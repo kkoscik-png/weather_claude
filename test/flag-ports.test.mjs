@@ -35,18 +35,30 @@ test('one, two or three points can show flags at the same time', () => {
   assert.deepEqual(shown(t), [2]);
   t.toggleFlagPort(2);
   assert.deepEqual(shown(t), []);
-  assert.equal(stored.get('baltic-flag-ports'), '[]');
+  assert.equal(stored.has('baltic-flag-ports'), false);
 });
 
-test('the choice is remembered and cards no longer show port codes', () => {
+test('cards no longer show port codes and mark the chosen flags', () => {
   const { t, el } = app();
   t.toggleFlagPort(1);
-  const again = app();
-  again.stored.set('baltic-flag-ports', '[1,2]'); again.t.loadFlagPorts();
-  assert.deepEqual(shown(again.t), [1, 2]);
   t.renderPorts();
   const html = el('ports').innerHTML;
   assert(!/LV VNT|SE NYN/.test(html));
   assert.equal((html.match(/data-flag-port=/g) || []).length, 3);
   assert.equal((html.match(/class="port-flag on"/g) || []).length, 2);
+});
+
+test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and flags at both berths', () => {
+  const src = fs.readFileSync('dist/app.js', 'utf8');
+  const opening = src.match(/async function start\(\)\{Object\.assign\(state,\{([^}]*)\}\)/)[1];
+  assert.match(opening, /model:'icon_eu'/);
+  assert.match(opening, /waveSource:'ecmwf_wam'/);
+  assert.match(opening, /animate:true/);
+  assert.match(opening, /routeWaves:true/);
+  assert.match(opening, /flagPorts:new Set\(\[1,2\]\)/);
+  assert(!/localStorage\.setItem\('baltic-flag-ports'/.test(src));
+  const html = fs.readFileSync('dist/index.html', 'utf8');
+  assert.match(html, /<html lang="en">/);
+  assert.match(html, /<option value="icon_eu" selected>/);
+  assert(!/id="info"|id="refresh"/.test(html));
 });

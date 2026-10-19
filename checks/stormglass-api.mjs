@@ -19,8 +19,8 @@ test('Stormglass status reports port data without recreating removed map plaques
  state.waveSource='stormglass';state.stormglassStatus={configured:true,routeEnabled:false};state.flags=false;
  state.times=fixture.hours.map(r=>Date.parse(r.time)/1000);state.stormglassWave=[0,1,2].map(()=>normalizeStormglass(fixture,{lat:58,lon:20},Date.now()));
  for(const i of [0,1,2]){assert.match(markerIcon(i).html,/pin-dot/);assert.doesNotMatch(markerIcon(i).html,/pin-label|pin-wave|pin-weather-label/);}
- assert.match(stormglassMapStatus(),/3\/3/);assert.match(stormglassMapStatus(),/wyłączona/);
+ assert.match(stormglassMapStatus(),/3\/3/);assert.match(stormglassMapStatus(),/ is off/);
  state.times.push(state.times[1]+3600);state.hour=2;assert.match(stormglassMapStatus(),/0\/3/);
- state.stormglassLoading=true;assert.match(stormglassMapStatus(),/pobieranie/);
- state.stormglassLoading=false;state.errors.stormglass='Stormglass: osiągnięto dzienny limit zapytań.';assert.match(stormglassMapStatus(),/limit/);
+ state.stormglassLoading=true;assert.match(stormglassMapStatus(),/loading/);
+ state.stormglassLoading=false;state.errors.stormglass='Stormglass: daily request limit reached.';assert.match(stormglassMapStatus(),/limit/);
 });

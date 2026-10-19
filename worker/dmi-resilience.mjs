@@ -18,10 +18,10 @@ export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=
    let value;
    try{value=await load();}
    catch(error){
-    if(old&&now()-old.saved<RETAIN&&usable(old))return save(key,{...old,stale:true,checkedAt:now(),refreshAfter:new Date(now()+Math.max(15*60000,(error.retryAfter||0)*1000)).toISOString(),notice:'Ostatnia dobra prognoza — może być nieaktualna.'});
+    if(old&&now()-old.saved<RETAIN&&usable(old))return save(key,{...old,stale:true,checkedAt:now(),refreshAfter:new Date(now()+Math.max(15*60000,(error.retryAfter||0)*1000)).toISOString(),notice:'Last good forecast — may be outdated.'});
     if(!fallback)throw error;value=await fallback(error);
    }
-   if(!usable(value))throw Error('Brak użytecznych danych prognozy.');
+   if(!usable(value))throw Error('No usable forecast data.');
    value={...value,saved:value.saved??now(),checkedAt:now(),stale:false};value.refreshAfter=new Date(forecastRefreshAfter(value)).toISOString();
    return save(key,value);
   })().finally(()=>pending.delete(key));pending.set(key,job);return job;
@@ -30,18 +30,18 @@ export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=
 }
 
 export function normalizeDMIOpenMeteo(data,points,fetchedAt=Date.now()){
- const rows=Array.isArray(data)?data:[data];if(rows.length!==points.length)throw Error('Niepełna prognoza zapasowa Open-Meteo.');
+ const rows=Array.isArray(data)?data:[data];if(rows.length!==points.length)throw Error('Incomplete Open-Meteo fallback forecast.');
  const fields=['temperature_2m','wind_speed_10m','wind_gusts_10m','wind_direction_10m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation'];
  const records=rows.map((row,i)=>{
-  const source=row.hourly;if(!Array.isArray(source?.time)||row.hourly_units?.wind_speed_10m!=='m/s')throw Error('Nieprawidłowa prognoza zapasowa Open-Meteo.');
+  const source=row.hourly;if(!Array.isArray(source?.time)||row.hourly_units?.wind_speed_10m!=='m/s')throw Error('Invalid Open-Meteo fallback forecast.');
   const hourly={time:source.time.map(t=>Number.isFinite(t)?t:null)};
   for(const field of fields)hourly[field]=source.time.map((_,i)=>{
    const v=source[field]?.[i];if(typeof v!=='number'||!Number.isFinite(v))return null;
    if(field==='temperature_2m')return v;
    return v>=0&&v<=(field.startsWith('cloud_cover')?100:field==='wind_direction_10m'?360:Infinity)?v:null;
   });
-  if(!hourly.wind_speed_10m.some(v=>v!==null))throw Error('Brak wiatru w prognozie zapasowej Open-Meteo.');
+  if(!hourly.wind_speed_10m.some(v=>v!==null))throw Error('No wind in the Open-Meteo fallback forecast.');
   return {id:points[i].id,latitude:row.latitude,longitude:row.longitude,provider:'DMI / ECMWF via Open-Meteo',model:'DMI Seamless (DMI + ECMWF)',hourly};
  });
- return {records,saved:fetchedAt,timing:{updatedAt:new Date(fetchedAt).toISOString(),nextUpdate:new Date(fetchedAt+3*HOUR).toISOString(),referenceTime:null,basis:'fetch',estimated:true},delivery:'open-meteo',blend:true,notice:'Źródło zapasowe: Open-Meteo · DMI Seamless (DMI + ECMWF).',attribution:'DMI, ECMWF / Open-Meteo, CC BY 4.0'};
+ return {records,saved:fetchedAt,timing:{updatedAt:new Date(fetchedAt).toISOString(),nextUpdate:new Date(fetchedAt+3*HOUR).toISOString(),referenceTime:null,basis:'fetch',estimated:true},delivery:'open-meteo',blend:true,notice:'Fallback source: Open-Meteo · DMI Seamless (DMI + ECMWF).',attribution:'DMI, ECMWF / Open-Meteo, CC BY 4.0'};
 }

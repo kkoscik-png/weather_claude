@@ -75,3 +75,7 @@ Odtwarzanie prognozy (▶) i przycisk „Teraz” są w lewym górnym rogu tabel
 ## Mapa fal: równe rozmieszczenie (19.10.2026)
 
 Liczby Hs na mapie są przerzedzane do jednego, równego odstępu na ekranie (58–84 px, dopasowanego do rozstawu punktów trasy przy danym przybliżeniu), więc punkty przy brzegu nie tworzą skupisk, a trasa nie wygląda na pustą. Kolor liczby odpowiada wysokości fali (przyciemniona skala legendy). Kolorowe pole fali korzysta ze wszystkich bezpośrednich punktów wybranego modelu: siatki regionalnej, trasy i wybrzeża.
+
+## English interface and opening state (19.10.2026)
+
+The interface is in English (en-GB number and date formats, Swedish time zone). Every time the page opens: wind model ICON-EU, wave model ECMWF WAM, flags at Ventspils Berth and Norvik Berth, wind animation and sea-state numbers on, and a default map view from Stockholm / Nynäshamn to Saaremaa / Ventspils (`DEFAULT_VIEW` in `dist/app.js`). The info and refresh buttons were removed from the brand column; "About the data" is in the page footer.

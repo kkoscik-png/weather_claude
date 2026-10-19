@@ -75,7 +75,7 @@ test('selected wave models isolate ports, route, map, and Swedish update clocks'
  for(const [i,model] of ['fmi_wam','dmi_wam','copernicus_baltic','dwd_ewam'].entries()){
   t.state.waves[model]=[record(i)];t.state.waveRoutes[model]=[{series:record(i)}];t.state.waveFields[model]=[{series:record(i)}];t.state.waveSource=model;
   assert.equal(t.waveAt(0,'wave_height'),i);assert.equal(t.routeWaveValues()[0].value,i);assert.equal(t.currentGrid()[0].series.hourly.wave_height[0],i);
-  t.state.timings[model]=modelTiming('2026-10-18T12:00:00Z',6*3600000);t.renderUpdateClocks();assert(el('waveUpdates').innerHTML.includes('14:00'));assert(el('waveUpdates').innerHTML.includes('20:00'));assert(el('waveUpdates').innerHTML.includes('przewidywana'));
+  t.state.timings[model]=modelTiming('2026-10-18T12:00:00Z',6*3600000);t.renderUpdateClocks();assert(el('waveUpdates').innerHTML.includes('14:00'));assert(el('waveUpdates').innerHTML.includes('20:00'));assert(el('waveUpdates').innerHTML.includes('expected'));
  }
  assert.equal(t.selectWaveSource('smhi_swan'),false);assert.equal(t.MODELS.dmi_harmonie.api,true);
  t.state.waveSource='ecmwf_wam';assert.equal(t.waveAt(0,'wave_height'),9);assert.equal(t.currentGrid()[0].series.hourly.wave_height[0],9);
@@ -149,15 +149,15 @@ function dmiClientFixture(statuses){
  c.t.state.model='dmi_harmonie';return {c,timers,get calls(){return calls;},get mapLoads(){return mapLoads;},advance(ms){clock+=ms;},async fire(){const [id,timer]=[...timers][0];timers.delete(id);clock=Math.max(clock,timer.at);await timer.fn();}};
 }
 test('selected DMI retries automatically twice, deduplicates timers and recovers chart plus map',async()=>{
- const f=dmiClientFixture([429,429,200]),t=f.c.t;await t.loadExtraWindPorts('dmi_harmonie');assert.equal(f.calls,1);assert.equal(f.timers.size,1);assert.match(t.state.errors.dmi_harmonie,/próba 1\/2/);
+ const f=dmiClientFixture([429,429,200]),t=f.c.t;await t.loadExtraWindPorts('dmi_harmonie');assert.equal(f.calls,1);assert.equal(f.timers.size,1);assert.match(t.state.errors.dmi_harmonie,/attempt 1\/2/);
  await t.loadExtraWindPorts('dmi_harmonie');assert.equal(f.calls,1);assert.equal(f.timers.size,1);
- await f.fire();assert.equal(f.calls,2);assert.equal(f.timers.size,1);assert.match(t.state.errors.dmi_harmonie,/próba 2\/2/);
+ await f.fire();assert.equal(f.calls,2);assert.equal(f.timers.size,1);assert.match(t.state.errors.dmi_harmonie,/attempt 2\/2/);
  await f.fire();assert.equal(f.calls,3);assert.equal(t.state.wind.dmi_harmonie.length,3);assert.equal(t.state.errors.dmi_harmonie,'');assert.equal(f.timers.size,0);assert.equal(t.providerRetries.size,0);assert.equal(f.mapLoads,1);
 });
 test('persistent DMI 429 stops automatic attempts after two retries',async()=>{
  const f=dmiClientFixture([429]),t=f.c.t;await t.loadExtraWindPorts('dmi_harmonie');
  // A concurrent map response can replace the retry record before the timer fires.
- t.providerRetries.set('dmi_harmonie',{...t.providerRetries.get('dmi_harmonie')});await f.fire();await f.fire();assert.equal(f.calls,3);assert.equal(f.timers.size,0);assert.equal(f.mapLoads,0);assert.match(t.state.errors.dmi_harmonie,/Automatyczne ponowienia zakończone/);
+ t.providerRetries.set('dmi_harmonie',{...t.providerRetries.get('dmi_harmonie')});await f.fire();await f.fire();assert.equal(f.calls,3);assert.equal(f.timers.size,0);assert.equal(f.mapLoads,0);assert.match(t.state.errors.dmi_harmonie,/Automatic retries finished/);
  t.resumeDMIRetries();assert.equal(f.timers.size,0);assert.equal(f.calls,3);
 });
 test('automatic DMI retries pause in a hidden page and skip an unselected source',async()=>{
@@ -175,7 +175,7 @@ test('DMI Open-Meteo fallback preserves units, calm, gaps, negative Celsius and 
 test('DMI stores one forecast until its next model update, survives Worker replacement, and returns the original stale snapshot on failure',async()=>{
  let clock=Date.parse(T),loads=0,fallbacks=0;const cache=forecastStore(),options={cache,now:()=>clock},a=createLastGoodCache(options);const load=async()=>{loads++;return {...normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],clock),delivery:'dmi',blend:false};};
  const first=await a('point',load);assert.equal(loads,1);clock+=3599000;const b=createLastGoodCache(options);assert.equal((await b('point',load)).saved,first.saved);assert.equal(loads,1);
- clock+=7202000;const old=await b('point',async()=>{loads++;throw Error('timeout');},async()=>{fallbacks++;throw Error('must use old snapshot');});assert.equal(loads,2);assert.equal(fallbacks,0);assert.equal(old.saved,first.saved);assert.equal(old.delivery,'dmi');assert.equal(old.stale,true);assert.match(old.notice,/może być nieaktualna/);assert.equal(old.records[0].hourly.wind_speed_10m[1],3);
+ clock+=7202000;const old=await b('point',async()=>{loads++;throw Error('timeout');},async()=>{fallbacks++;throw Error('must use old snapshot');});assert.equal(loads,2);assert.equal(fallbacks,0);assert.equal(old.saved,first.saved);assert.equal(old.delivery,'dmi');assert.equal(old.stale,true);assert.match(old.notice,/may be outdated/);assert.equal(old.records[0].hourly.wind_speed_10m[1],3);
 });
 test('DMI uses one Open-Meteo query for all ports and parameters after a native failure, then caches it until the next cycle',async()=>{
  let clock=Date.parse(T),dmi=0,meteo=0;const api=createForecastAPI({now:()=>clock,pause:async ms=>{clock+=ms;},fetcher:async (url,options)=>{
@@ -189,7 +189,7 @@ test('DMI honours a shorter Retry-After with the minimum sixty-second pause',asy
  let clock=0,calls=0;const request=createDMIRequester({now:()=>clock,fetcher:async()=>{calls++;return new Response('busy',{status:429,headers:{'Retry-After':'5'}});}});await assert.rejects(request('https://opendataapi.dmi.dk/a'),e=>e.retryAfter===60);clock=30000;await assert.rejects(request('https://opendataapi.dmi.dk/b'),e=>e.retryAfter===30);assert.equal(calls,1);clock=60000;await assert.rejects(request('https://opendataapi.dmi.dk/b'),e=>e.retryAfter===120);assert.equal(calls,2);
 });
 test('client labels cached DMI/ECMWF fallback honestly and keeps its own fetch timing',()=>{
- const f=dmiClientFixture([200]);vm.runInContext(';globalThis.extra={windModelInfo,renderUpdateClocks,cacheLabel};',f.c);const t=f.c.t;t.state.metas.dmi_harmonie={delivery:'open-meteo',blend:true,saved:Date.parse(T),stale:true,timing:{updatedAt:T,nextUpdate:'2026-10-18T17:00:00Z',basis:'fetch'}};assert.match(f.c.extra.windModelInfo('dmi_harmonie').label,/DMI.*ECMWF.*Open-Meteo/);assert.equal(f.c.extra.windModelInfo('dmi_harmonie').short,'DMI/IFS');assert.match(f.c.extra.cacheLabel(t.state.metas.dmi_harmonie),/może być nieaktualna/);
+ const f=dmiClientFixture([200]);vm.runInContext(';globalThis.extra={windModelInfo,renderUpdateClocks,cacheLabel};',f.c);const t=f.c.t;t.state.metas.dmi_harmonie={delivery:'open-meteo',blend:true,saved:Date.parse(T),stale:true,timing:{updatedAt:T,nextUpdate:'2026-10-18T17:00:00Z',basis:'fetch'}};assert.match(f.c.extra.windModelInfo('dmi_harmonie').label,/DMI.*ECMWF.*Open-Meteo/);assert.equal(f.c.extra.windModelInfo('dmi_harmonie').short,'DMI/IFS');assert.match(f.c.extra.cacheLabel(t.state.metas.dmi_harmonie),/may be outdated/);
 });
 
 test('selected weather refreshes when due and waits while the page is hidden',async()=>{

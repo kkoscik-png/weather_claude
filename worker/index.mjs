@@ -41,8 +41,8 @@ export function createHandler() {
   return async function fetch(request, env, ctx) {
     // The owner selected public access without a PIN or login.
     const url = new URL(request.url);
-    if (!ALLOWED_HOSTS.has(url.hostname)) return deny('Niedozwolony adres aplikacji.', 403);
-    if (!env.ASSETS?.fetch) return deny('Aplikacja oczekuje na dokończenie wdrożenia.', 503);
+    if (!ALLOWED_HOSTS.has(url.hostname)) return deny('This address is not allowed.', 403);
+    if (!env.ASSETS?.fetch) return deny('The app is waiting for the deployment to finish.', 503);
     const api = await handleStormglass(request, env, ctx);
     if (api) return api;
     const forecast = await handleForecast(request, env, ctx);

@@ -8,7 +8,7 @@ export async function copernicusDataset(getJSON, now) {
   const versions = await Promise.all(items.map(l => getJSON(new URL(l.href, ROOT).href, 1800)));
   const active = versions.filter(d => Date.parse(d.properties?.admp_released_date || '2000-01-01') <= now && Date.parse(d.properties?.admp_retired_date || '2100-01-01') > now);
   active.sort((a,b) => Date.parse(b.properties.admp_released_date) - Date.parse(a.properties.admp_released_date));
-  const dataset = active[0]; if (!dataset?.assets?.geoChunked) throw Error('Brak aktywnego zbioru Copernicus');
+  const dataset = active[0]; if (!dataset?.assets?.geoChunked) throw Error('No active Copernicus dataset');
   return dataset;
 }
 export async function loadCopernicus(points, { getJSON, getBuffer, now }) {
@@ -26,7 +26,7 @@ export async function loadCopernicus(points, { getJSON, getBuffer, now }) {
   const records = locations.map(p => ({id:p.id,latitude:axes.latitude[p.y],longitude:axes.longitude[p.x],provider:'Copernicus Marine / FMI',model:'Baltic WAM',hourly:{time:times, wave_height:times.map(()=>null),wave_direction:times.map(()=>null),wave_period:times.map(()=>null)}}));
   for (const [field,key] of Object.entries(FIELDS)) {
     const array = meta[field + '/.zarray'];
-    if (!array || array.dtype !== '<f4' || array.order !== 'C' || array.compressor?.id !== 'blosc' || array.compressor.cname !== 'lz4' || array.filters?.length) throw Error('Nieobsługiwany format Copernicus');
+    if (!array || array.dtype !== '<f4' || array.order !== 'C' || array.compressor?.id !== 'blosc' || array.compressor.cname !== 'lz4' || array.filters?.length) throw Error('Unsupported Copernicus format');
     const [ct,cy,cx] = array.chunks, groups = new Map();
     locations.forEach((p,i) => times.forEach((_,j) => {
       const t = t0+j; if (t < 0 || t >= array.shape[0]) return;

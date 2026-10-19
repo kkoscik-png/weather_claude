@@ -13,15 +13,15 @@ export function createStormglassAPI({fetcher=(...args)=>fetch(...args),cache=nul
  const inflight=new Map(),memory=new Map();
  return async function handleStormglass(request,env,ctx={}){
   const url=new URL(request.url);if(!url.pathname.startsWith('/api/stormglass/'))return null;
-  if(request.method!=='GET')return json({error:'Metoda niedozwolona.'},405);
+  if(request.method!=='GET')return json({error:'Method not allowed.'},405);
   const configured=typeof env.STORMGLASS_API_KEY==='string'&&env.STORMGLASS_API_KEY.trim().length>0,routeEnabled=env.STORMGLASS_ROUTE_ENABLED==='true';
   if(url.pathname==='/api/stormglass/status')return json({configured,routeEnabled:configured&&routeEnabled,source:SOURCE,cacheHours:6});
-  if(url.pathname!=='/api/stormglass/waves')return json({error:'Nieznany adres API.'},404);
-  if(!configured)return json({error:'Dodaj sekret STORMGLASS_API_KEY w Cloudflare.'},503);
+  if(url.pathname!=='/api/stormglass/waves')return json({error:'Unknown API address.'},404);
+  if(!configured)return json({error:'Add the STORMGLASS_API_KEY secret in Cloudflare.'},503);
   const group=url.searchParams.get('group')||'ports',offsetText=url.searchParams.get('offset')||'0';
-  if(!['ports','route'].includes(group)||!/^\d+$/.test(offsetText))return json({error:'Nieprawidłowa grupa punktów.'},400);
-  if(group==='route'&&!routeEnabled)return json({error:'Stormglass dla trasy nie jest włączony. Wymaga STORMGLASS_ROUTE_ENABLED=true.'},403);
-  const all=STORMGLASS_POINTS[group],offset=Number(offsetText);if(offset>=all.length||(group==='ports'&&offset!==0)||offset%5!==0)return json({error:'Nieprawidłowy zakres punktów.'},400);
+  if(!['ports','route'].includes(group)||!/^\d+$/.test(offsetText))return json({error:'Invalid point group.'},400);
+  if(group==='route'&&!routeEnabled)return json({error:'Stormglass for the route is off. It requires STORMGLASS_ROUTE_ENABLED=true.'},403);
+  const all=STORMGLASS_POINTS[group],offset=Number(offsetText);if(offset>=all.length||(group==='ports'&&offset!==0)||offset%5!==0)return json({error:'Invalid point range.'},400);
   const activeCache=cache||(typeof caches!=='undefined'?caches.default:null),points=all.slice(offset,offset+5);let records=[];
   try{records=await Promise.all(points.map(async point=>{
    const key=new Request(url.origin+'/__stormglass_cache/v1/'+group+'/'+point.id);
@@ -39,7 +39,7 @@ export function createStormglassAPI({fetcher=(...args)=>fetch(...args),cache=nul
     return record;
    })().finally(()=>inflight.delete(cacheKey)));
    return inflight.get(cacheKey);
-  }));}catch(error){console.warn('stormglass_adapter',error.name,error.status||0,String(error.message||'').replace(env.STORMGLASS_API_KEY,'[redacted]'));const status=error.status===429?429:error.status===401||error.status===403?502:502;return json({error:error.status===429?'Limit zapytań Stormglass został osiągnięty.':error.status===401||error.status===403?'Stormglass odrzucił klucz lub uprawnienia.':'Nie udało się pobrać prognozy Stormglass.'},status);}
+  }));}catch(error){console.warn('stormglass_adapter',error.name,error.status||0,String(error.message||'').replace(env.STORMGLASS_API_KEY,'[redacted]'));const status=error.status===429?429:error.status===401||error.status===403?502:502;return json({error:error.status===429?'Stormglass request limit reached.':error.status===401||error.status===403?'Stormglass rejected the key or permissions.':'Could not load the Stormglass forecast.'},status);}
   const saved=Math.min(...records.map(r=>r.saved)),refreshAfter=new Date(saved+TTL*1000).toISOString();
   return json({records,saved,refreshAfter,timing:{updatedAt:new Date(saved).toISOString(),nextUpdate:refreshAfter,basis:'fetch',estimated:true},source:SOURCE,group,nextOffset:offset+points.length<all.length?offset+points.length:null,total:all.length,cacheHours:6});
  };
