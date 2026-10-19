@@ -315,3 +315,9 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .time-cursor{background:rgba(214,58,50,.4)}
 /* Telefon: mapa ma stałą wysokość (w kolumnie nie ma czego rozciągać) */
 @media(max-width:760px){.top-row>.map-section{height:clamp(380px,62vh,520px);min-height:0;align-self:stretch}}
+/* Pogoda w kafelku: ikona i temperatura między nazwą a flagą */
+.port-top{display:flex;align-items:center;gap:6px;padding-right:30px}
+.port-top h2{padding-right:0;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.port-wx{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none;color:#14323c}
+.port-wx svg{width:20px;height:20px}
+.port-wx b{font:700 13px 'Manrope',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.2px}

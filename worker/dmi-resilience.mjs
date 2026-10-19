@@ -7,7 +7,7 @@ export function forecastRefreshAfter(value){
 // Forecasts and their update schedules stay on the server until the next cycle.
 export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=>Array.isArray(value?.records)&&value.records.some(r=>r.hourly?.time?.length)}={}){
  const memory=new Map(),pending=new Map(),storage=()=>cache||(typeof caches!=='undefined'?caches.default:null);
- const requestFor=key=>new Request('https://weather.seasync.co/__forecast_cycles/v1/'+encodeURIComponent(key));
+ const requestFor=key=>new Request('https://weather.seasync.co/__forecast_cycles/v2/'+encodeURIComponent(key));
  async function read(key){let value=memory.get(key);const store=storage();if(!value&&store){try{let hit=await store.match(requestFor(key));if(!hit&&key.startsWith('dmi_'))hit=await store.match(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent(key)));if(hit)value=await hit.json();}catch{}}return value;}
  async function save(key,value){if(memory.size>=180)memory.delete(memory.keys().next().value);memory.set(key,value);const store=storage();if(store){try{await store.put(requestFor(key),new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+RETAIN/1000}}));}catch{}}return value;}
  async function lastGood(key,load,fallback=null){

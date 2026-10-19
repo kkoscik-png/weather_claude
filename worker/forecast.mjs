@@ -129,8 +129,8 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   }
   async function fetchOpenWeather(model,points,group){
     const wave=['ecmwf_wam','dwd_ewam'].includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
-    const fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation':'');
-    const query={latitude:points.map(p=>p.lat).join(','),longitude:points.map(p=>p.lon).join(','),hourly:fields,models:model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(Math.floor(now()/HOUR)*HOUR-HOUR).slice(0,16),end_hour:iso(Math.floor(now()/HOUR)*HOUR+95*HOUR).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms'}:{})};
+    const fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,temperature_2m':'');
+    const query={latitude:points.map(p=>p.lat).join(','),longitude:points.map(p=>p.lon).join(','),hourly:fields,models:model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(Math.floor(now()/HOUR)*HOUR-HOUR).slice(0,16),end_hour:iso(Math.floor(now()/HOUR)*HOUR+95*HOUR).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
     const data=await(await response(host+'?'+new URLSearchParams(query))).json(),saved=now();let timing;
     try{timing=(await getSchedule(model)).timing;}catch{timing=modelTiming(iso(saved),HOUR,null,'fetch');}
     return {records:normalizeOpenWeather(data,points,model,wave),saved,timing,delivery:'open-meteo',attribution:(wave?'Marine forecasts':'Weather forecasts')+' / Open-Meteo, CC BY 4.0'};
