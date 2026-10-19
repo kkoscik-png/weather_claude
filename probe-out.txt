@@ -1,0 +1,113 @@
+t 0 0,0:0.27/D 0,1:0.30/D 0,2:0.32/D 1,0:0.20/D 1,1:0.25/D 1,2:0.27/D 2,0:0.22/- 2,1:0.22/D 2,2:0.19/D 3,0:0.21/- 3,1:0.20/D 3,2:0.21/- 4,0:0.20/- 4,1:0.20/- 4,2:0.20/-
+t 1 0,0:0.27/D 0,1:0.30/D 0,2:0.32/D 1,0:0.20/D 1,1:0.26/D 1,2:0.27/D 2,0:0.21/- 2,1:0.22/D 2,2:0.20/D 3,0:0.18/- 3,1:0.14/D 3,2:0.20/- 4,0:0.14/- 4,1:0.14/- 4,2:0.14/-
+t 2 0,0:0.28/D 0,1:0.30/D 0,2:0.32/D 1,0:0.20/D 1,1:0.26/D 1,2:0.27/D 2,0:0.18/- 2,1:0.19/D 2,2:0.20/D 3,0:0.13/- 3,1:0.08/D 3,2:0.18/- 4,0:0.08/- 4,1:0.08/- 4,2:0.08/-
+t 3 0,0:0.27/D 0,1:0.30/D 0,2:0.31/D 1,0:0.20/D 1,1:0.25/D 1,2:0.27/D 2,0:0.17/- 2,1:0.18/D 2,2:0.20/D 3,0:0.11/- 3,1:0.04/D 3,2:0.16/- 4,0:0.04/- 4,1:0.04/- 4,2:0.04/-
+t 4 0,0:0.27/D 0,1:0.29/D 0,2:0.31/D 1,0:0.20/D 1,1:0.24/D 1,2:0.26/D 2,0:0.16/- 2,1:0.17/D 2,2:0.19/D 3,0:0.10/- 3,1:0.03/D 3,2:0.16/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 5 0,0:0.26/D 0,1:0.28/D 0,2:0.29/D 1,0:0.20/D 1,1:0.23/D 1,2:0.25/D 2,0:0.15/- 2,1:0.16/D 2,2:0.18/D 3,0:0.09/- 3,1:0.02/D 3,2:0.15/- 4,0:0.02/- 4,1:0.02/- 4,2:0.02/-
+t 6 0,0:0.25/D 0,1:0.27/D 0,2:0.28/D 1,0:0.19/D 1,1:0.22/D 1,2:0.24/D 2,0:0.15/- 2,1:0.15/D 2,2:0.17/D 3,0:0.09/- 3,1:0.03/D 3,2:0.14/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 7 0,0:0.24/D 0,1:0.25/D 0,2:0.26/D 1,0:0.18/D 1,1:0.20/D 1,2:0.22/D 2,0:0.14/- 2,1:0.15/D 2,2:0.17/D 3,0:0.09/- 3,1:0.03/D 3,2:0.13/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 8 0,0:0.22/D 0,1:0.23/D 0,2:0.24/D 1,0:0.17/D 1,1:0.19/D 1,2:0.21/D 2,0:0.13/- 2,1:0.14/D 2,2:0.16/D 3,0:0.08/- 3,1:0.03/D 3,2:0.13/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 9 0,0:0.21/D 0,1:0.22/D 0,2:0.23/D 1,0:0.16/D 1,1:0.18/D 1,2:0.20/D 2,0:0.13/- 2,1:0.13/D 2,2:0.15/D 3,0:0.08/- 3,1:0.03/D 3,2:0.12/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 10 0,0:0.20/D 0,1:0.21/D 0,2:0.22/D 1,0:0.15/D 1,1:0.17/D 1,2:0.19/D 2,0:0.12/- 2,1:0.13/D 2,2:0.14/D 3,0:0.08/- 3,1:0.03/D 3,2:0.12/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 11 0,0:0.19/D 0,1:0.20/D 0,2:0.21/D 1,0:0.15/D 1,1:0.17/D 1,2:0.18/D 2,0:0.12/- 2,1:0.12/D 2,2:0.14/D 3,0:0.08/- 3,1:0.03/D 3,2:0.12/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+t 12 0,0:0.18/D 0,1:0.19/D 0,2:0.21/D 1,0:0.14/D 1,1:0.16/D 1,2:0.18/D 2,0:0.12/- 2,1:0.12/D 2,2:0.14/D 3,0:0.08/- 3,1:0.03/D 3,2:0.12/- 4,0:0.03/- 4,1:0.03/- 4,2:0.03/-
+=== nested
+ww3_nsbalt_nested_2026101906.nc
+Dataset {
+    Float64 time[time = 56];
+    Float32 latitude[latitude = 153];
+    Float32 longitude[longitude = 143];
+    Float32 latc_nsbalt[latc_nsbalt = 346];
+    Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    Grid {
+        Array:
+            Float32 u_dkinner[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } u_dkinner;
+    Grid {
+        Array:
+            Float32 v_dkinner[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } v_dkinner;
+    Grid {
+        Array:
+            Float32 TMN_dkinner[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } TMN_dkinner;
+    Grid {
+        Array:
+            Float32 u_v_dkinner[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } u_v_dkinner;
+    Grid {
+        Array:
+            Float32 TMN_nsbalt[time = 56][latc_nsbalt = 346][lonc_nsbalt = 410];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latc_nsbalt[latc_nsbalt = 346];
+            Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    } TMN_nsbalt;
+    Grid {
+        Array:
+            Float32 bathymetry_nsbalt[latc_nsbalt = 346][lonc_nsbalt = 410];
+        Maps:
+            Float32 latc_nsbalt[latc_nsbalt = 346];
+            Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    } bathymetry_nsbalt;
+    Grid {
+        Array:
+            Float32 u_nsbalt[time = 56][latc_nsbalt = 346][lonc_nsbalt = 410];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latc_nsbalt[latc_nsbalt = 346];
+            Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    } u_nsbalt;
+    Grid {
+        Array:
+            Float32 u_v_nsbalt[time = 56][latc_nsbalt = 346][lonc_nsbalt = 410];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latc_nsbalt[latc_nsbalt = 346];
+            Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    } u_v_nsbalt;
+    Grid {
+        Array:
+            Float32 v_nsbalt[time = 56][latc_nsbalt = 346][lonc_nsbalt = 410];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latc_nsbalt[latc_nsbalt = 346];
+            Float32 lonc_nsbalt[lonc_nsbalt = 410];
+    } v_nsbalt;
+} ww3_nsbalt_nested_2026101906%2Enc;
+Dataset {
+    Float64 time[time = 56];
+    Float32 latitude[latitude = 153];
+    Float32 longitude[longitude = 143];
+    Grid {
+        Array:
+            Float32 u[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } u;
+    Grid {
+        Array:
+            Float32 v[time = 56][latitude = 153][longitude = 143];
+        Maps:
+            Float64 time[time = 56];
+            Float32 latitude[latitude = 153];
+            Float32 longitude[longitude = 143];
+    } v;
