@@ -22,9 +22,10 @@ export const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 // Public addresses of this app. Everything else (workers.dev, previews) is refused.
-export const ALLOWED_HOSTS = new Set(['pogoda.seasync.co', 'weather.seasync.co']);
-// "www." variants are only redirects to the canonical address.
-export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'pogoda.seasync.co']]);
+// The app lives at weather.seasync.co; every other address of ours redirects there.
+export const ALLOWED_HOSTS = new Set(['weather.seasync.co']);
+// "www." variants and the old pogoda.seasync.co address only redirect to the canonical one.
+export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['pogoda.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'weather.seasync.co']]);
 
 const YEAR = 31536000, DAY = 86400;
 

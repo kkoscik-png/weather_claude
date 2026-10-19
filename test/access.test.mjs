@@ -36,9 +36,9 @@ test('missing assets are never cached by the browser', async () => {
   assert.equal(response.status, 404);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
-test('the new pogoda.seasync.co address serves the app', async () => {
+test('weather.seasync.co serves the app', async () => {
   const { env } = assetsEnv();
-  for (const path of ['/', '/app.js?v=1', '/api/stormglass/status']) assert.equal((await handler(request(path, 'pogoda.seasync.co'), env)).status, 200);
+  for (const path of ['/', '/app.js?v=1', '/api/stormglass/status']) assert.equal((await handler(request(path, 'weather.seasync.co'), env)).status, 200);
 });
 test('legacy Access settings and assertions do not require a login', async () => {
   const { env } = assetsEnv({ ACCESS_TEAM_DOMAIN: 'old.cloudflareaccess.com', ACCESS_AUD: 'old-audience' });
@@ -72,7 +72,8 @@ test('www. and http:// addresses redirect to the canonical HTTPS address', async
   const { env, calls } = assetsEnv();
   const cases = [
     ['https://www.weather.seasync.co/?x=1', 'https://weather.seasync.co/?x=1'],
-    ['http://www.pogoda.seasync.co/app.js', 'https://pogoda.seasync.co/app.js'],
+    ['http://www.pogoda.seasync.co/app.js', 'https://weather.seasync.co/app.js'],
+    ['https://pogoda.seasync.co/?p=2', 'https://weather.seasync.co/?p=2'],
     ['http://weather.seasync.co/', 'https://weather.seasync.co/'],
   ];
   for (const [from, to] of cases) {
