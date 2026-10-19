@@ -442,3 +442,28 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 :root[data-theme="dark"] .wind-chip.no-data{background:#16303a!important;color:#6f8790!important}
 :root[data-theme="dark"] .wind-chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
 :root[data-theme="dark"] .brandmark{background:#15363b;color:#6fe0c2;box-shadow:0 0 0 1px #24505a}
+
+/* ---------- Pasek marki w poziomie: logo po lewej, motyw i godzina po prawej, jeden delikatny kafelek ---------- */
+.brand-column{flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:14px;text-align:left;padding:8px 14px 8px 10px!important;background:rgba(255,255,255,.85);border:1px solid #e6edef;border-radius:14px;box-shadow:0 1px 2px rgba(16,44,57,.04)}
+.brand-column .brand{font-size:19px;gap:9px}
+.brand-column .brandmark{width:34px;height:34px;font-size:32px;border-radius:9px}
+.brand-tools{display:flex;align-items:center;gap:14px;margin-left:auto}
+.brand-tools .theme-switch{margin:0;align-self:center}
+.brand-tools .brand-clock{align-items:flex-end;margin:0;text-align:right}
+.brand-tools .brand-clock b{font-size:15px;line-height:1.15}
+@media(min-width:761px){
+main{grid-template-columns:max-content minmax(0,1fr)}
+.brand-column{grid-column:1 / -1;align-self:stretch}
+main>.forecast,main>.page-footer{grid-column:1 / -1}
+main{row-gap:14px}
+}
+@media(max-width:760px){
+.brand-column{padding:7px 10px 7px 8px!important;border-radius:12px}
+.brand-column .brand{font-size:16px}
+.brand-column .brandmark{width:30px;height:30px;font-size:28px}
+.brand-tools{gap:10px}
+.brand-tools .brand-clock b{font-size:13px}
+.brand-tools .theme-switch button{width:26px;height:22px}
+}
+:root[data-theme="dark"] .brand-column{background:#11232c;border-color:#22404b;box-shadow:none}
+@media(min-width:761px){main>.forecast{margin-top:0}}
