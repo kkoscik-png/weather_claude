@@ -10,6 +10,8 @@ const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_e
 const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
+// Bump a model's revision when its sampling changes, so stored cycles are not reused.
+const CYCLE_REVISION={fcoo_ww3:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group,offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
@@ -201,7 +203,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const model=u.searchParams.get('model');
     if(u.pathname==='/api/model-updates'){
       if(!SOURCES[model])return json({error:'Unknown model.'},400);
-      const snapshot=await lastGood.peek([model,'ports',0].join('/'));
+      const snapshot=await lastGood.peek(cycleKey(model,'ports',0));
       if(snapshot&&now()<Date.parse(snapshot.refreshAfter||snapshot.timing?.nextUpdate))return json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter||snapshot.timing?.nextUpdate,checkedAt:iso(snapshot.checkedAt)});
       if(model==='smhi_snow')return snapshot?json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter}):json({error:'The update time appears after the forecast is loaded.'},503);
       try{const schedule=await getSchedule(model);return json({timing:schedule.timing,refreshAfter:schedule.refreshAfter,checkedAt:iso(schedule.saved)});}
@@ -212,7 +214,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const offset=Number(text);if(offset%BATCH||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
     const selected=points.slice(offset,offset+BATCH);
     try {
-      const payload=await lastGood([model,group,offset].join('/'),()=>fetchModel(model,selected,group),model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
+      const payload=await lastGood(cycleKey(model,group,offset),()=>fetchModel(model,selected,group),model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
       return json({...payload,model,group,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
     }catch(e){return json({error:e.status===429?(model.startsWith('dmi_')?'DMI is overloaded. Wait '+e.retryAfter+' s before trying again.':'The provider is busy. Try again shortly.'):'Could not load model '+model+'.',model,...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
   };
