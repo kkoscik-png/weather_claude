@@ -54,6 +54,14 @@ Pod każdą listą są osobne terminy ostatniej i przewidywanej następnej aktua
 
 `/api/forecast` przyjmuje tylko ustalone modele i grupy punktów aplikacji. Dane DMI i FMI mają CC BY 4.0. Copernicus Baltic WAM korzysta z publicznego oficjalnego zbioru ARCO/Zarr, bez danych logowania w przeglądarce i bez dodatkowego sekretu. Aktualną wersję zbioru wybieramy z oficjalnego STAC, pomijając wersje przyszłe i wycofane. Wszystkie nowe bezpośrednie adaptery działają bez płatnego planu. Warunki istniejących Open-Meteo i Stormglass pozostają bez zmian.
 
-Punkty leżące na modelowej masce lądu mogą użyć pobliskiego punktu morskiego tego samego modelu; jego współrzędne i odległość są widoczne w szczegółach. Brakujące godziny i wartości pozostają brakujące. FMI/Copernicus używają okresu szczytowego Tp, DMI WAM okresu średniego. Błędy lub przeciążenie DMI są jawne; nie zastępujemy jego wyników danymi innego modelu.
+Punkty leżące na modelowej masce lądu mogą użyć pobliskiego punktu morskiego tego samego modelu; jego współrzędne i odległość są widoczne w szczegółach. Brakujące godziny i wartości pozostają brakujące. FMI/Copernicus używają okresu szczytowego Tp, DMI WAM okresu średniego. Gdy DMI HARMONIE jest przeciążone (HTTP 429) lub nie odpowiada, serwer najpierw zwraca ostatnią dobrą prognozę DMI (do 48 h, oznaczoną jako możliwie nieaktualna), a jeśli jej nie ma, pobiera DMI Seamless przez Open-Meteo (HARMONIE 2 km, dalej ECMWF). Takie dane są w interfejsie wyraźnie podpisane jako źródło zapasowe. DMI WAM i pozostałe modele nie mają zastępczego źródła.
 
 Weryfikacja: `npm test` (dotychczasowe kontrole i nowe testy adapterów, wyboru źródła, czasu szwedzkiego oraz niezależne próbki kompresji Blosc/LZ4) i `npm run build:check`.
+
+## Wydajność, bezpieczeństwo i interfejs (19.10.2026)
+
+- Pliki z parametrem `?v=` (`app.js`, `style.css`) są buforowane przez przeglądarkę na rok, biblioteka Leaflet na tydzień, a `index.html` zawsze sprawdzany ponownie. Przy każdej zmianie `app.js` lub `style.css` podnieś numer `v=` w `index.html`.
+- Strona wysyła nagłówki Content-Security-Policy, HSTS i Permissions-Policy. Dozwolone źródła zewnętrzne: kafelki OpenStreetMap i Google Fonts.
+- Bufor serwera pamięta prawdziwy czas pobrania, więc kopia z pamięci Cloudflare nie żyje dłużej niż zakładany czas (`test/cache.test.mjs`).
+- Zmiana godziny przesuwa tylko zaznaczenie w tabeli i kursor wykresu, a mapa liczy geometrię interpolacji raz na widok. Zmiana godziny trwa ok. 5–8 ms zamiast ok. 100 ms; rysowanie pola mapy ok. 2 ms zamiast ok. 18 ms.
+- Interfejs: przyklejony nagłówek, porywy i kierunek na kartach punktów, zakładka DMI, na telefonie kolejność punkty → mapa → tabela → ustawienia, manifest aplikacji i ikony do dodania na ekran główny.
