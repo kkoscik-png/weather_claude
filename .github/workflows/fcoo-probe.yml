@@ -1,10 +1,15 @@
 name: fcoo-probe
 on: push
+permissions:
+  contents: write
 jobs:
   probe:
+    if: "!contains(github.event.head_commit.message, 'probe output')"
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: |
+          {
           B=https://data.fcoo.dk/webmap/v2/data/NETCDF/FCOO/WW3/
           RUN=$(curl -s $B | grep -o 'ww3c_NSBALT3NM_[0-9]\{10\}\.nc' | sort -u | tail -1)
           echo "RUN=$RUN"
@@ -23,3 +28,6 @@ jobs:
           echo ==== GRID-HEAD; curl -sI "$F" | head -12
           echo ==== OPENMETEO; curl -s "https://marine-api.open-meteo.com/v1/marine?latitude=57.39,58.94&longitude=21.53,17.98&hourly=wave_height,wave_direction&models=ecmwf_wam&forecast_hours=6&cell_selection=sea" | head -c 1500
           echo; echo ==== NORVIK; curl -s "$F.ascii?u_v.u_v[0:1:0][205:1:210][262:1:267],u.u[0:1:0][205:1:210][262:1:267],v.v[0:1:0][205:1:210][262:1:267]"
+          } > probe-out.txt 2>&1
+          git config user.name probe; git config user.email probe@example.com
+          git add probe-out.txt; git commit -m 'probe output'; git push
