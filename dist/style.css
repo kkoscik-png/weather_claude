@@ -104,3 +104,22 @@ main{order:2}
 /* Punkty stanu morza przy wybrzeżu */
 .route-wave-value{font-size:13px;font-weight:700;letter-spacing:-.2px;text-shadow:0 0 2px #fff,0 0 4px #fff,0 0 7px rgba(255,255,255,.9),0 1px 1px #fff}
 @media(max-width:760px){.table-corner{gap:3px;padding-left:5px}.table-corner .play{width:28px;height:28px}.now-btn{font-size:8px;padding:2px 4px}}
+/* Kafelki punktów: mniejsze, lżejsze, wiatr i porywy w kolorach skali tabeli */
+.ports{gap:8px}
+.port{padding:10px 12px 11px;border-radius:12px;border-color:#e6edef;box-shadow:none;background:rgba(255,255,255,.85)}
+.port:hover{box-shadow:0 6px 18px -12px rgba(16,44,57,.35);transform:none}
+.port.active{background:#fff;border-color:#7cc3b6;box-shadow:0 0 0 3px #7cc3b61f,0 8px 22px -16px rgba(16,44,57,.5)}
+.port h2{font-size:14px;font-weight:650;letter-spacing:-.2px}
+.port .port-code{font-size:7px;letter-spacing:.6px;color:#9fb0b5;margin-left:auto;margin-right:6px}
+.port small{font-size:9px;margin-top:2px;color:#9aabb1;font-variant-numeric:tabular-nums}
+.port-check{width:13px;height:13px;font-size:8px;border-color:#d5dfe1}
+.port:not(.active) .port-check{background:transparent;border-color:#d5dfe1;color:transparent}
+.port-wind{display:flex;align-items:stretch;gap:6px;margin-top:9px}
+.wind-chip{display:flex;flex-direction:column;justify-content:center;min-width:58px;padding:4px 9px 5px;border-radius:8px;line-height:1.05;box-shadow:inset 0 0 0 1px rgba(16,44,57,.06)}
+.wind-chip small{display:block;margin:0;font-size:8px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:inherit;opacity:.72}
+.wind-chip b{font:700 17px 'Manrope',sans-serif;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.wind-chip.no-data{background:#f1f4f5!important;color:#8a9ca3!important}
+.port-dir{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;margin-left:2px;color:#56707a}
+.port-dir .flow-arrow{font-style:normal;font-size:15px;line-height:1;color:var(--ink)}
+.port-dir em{font-style:normal;font-size:8px;color:#9aabb1}
+@media(max-width:760px){.port{flex-basis:64%;padding:9px 11px 10px}.wind-chip{min-width:52px;padding:3px 8px 4px}.wind-chip b{font-size:16px}}
