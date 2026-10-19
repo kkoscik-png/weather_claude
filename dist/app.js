@@ -71,11 +71,13 @@ function loadFlagPorts(){try{const saved=JSON.parse(localStorage.getItem('baltic
 const FLAG_ICON='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 14.5V2m0 .8c3-2.2 5 2.2 8.5 0v6.4c-3.5 2.2-5.5-2.2-8.5 0"/></svg>';
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 function compassName(d){return COMPASS[Math.round((((d%360)+360)%360)/22.5)%16];}
-// Direction chip: colour follows the compass (each wind direction has its own hue) and the
-// arrow runs across the whole chip in the direction the wind blows (from N: top to bottom).
-function directionArrowSVG(from,w=58,h=40,pad=5){
- const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),t=Math.min(Math.abs(vx)>1e-6?(w/2-pad)/Math.abs(vx):Infinity,Math.abs(vy)>1e-6?(h/2-pad)/Math.abs(vy):Infinity);
- const f=n=>n.toFixed(1),sx=w/2-vx*t,sy=h/2-vy*t,ex=w/2+vx*t,ey=h/2+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
+// Direction chip (light blue): the arrow points the way the wind blows (from N: top to bottom).
+// The arrow lives in the area below the compass label (top 12 px) and is scaled to 80 %
+// of that area, so it never touches the label, whatever the direction.
+function directionArrowSVG(from,w=58,h=40,top=12){
+ const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),cx=w/2,cy=(top+h)/2,halfW=w/2-4,halfH=(h-top)/2-1.5;
+ const t=.8*Math.min(Math.abs(vx)>1e-6?halfW/Math.abs(vx):Infinity,Math.abs(vy)>1e-6?halfH/Math.abs(vy):Infinity);
+ const f=n=>n.toFixed(1),sx=cx-vx*t,sy=cy-vy*t,ex=cx+vx*t,ey=cy+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
  // Faint shaft and open chevron head; two short streaks travel along the full length of the
 // arrow, tail to head, so the movement shows which way the wind blows.
  const L=2*t,len=L.toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
@@ -86,9 +88,9 @@ function directionArrowSVG(from,w=58,h=40,pad=5){
 }
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="Brak kierunku"><small>Kier.</small><b>—</b></span>';
- const from=((d%360)+360)%360,hue=Math.round((from+200)%360);
+ const from=((d%360)+360)%360;
  const duration=valid(speed)?Math.max(.8,Math.min(2.2,2.4-speed*.09)).toFixed(2):'1.6';
- return `<span class="wind-chip dir-chip" style="background:hsl(${hue} 62% 91%);color:hsl(${hue} 50% 32%);--flow-duration:${duration}s" title="Wiatr z ${Math.round(from)}° (${compassName(from)})" aria-label="Kierunek wiatru: z ${Math.round(from)}°, ${compassName(from)}">${directionArrowSVG(from)}<small class="dir-name">${compassName(from)}</small></span>`;
+ return `<span class="wind-chip dir-chip" style="--flow-duration:${duration}s" title="Wiatr z ${Math.round(from)}° (${compassName(from)})" aria-label="Kierunek wiatru: z ${Math.round(from)}°, ${compassName(from)}">${directionArrowSVG(from)}<small class="dir-name">${compassName(from)}</small></span>`;
 }
 function renderPorts(){const flags=flagPorts(); $('ports').innerHTML=PORTS.map((p,i)=>{const v=windAt(i,'wind_speed_10m'),g=windAt(i,'wind_gusts_10m'),d=windAt(i,'wind_direction_10m'),on=flags.has(i);return `<div class="port ${i===state.port?'active':''}"><button class="port-main" data-port="${i}" aria-pressed="${i===state.port}" aria-label="${p.name}: wiatr ${format(v)} m/s, porywy ${format(g)} m/s. Pokaż na wykresie i w tabeli"><div class="port-top"><h2>${p.name}</h2></div><small>${p.lat.toFixed(4)}°N · ${p.lon.toFixed(4)}°E</small><div class="port-wind">${windChip(v,'Wiatr')}${windChip(g,'Porywy','gust')}${directionChip(d,v)}</div></button><button class="port-flag ${on?'on':''}" data-flag-port="${i}" aria-pressed="${on}" aria-label="Flagi modeli na mapie: ${p.name}" title="${on?'Ukryj':'Pokaż'} flagi modeli na mapie dla ${p.name}">${FLAG_ICON}</button></div>`;}).join('');}
 function renderSummary(){renderWaveAvailability();const p=PORTS[state.port];$('forecastPort').textContent=p.name;$('forecastLocation').textContent=p.country+' · '+p.portName;renderPointDetails();const ts=state.times.filter(t=>t>=Math.floor(Date.now()/3600000)*3600).slice(0,24),max=arr=>{const a=arr.filter(valid);return a.length?Math.max(...a):null;};if($('maxGust'))$('maxGust').innerHTML=format(max(ts.map(t=>windAt(state.port,'wind_gusts_10m',t))))+' <small>m/s</small>';if($('maxWave'))$('maxWave').innerHTML=format(max(ts.map(t=>waveAt(state.port,'wave_height',t))))+' <small>m</small>';$('forecastSource').textContent='Wiatr: '+windModelInfo(state.model).label+' · Fala: '+waveSourceLabel()+(state.metas[state.model]?' · '+cacheLabel(state.metas[state.model]):'')+(waveMeta()?.stale?' · Fala z pamięci: '+cacheLabel(waveMeta()):'');const errors=[...Object.keys(MODELS),waveErrorKey()].map(key=>state.errors[key]).filter(Boolean);const metas=Object.values(state.metas).filter(Boolean);const windMeta=state.metas[state.model],notices=[state.model==='dmi_harmonie'&&windMeta?.delivery==='open-meteo'?'Źródło zapasowe: Open-Meteo · DMI Seamless (DMI + ECMWF).':'',windMeta?.stale||waveMeta()?.stale?'Ostatnia dobra prognoza — może być nieaktualna.':''].filter(Boolean);$('forecastError').hidden=!errors.length&&!notices.length;$('forecastError').textContent=[...errors,...notices].join(' ');if($('dataStatus'))$('dataStatus').textContent=errors.length?'Część danych niedostępna':metas.some(x=>x.stale)?'Może być nieaktualna · kopia z pamięci':state.model==='dmi_harmonie'&&windMeta?.delivery==='open-meteo'?'Źródło zapasowe · Open-Meteo':'Prognoza modelowa · 1 h';document.querySelector('.sidebar-footer')?.classList.toggle('error',errors.length>0||metas.some(x=>x.stale));$('forecastSource').title=metas.map(cacheLabel).join(' / ');}
