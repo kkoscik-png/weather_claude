@@ -357,3 +357,7 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .meteogram-plot,.meteogram-svg{height:100px}
 .chart-labels .axis-unit{height:100px}
 .axis-unit>small{top:36px}
+/* Aktywny kafelek (dla niego jest tabela i wykres): to samo jasnozielone tło co aktywny model w tabeli */
+.port{transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+.ports-column .port.active{background:#edf6f4;border-color:#7cc3b6}
+.ports-column .port:not(.active){background:#fff}
