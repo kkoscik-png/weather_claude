@@ -8,7 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      - shell: bash {0}
+        run: |
           {
           B=https://data.fcoo.dk/webmap/v2/data/NETCDF/FCOO/WW3/
           RUN=$(curl -s $B | grep -o 'ww3c_NSBALT3NM_[0-9]\{10\}\.nc' | sort -u | tail -1)
@@ -23,7 +24,7 @@ jobs:
           echo ==== TINY-ARRAY; curl -s "$F.ascii?u_v.u_v[0:1:1][177:1:178][307:1:308]"
           echo ==== MULTI; curl -s "$F.ascii?u_v.u_v[0:1:0][177:1:177][307:1:307],u_v.u_v[0:1:0][208:1:208][264:1:264]"
           echo ==== LAT; curl -s "$F.ascii?latc[175:1:179]"; curl -s "$F.ascii?lonc[305:1:309]"
-          echo ==== BIG; /usr/bin/time -f "%e s" curl -s -o big.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v.u_v[0:1:55][175:1:179][305:1:309]"; head -c 400 big.txt
+          echo ==== BIG; curl -s -o big.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v.u_v[0:1:55][175:1:179][305:1:309]"; head -c 400 big.txt
           echo; echo ==== DODS; curl -s -o d.bin -w "%{http_code} %{size_download} %{time_total}\n" "$F.dods?u_v.u_v[0:1:1][177:1:178][307:1:308]"; xxd d.bin | tail -8
           echo ==== GRID-HEAD; curl -sI "$F" | head -12
           echo ==== OPENMETEO; curl -s "https://marine-api.open-meteo.com/v1/marine?latitude=57.39,58.94&longitude=21.53,17.98&hourly=wave_height,wave_direction&models=ecmwf_wam&forecast_hours=6&cell_selection=sea" | head -c 1500
