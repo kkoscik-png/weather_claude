@@ -169,3 +169,26 @@ main{order:2}
 .ports-column>.section-eyebrow{display:none}
 .ports-column>.ports{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:0;padding:2px 0 6px;margin:0}
 }
+/* Kolumna po lewej mapy: punkty u góry, wybór modeli u dołu, razem tej samej wysokości co mapa */
+.top-row{align-items:stretch}
+.top-row>.map-section{height:auto;align-self:stretch}
+.ports-column{justify-content:space-between;gap:10px}
+.ports-column>.ports{gap:8px}
+.model-pickers{display:flex;flex-direction:column;gap:8px}
+.picker-card{display:block;padding:9px 12px 10px;border:1px solid #e6edef;border-radius:12px;background:rgba(255,255,255,.85);cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.picker-card:hover{box-shadow:0 6px 18px -12px rgba(16,44,57,.35)}
+.picker-card:focus-within{border-color:#7cc3b6;box-shadow:0 0 0 3px #7cc3b61f}
+.picker-title{display:flex;align-items:center;gap:6px;font-size:8.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:#7b8f97}
+.picker-title svg{width:13px;height:13px;fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.picker-select{position:relative;display:block;margin-top:6px}
+.picker{appearance:none;-webkit-appearance:none;width:100%;padding:7px 26px 7px 9px;border:1px solid #dfe8ea;border-radius:8px;background:#f7fafa;font:600 12.5px 'DM Sans',system-ui,sans-serif;color:var(--ink);cursor:pointer;text-overflow:ellipsis}
+.picker:hover{background:#fff;border-color:#c9dadd}
+.picker:focus-visible{outline:none;border-color:#31b9ab;box-shadow:0 0 0 3px #31b9ab33;background:#fff}
+.picker option:disabled{color:#a3b2b7}
+.picker-chevron{position:absolute;right:9px;top:50%;width:12px;height:12px;margin-top:-6px;pointer-events:none;fill:none;stroke:#5f7680;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:760px){
+.model-pickers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.picker-card{padding:8px 10px 9px}
+.picker{font-size:12px;padding:6px 24px 6px 8px}
+}
+@media(min-width:761px){.model-pickers{width:0;min-width:100%}.ports-column>.ports .port{width:100%}}

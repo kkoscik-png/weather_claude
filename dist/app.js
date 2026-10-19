@@ -57,7 +57,7 @@ function windModelInfo(model,meta=state.metas[model]){
  const info=MODELS[model];return model==='dmi_harmonie'&&meta?.delivery==='open-meteo'?{...info,label:'DMI + ECMWF · Open-Meteo',short:'DMI/IFS',desc:'Źródło zapasowe Open-Meteo · DMI HARMONIE 2 km + ECMWF 9 km'}:info;
 }
 function renderWindSource(){
- const option=$('windSource')?.querySelector?.('[value="dmi_harmonie"]');if(option)option.textContent=windModelInfo('dmi_harmonie').label;
+ const option=$('windSource')?.querySelector?.('[value="dmi_harmonie"]');if(option)option.textContent=windModelInfo('dmi_harmonie').label.replace(' · Open-Meteo','').replace('DMI HARMONIE DINI','DMI HARMONIE');
  if($('modelDescription'))$('modelDescription').textContent=windModelInfo(state.model).desc;
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
