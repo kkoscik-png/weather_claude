@@ -1,9 +1,10 @@
 import { handleStormglass } from './stormglass.mjs';
 import { handleForecast } from './forecast.mjs';
 
-const deny = (message, status) => new Response(message, {
+// A visible HTML page, so a refusal from this app is never mistaken for a browser or proxy error.
+const deny = (message, status, host = '') => new Response(`<!doctype html><meta charset="utf-8"><title>Baltic · ${status}</title><body style="font:15px system-ui;padding:40px;color:#14323c"><h1 style="font-size:18px">Baltic Wind &amp; Waves · ${status}</h1><p>${message}</p>${host ? `<p style="color:#7b8b92">Host: ${host.replace(/[^a-z0-9.-]/gi, '')}</p>` : ''}<p><a href="https://pogoda.seasync.co/">pogoda.seasync.co</a></p></body>`, {
   status,
-  headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
 });
 
 // The page only talks to its own API; map tiles and fonts are the only third parties.
@@ -22,10 +23,10 @@ export const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 // Public addresses of this app. Everything else (workers.dev, previews) is refused.
-// The app lives at weather.seasync.co; every other address of ours redirects there.
-export const ALLOWED_HOSTS = new Set(['weather.seasync.co']);
+// Both public addresses serve the app; www. variants redirect to them.
+export const ALLOWED_HOSTS = new Set(['pogoda.seasync.co', 'weather.seasync.co']);
 // "www." variants and the old pogoda.seasync.co address only redirect to the canonical one.
-export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['pogoda.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'weather.seasync.co']]);
+export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'pogoda.seasync.co']]);
 
 const YEAR = 31536000, DAY = 86400;
 
@@ -45,7 +46,7 @@ export function createHandler() {
     // The owner selected public access without a PIN or login.
     const url = new URL(request.url);
     const canonical = REDIRECT_HOSTS.get(url.hostname) || (ALLOWED_HOSTS.has(url.hostname) ? url.hostname : null);
-    if (!canonical) return deny('This address is not allowed.', 403);
+    if (!canonical) return deny('This address is not allowed.', 403, url.hostname);
     // Always serve the canonical host over HTTPS (typed "www." or "http://" addresses land here).
     if (canonical !== url.hostname || url.protocol === 'http:') {
       const target = new URL(url); target.protocol = 'https:'; target.hostname = canonical; target.port = '';
