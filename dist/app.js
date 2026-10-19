@@ -78,8 +78,11 @@ function directionArrowSVG(from,w=58,h=40,pad=5){
  const f=n=>n.toFixed(1),sx=w/2-vx*t,sy=h/2-vy*t,ex=w/2+vx*t,ey=h/2+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
  // Faint shaft and open chevron head; two short streaks travel along the full length of the
 // arrow, tail to head, so the movement shows which way the wind blows.
- const len=(2*t).toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
- return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" style="--len:${len}px"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
+ const L=2*t,len=L.toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
+ // A streak's front reaches the head at L/(L+9) of its cycle; streaks run half a cycle apart,
+ // so the head pulses every half cycle, timed (keyframe peak at 10%) to each arrival.
+ const arrive=L/(L+9),headDelay=(((arrive-.05)%.5)+.5)%.5-.5;
+ return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" style="--len:${len}px;--head-delay:${headDelay.toFixed(3)}"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" style="transform-origin:${f(ex)}px ${f(ey)}px" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
 }
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="Brak kierunku"><small>Kier.</small><b>—</b></span>';

@@ -145,12 +145,14 @@ main{order:2}
 .dir-arrow{overflow:visible}
 .dir-arrow line,.dir-arrow path{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .dir-arrow .dir-track{stroke-width:1.1;opacity:.35}
-.dir-arrow .dir-flow{stroke-width:2.2;opacity:0;animation:dir-streak var(--flow-duration,1.6s) cubic-bezier(.45,.05,.55,.95) infinite}
+.dir-arrow .dir-flow{stroke-width:2.2;opacity:0;animation:dir-streak var(--flow-duration,1.6s) linear infinite}
 .dir-arrow .dir-flow-2{animation-delay:calc(var(--flow-duration,1.6s) / -2)}
-.dir-arrow .dir-head{stroke-width:1.4;opacity:.9}
-@keyframes dir-streak{0%{stroke-dashoffset:9px;opacity:0}15%{opacity:.95}80%{opacity:.95}100%{stroke-dashoffset:calc(-1 * var(--len,46px));opacity:0}}
+.dir-arrow .dir-head{stroke-width:1.4;opacity:.85;transform-box:view-box;animation:dir-head calc(var(--flow-duration,1.6s) / 2) ease-out infinite;animation-delay:calc(var(--flow-duration,1.6s) * var(--head-delay,0))}
+@keyframes dir-streak{0%{stroke-dashoffset:9px;opacity:0}12%{opacity:.95}84%{opacity:.95}100%{stroke-dashoffset:calc(-1 * var(--len,46px));opacity:0}}
+/* Grot „odbiera” smugę: krótki puls w chwili, gdy smuga do niego dociera. */
+@keyframes dir-head{0%{transform:scale(1);stroke-width:1.4px;opacity:.85}10%{transform:scale(1.4);stroke-width:2.3px;opacity:1}40%{transform:scale(1);stroke-width:1.4px;opacity:.85}100%{transform:scale(1);stroke-width:1.4px;opacity:.85}}
 /* Systemowe „ogranicz ruch”: animacja zostaje, ale jest wolniejsza i spokojniejsza. */
-@media(prefers-reduced-motion:reduce){.dir-arrow .dir-flow{animation-duration:4s}}
+@media(prefers-reduced-motion:reduce){.dir-chip{--flow-duration:4s!important}}
 .dir-chip .dir-name{position:absolute;left:6px;top:3px;font-size:7.5px;font-weight:700;letter-spacing:.2px;opacity:.8;text-transform:none}
 .port-top h2{white-space:nowrap}
 @media(max-width:760px){.sidebar>.ports{display:flex}.port{flex:0 0 auto}.wind-chip{width:54px;height:38px}}
