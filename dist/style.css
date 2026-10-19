@@ -258,3 +258,26 @@ body.map-full-open{overflow:hidden}
 .model-label em{color:#6f8790}
 .model-label.primary-model>span{color:#0a7a67}
 @media(max-width:760px){.model-label>span{font-size:11.5px}.model-label small{font-size:7.5px}}
+/* Oś czasu na pełnym ekranie mapy: między przyciskiem „−” a legendą wiatru */
+.map-timeline{display:none;position:absolute;z-index:820;left:64px;right:76px;bottom:24px;height:32px;align-items:center;gap:8px;padding:0 12px 0 0;background:#0f2535ed;border:1px solid #3f58675c;border-radius:8px;color:#d8e8ee}
+.map-section.map-full .map-timeline,.map-section:fullscreen .map-timeline{display:flex}
+.map-tl-play{flex:0 0 32px;height:30px;border-radius:7px 0 0 7px;background:#16394a;color:#e8f4f8;font-size:11px;border-right:1px solid #3f586780}
+.map-tl-play[aria-pressed="true"]{background:#0d8c7a}
+.map-tl-play:hover{filter:none;background:#1d4a5e}
+.map-tl-track{position:relative;flex:1;height:100%;min-width:0}
+.map-tl-days{position:absolute;inset:0;display:flex;pointer-events:none}
+.map-tl-days>span{position:relative;height:100%;border-left:1px solid #ffffff2e;overflow:hidden}
+.map-tl-days>span:first-child{border-left:0}
+.map-tl-days b{position:absolute;left:6px;top:3px;font-size:9px;font-weight:600;letter-spacing:.3px;color:#9fb6bf;white-space:nowrap}
+.map-tl-range{-webkit-appearance:none;appearance:none;position:absolute;left:0;right:0;bottom:6px;width:100%;height:4px;margin:0;border-radius:2px;cursor:pointer;background:linear-gradient(90deg,#4fc3b0 var(--tl-pct,0%),#ffffff33 var(--tl-pct,0%))}
+.map-tl-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #0d8c7a;box-shadow:0 1px 4px #0006;cursor:grab}
+.map-tl-range::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #0d8c7a;cursor:grab}
+.map-tl-range:focus-visible{outline:2px solid #4fc3b0;outline-offset:4px}
+.map-tl-time{position:absolute;top:-24px;transform:translateX(-50%);font-size:9.5px;font-weight:700;color:#fff;background:#d63a32;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none}
+@media(max-width:760px){.map-timeline{left:54px;right:68px;bottom:24px}.map-tl-days b{font-size:8px;left:4px}}
+.map-tl-track{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:2px 0}
+.map-tl-days{position:relative;inset:auto;height:11px;flex:0 0 11px}
+.map-tl-days b{top:0;line-height:11px}
+.map-tl-range{position:relative;left:auto;right:auto;bottom:auto;flex:0 0 4px;height:4px!important;min-height:0;padding:0;border:0}
+.map-tl-range:focus-visible{outline:none}
+.map-tl-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px #4fc3b080}
