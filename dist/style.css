@@ -200,3 +200,6 @@ main{order:2}
 .stamp-time{color:#9fb6bf}
 .stamp-time b{color:#e3eef2;font-weight:600;font-variant-numeric:tabular-nums;margin-left:2px}
 @media(max-width:760px){.map-top>.map-stamp{font-size:8.5px;gap:6px;padding:6px 8px}}
+/* Bez panelu bocznego: treść na całą szerokość */
+.app-layout{display:block}
+main{max-width:1680px;margin:0 auto}
