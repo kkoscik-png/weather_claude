@@ -221,3 +221,22 @@ main{padding-top:10px}
 .brand-clock{margin-left:auto;align-items:flex-end}
 .brand-clock b{font-size:13px}
 }
+/* Tabela wyrównana z kolumną kafelków (lewa krawędź) i z mapą (prawa krawędź) */
+@media(min-width:761px){
+main{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);column-gap:16px;align-items:stretch}
+.top-row{display:contents}
+.brand-column{align-self:start}
+main>.forecast{grid-column:2 / -1;min-width:0}
+main>.page-footer{grid-column:2 / -1}
+}
+/* Przycisk pełnego ekranu mapy (prawy górny róg) */
+.map-full-btn{position:absolute;top:16px;right:16px;z-index:850;width:34px;height:34px;display:grid;place-items:center;border-radius:8px;background:#0f2535ed;border:1px solid #3f58675c;color:#d8e8ee;box-shadow:0 4px 16px #0002;transition:background .15s,transform .15s}
+.map-full-btn:hover{filter:none;background:#163448;transform:scale(1.05)}
+.map-full-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.map-full-btn .icon-collapse{display:none}
+.map-section.map-full .map-full-btn .icon-expand{display:none}
+.map-section.map-full .map-full-btn .icon-collapse{display:block}
+.map-section.map-full{position:fixed!important;inset:0;z-index:3000;width:100vw!important;height:100vh!important;height:100dvh!important;max-height:none!important;min-height:0!important;border-radius:0!important;margin:0}
+.map-section:fullscreen{width:100vw;height:100vh;border-radius:0}
+body.map-full-open{overflow:hidden}
+@media(max-width:760px){.map-full-btn{top:12px;right:12px;width:32px;height:32px}}
