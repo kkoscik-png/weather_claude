@@ -279,7 +279,7 @@ function setHour(hour,scroll=false){state.hour=Math.max(0,Math.min(state.times.l
 let renderQueued=false;
 // Several sources finish within milliseconds of each other; draw once per frame.
 function scheduleRenderAll(){if(typeof requestAnimationFrame!=='function'){renderAll();return;}if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderAll();});}
-function renderAll(){renderQueued=false;renderWindSource();renderUpdateClocks();renderWaveSource();renderPorts();renderSummary();renderTimeline();renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();}
+function renderAll(){renderQueued=false;if(map&&!state.viewTouched&&!state.flagFitDone)fitFlags();renderWindSource();renderUpdateClocks();renderWaveSource();renderPorts();renderSummary();renderTimeline();renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();}
 function distanceKm(a,b){const rad=Math.PI/180,dlat=(b.lat-a.lat)*rad,dlon=(b.lon-a.lon)*rad;const h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
 function renderPointDetails(){
  const p=PORTS[state.port],r=windRecord(state.port),w=selectedWaveRecords()?.[state.port];
@@ -329,7 +329,31 @@ let map,fieldCanvas,particleCanvas,fctx,pctx,markers=[],particles=[],screenField
 // Default view: Stockholm and Nynäshamn in the north-west to Saaremaa and Ventspils in the
 // east, Gotland in the middle (both ports and the whole route).
 const DEFAULT_VIEW=[[56.91,13.81],[59.40,25.04]];
-function fitPorts(){if(!map)return;map.fitBounds(DEFAULT_VIEW,{animate:false});}
+function fitPorts(){if(!map)return;if(!fitFlags())map.fitBounds(DEFAULT_VIEW,{animate:false});}
+// Closest zoom (quarter steps) at which both ports AND their whole wind flags are visible,
+// clear of the map buttons (left), legend (right) and the layer switch (top left).
+// Flags have a fixed pixel size, so the fit is computed in screen pixels at each zoom.
+function flagPixelOffsets(point){
+ if(!state.flags||!flagPorts().has(point))return [{x:0,y:0}];
+ const flags=windFlagLayout(point);if(!flags.length)return null;
+ const out=[{x:0,y:0}];
+ for(const f of flags){const r=f.rotation*Math.PI/180,c=Math.cos(r),s=Math.sin(r);for(const [x,y] of [[f.lane-12,-WIND_FLAG.far-6],[f.lane+12,-WIND_FLAG.far-6],[f.lane-12,-WIND_FLAG.near],[f.lane+12,-WIND_FLAG.near]])out.push({x:x*c-y*s,y:x*s+y*c});}
+ return out;
+}
+function fitFlags(){
+ if(!map)return false;const size=map.getSize();if(!size.x||!size.y)return false;
+ const points=PORTS.map((p,i)=>({ll:L.latLng(p.lat,p.lon),off:flagPixelOffsets(i)}));if(points.some(p=>!p.off))return false;
+ const narrow=size.x<560,m={left:narrow?52:58,right:narrow?58:62,top:narrow?112:18,bottom:18},tabs=narrow?{x:0,y:0}:{x:330,y:118};
+ for(let z=12;z>=4;z-=.25){
+  const px=points.flatMap(p=>{const c=map.project(p.ll,z);return p.off.map(o=>({x:c.x+o.x,y:c.y+o.y}));});
+  const minX=Math.min(...px.map(q=>q.x)),maxX=Math.max(...px.map(q=>q.x)),minY=Math.min(...px.map(q=>q.y)),maxY=Math.max(...px.map(q=>q.y));
+  if(maxX-minX>size.x-m.left-m.right||maxY-minY>size.y-m.top-m.bottom)continue;
+  const origin={x:(minX+maxX)/2-(m.left+(size.x-m.right))/2,y:(minY+maxY)/2-(m.top+(size.y-m.bottom))/2};
+  if(px.some(q=>q.x-origin.x<tabs.x&&q.y-origin.y<tabs.y))continue;
+  map.setView(map.unproject(L.point(origin.x+size.x/2,origin.y+size.y/2),z),z,{animate:false});state.flagFitDone=true;return true;
+ }
+ return false;
+}
 function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');PORTS.forEach((p,i)=>markers.push(L.marker([p.lat,p.lon],{icon:markerIcon(i)}).addTo(map).on('click',()=>selectPort(i))));map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>{if(!fieldCovers(e.latlng.lng,e.latlng.lat))return;const v=sample(e.latlng.lat,e.latlng.lng);const label=state.layer==='wave'?'Wave Hs':state.layer==='gust'?'Gusts':'Wind';L.popup().setLatLng(e.latlng).setContent(`<b>${label} · ${format(v?.value)} ${state.layer==='wave'?'m':'m/s'}</b><br>${fullFmt.format(new Date(selectedEpoch()*1000))}<br>${e.latlng.lat.toFixed(2)}°N ${e.latlng.lng.toFixed(2)}°E<br><small>Interpolated overview grid · ${state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label}</small>`).openOn(map);});new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
 
 // Four query rows, extended toward Gotland, with independent marine samples at cell centres.
