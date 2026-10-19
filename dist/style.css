@@ -192,3 +192,11 @@ main{order:2}
 .picker{font-size:12px;padding:6px 24px 6px 8px}
 }
 @media(min-width:761px){.model-pickers{width:0;min-width:100%}.ports-column>.ports .port{width:100%}}
+/* Etykieta źródła na mapie: ta sama szerokość co przełącznik Wiatr / Porywy / Fala */
+.map-top{right:auto;align-items:stretch}
+.map-top>.map-stamp{align-self:stretch;position:static;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;font-size:9.5px;border-radius:8px;white-space:nowrap}
+.stamp-source{display:flex;align-items:center;gap:6px}
+.stamp-source b{color:#fff;font-weight:650;letter-spacing:.2px}
+.stamp-time{color:#9fb6bf}
+.stamp-time b{color:#e3eef2;font-weight:600;font-variant-numeric:tabular-nums;margin-left:2px}
+@media(max-width:760px){.map-top>.map-stamp{font-size:8.5px;gap:6px;padding:6px 8px}}

@@ -99,7 +99,7 @@ function forecastTimes(now=Date.now()){
 }
 function resetForecastWindow(){state.times=forecastTimes();state.base=state.times[0];state.hour=1;state.range=state.times.length;state.chartPositioned=false;}
 function renderTimeline(){
- const t=selectedEpoch();if($('selectedTime'))$('selectedTime').textContent=fullFmt.format(new Date(t*1000));$('mapTime').textContent=shortFmt.format(new Date(t*1000));$('mapSource').textContent=state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label;
+ const t=selectedEpoch();if($('selectedTime'))$('selectedTime').textContent=fullFmt.format(new Date(t*1000));$('mapSource').textContent=(state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label).replace(' · Open-Meteo','');renderMapStamp();
 
 }
 
@@ -486,7 +486,22 @@ async function loadModelTiming(model,force=false){
  const meta=model===state.waveSource?waveMeta():state.metas[model],known=meta?.refreshAfter||state.timings[model]?.nextUpdate;if(Date.now()<Date.parse(known)){renderUpdateClocks();return;}
  try{const r=await requestJSON('/api/model-updates?model='+model,'model-timing-cycle-v1-'+model,force,300000);state.timings[model]=r.data.timing;}catch{}renderUpdateClocks();
 }
-function renderUpdateClocks(){
+function sourceTiming(model,meta){
+ let timing=meta?.delivery==='open-meteo'?meta.timing:state.timings[model]||meta?.timing;
+ if(model==='stormglass'&&meta)timing={updatedAt:new Date(meta.saved).toISOString(),nextUpdate:new Date(meta.saved+21600000).toISOString(),basis:'fetch',estimated:true};
+ return timing;
+}
+const stampDayFmt=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Stockholm',weekday:'short'});
+// Short time for the map label; adds the weekday when it is not today (Swedish time).
+function stampTime(ms){if(!Number.isFinite(ms))return '—';const d=new Date(ms);return (DAY_KEY.format(d)!==DAY_KEY.format(new Date())?stampDayFmt.format(d)+' ':'')+shortFmt.format(d);}
+// Map label: selected source, when its data was last updated and when the next update is expected.
+function renderMapStamp(){
+ const wave=state.layer==='wave',model=wave?state.waveSource:state.model,meta=wave?waveMeta():state.metas[model],timing=sourceTiming(model,meta);
+ const updated=$('mapUpdated'),next=$('mapNext');if(!updated||!next)return;
+ updated.textContent=stampTime(Date.parse(timing?.updatedAt));next.textContent=stampTime(Date.parse(timing?.nextUpdate));
+ const stamp=updated.closest?.('.map-stamp');if(stamp)stamp.title=(timing?.basis==='reference'?'Cykl modelu':timing?.basis==='fetch'?'Pobranie danych':'Publikacja dostawcy')+(timing?.estimated?' · następna aktualizacja jest szacowana':'')+' · czas szwedzki';
+}
+function renderUpdateClocks(){renderMapStamp();
  for(const [id,model,meta] of [['windUpdates',state.model,state.metas[state.model]],['waveUpdates',state.waveSource,waveMeta()]]){
   const node=$(id);if(!node)continue;let timing=meta?.delivery==='open-meteo'?meta.timing:state.timings[model]||meta?.timing;
   if(model==='stormglass'&&meta)timing={updatedAt:new Date(meta.saved).toISOString(),nextUpdate:new Date(meta.saved+21600000).toISOString(),basis:'fetch',estimated:true};
