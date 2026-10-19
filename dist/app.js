@@ -147,8 +147,11 @@ const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
 // Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
 const WIND_COLORS=[[0,[243,243,243]],[3,[243,243,243]],[4,[0,200,254]],[6,[0,230,0]],[10,[254,174,0]],[19,[254,0,150]],[100,[151,50,222]]];
-function windRGB(v){if(!valid(v))return [240,242,243];for(let i=1;i<WIND_COLORS.length;i++)if(v<WIND_COLORS[i][0]){const [a,ac]=WIND_COLORS[i-1],[b,bc]=WIND_COLORS[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return WIND_COLORS.at(-1)[1];}
-function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':'#f0f2f3';}
+// Dark theme: calm winds (0–3 m/s) are mid grey instead of near-white, so the table does not glare.
+const isDarkTheme=()=>typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
+const WIND_COLORS_DARK=[[0,[86,99,108]],[3,[86,99,108]],...WIND_COLORS.slice(2)];
+function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=isDarkTheme()?WIND_COLORS_DARK:WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
+function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':(isDarkTheme()?'#22343e':'#f0f2f3');}
 function flowArrow(degrees){return valid(degrees)?`<i class="flow-arrow" style="transform:rotate(${(degrees+180)%360}deg)" aria-hidden="true">↑</i>`:'<i class="flow-arrow missing" aria-hidden="true">·</i>';}
 function buildWindyTable(ts){
  const count=ts.length,groups=[];ts.forEach((t,i)=>{const key=DAY_KEY.format(new Date(t*1000));const last=groups.at(-1);if(last?.key===key)last.count++;else groups.push({key,count:1,index:i,t});});
@@ -711,7 +714,9 @@ function applyTheme(theme,save=false){
  document.documentElement.setAttribute('data-theme',theme);
  for(const b of document.querySelectorAll('[data-theme-set]'))b.setAttribute('aria-pressed',String(b.dataset.themeSet===theme));
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#0b1820':'#102e3b');
- if(save){try{localStorage.setItem('baltic-theme',theme);}catch{}}
+ if(save){try{localStorage.setItem('baltic-theme',theme);}catch{}
+  // Colours of the wind scale depend on the theme: redraw the table, cards, legend and map field.
+  state.renderedChart=null;renderAll();updateScale();drawField();}
 }
 function bindThemeSwitch(){
  const current=document.documentElement.getAttribute?.('data-theme')==='dark'?'dark':'light';
