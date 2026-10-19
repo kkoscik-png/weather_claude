@@ -58,3 +58,38 @@ test('DMI WAM reads a small cube around each coastal point to find a wet cell', 
   assert(!paths.some(p => p.endsWith('/position')));
   assert.equal(data.records[0].hourly.wave_height[0], 1.1);
 });
+
+test('Gdynia–Karlskrona corridor: shared fixed points with the same spacing and row offsets as Ventspils–Norvik', async () => {
+  const fs = await import('node:fs');
+  const { GK_ROUTE_POINTS, COAST_POINTS: workerCoast } = await import('../worker/forecast-points.mjs');
+  const app = fs.readFileSync('dist/app.js', 'utf8');
+  assert.deepEqual(JSON.parse(app.match(/const GK_ROUTE_POINTS=(\[.*?\]);/)[1]), GK_ROUTE_POINTS);
+  assert.deepEqual(JSON.parse(app.match(/const COAST_POINTS=(\[.*?\]);/)[1]), workerCoast);
+  assert(GK_ROUTE_POINTS.length > 40 && GK_ROUTE_POINTS.length <= 66);
+  for (const p of GK_ROUTE_POINTS) {
+    assert([-30, -22.5, -15, -7.5, 0, 7.5, 15].includes(p.offset));
+    assert(p.lat > 54.4 && p.lat < 56.4 && p.lon > 15.3 && p.lon < 19.6, p.id);
+  }
+  assert.equal(new Set(GK_ROUTE_POINTS.map(p => p.id)).size, GK_ROUTE_POINTS.length);
+  for (const area of ['gdynia', 'karlskrona']) assert(workerCoast.filter(p => p.area === area).length >= 8, area);
+});
+
+test('the route-gk group is served in batches of six for marine models', async () => {
+  const { GK_ROUTE_POINTS } = await import('../worker/forecast-points.mjs');
+  const api = createForecastAPI({
+    now: () => Date.parse('2026-10-19T08:00:00Z'),
+    fetcher: async url => {
+      const u = new URL(url);
+      if (u.pathname.includes('/static/meta.json')) return Response.json({ last_run_availability_time: 1760853600, last_run_initialisation_time: 1760853600, update_interval_seconds: 21600 });
+      const lats = u.searchParams.get('latitude').split(','), lons = u.searchParams.get('longitude').split(',');
+      return Response.json(lats.map((lat, i) => ({ latitude: Number(lat), longitude: Number(lons[i]), hourly: { time: [1760860800], wave_height: [0.8], wave_direction: [250], wave_period: [4.5] } })));
+    },
+  });
+  let offset = 0, records = [];
+  do {
+    const response = await api(new Request('https://weather.seasync.co/api/forecast?model=ecmwf_wam&group=route-gk&offset=' + offset), {});
+    assert.equal(response.status, 200);
+    const data = await response.json(); records.push(...data.records); offset = data.nextOffset;
+  } while (offset !== null);
+  assert.deepEqual(records.map(r => r.id), GK_ROUTE_POINTS.map(p => p.id));
+});

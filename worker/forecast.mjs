@@ -1,17 +1,18 @@
 import { normalizeOpenWeather, normalizeSnow } from './open-weather.mjs';
 import { createLastGoodCache, normalizeDMIOpenMeteo } from './dmi-resilience.mjs';
 import { STORMGLASS_POINTS } from './stormglass-points.mjs';
-import { FORECAST_GRIDS, COAST_POINTS } from './forecast-points.mjs';
+import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
 const HOUR=3600000, BATCH=6;
 const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
-const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
+const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon})),'route-gk':GK_ROUTE_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 // Bump a model's revision when its sampling changes, so stored cycles are not reused.
-const CYCLE_REVISION={fcoo_ww3:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group,offset].join('/');
+// Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
+const CYCLE_REVISION={fcoo_ww3:2},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
@@ -155,7 +156,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       // The documented stored query accepts one location. Repeated latlon
       // parameters are not reliably honoured, so fetch every point explicitly.
       // Harbour samples use verified nearby sea positions, disclosed in the UI.
-      const sea={0:{lat:57.437578,lon:21.525557},1:{lat:57.398842,lon:21.466607},2:{lat:58.909033,lon:18.034752}};
+      const sea={0:{lat:57.437578,lon:21.525557},1:{lat:57.398842,lon:21.466607},2:{lat:58.909033,lon:18.034752},3:{lat:54.535,lon:18.60},4:{lat:56.075,lon:15.645}};
       const results=[];
       for(let offset=0;offset<points.length;offset+=2){
         results.push(...await Promise.all(points.slice(offset,offset+2).map(async p=>{

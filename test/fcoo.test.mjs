@@ -72,7 +72,7 @@ test('FCOO WW3 ports: nearest wet cell, hourly axis and "from" direction', async
   const response = await api(new Request('https://pogoda.seasync.co/api/forecast?model=fcoo_ww3&group=ports'), {});
   assert.equal(response.status, 200);
   const data = await response.json();
-  assert.equal(data.records.length, 3);
+  assert.equal(data.records.length, 5);
   const r = data.records[1], h = r.hourly;
   assert.equal(h.time[0], Date.parse('2026-10-19T10:00:00Z') / 1000);
   assert.equal(h.time.length, 73);

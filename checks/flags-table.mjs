@@ -22,7 +22,7 @@ state.wind.icon_eu[0].hourly.wind_speed_10m[0]=6;
 state.wind.smhi_snow[0].hourly.wind_speed_10m[0]=7;
 const icons=[];vm.runInContext('map={};markers=PORTS.map(()=>({setIcon(icon){globalThis.captureIcon(icon)},setZIndexOffset(){}}));',c);c.captureIcon=icon=>icons.push(icon);c.L={divIcon:x=>x};
 c.test.setHour(0);const firstMarker=icons[0].html;assert(!icons[1].html.includes('wind-flags-svg'));assert(!icons[2].html.includes('wind-flags-svg'));assert(firstMarker.includes('data-wind-from="220"'));
-c.test.setHour(1);const nextMarker=icons[3].html;assert(nextMarker.includes('data-wind-from="70"'));assert.notEqual(firstMarker,nextMarker);assert.equal(icons.length,6);assert.equal(state.hour,1);assert.equal((el('chartContent').innerHTML.match(/meteo-cell selected/g)||[]).length,5);
+c.test.setHour(1);const nextMarker=icons[PORTS.length].html;assert(nextMarker.includes('data-wind-from="70"'));assert.notEqual(firstMarker,nextMarker);assert.equal(icons.length,PORTS.length*2);assert.equal(state.hour,1);assert.equal((el('chartContent').innerHTML.match(/meteo-cell selected/g)||[]).length,5);
 // Labels use true compass bearings: adjacent directions collide, perpendicular
 // and opposing winds stay separate, including the 359°/1° wrap around north.
 const {windFlagLayout,windFlagsOverlap,advanceFlagCycle}=c.test;

@@ -470,3 +470,25 @@ main{row-gap:14px}
 /* Ciemny motyw: nagłówki tabeli (dzień, godzina) w tym samym kolorze co kolumna nazw modeli */
 :root[data-theme="dark"] .model-label-day,:root[data-theme="dark"] .model-label-hour,:root[data-theme="dark"] .meteo-days,:root[data-theme="dark"] .meteo-day,:root[data-theme="dark"] .meteo-day:nth-child(even),:root[data-theme="dark"] .meteo-hours,:root[data-theme="dark"] .table-corner,:root[data-theme="dark"] .chart-labels{background:#0f2028}
 .meteo-days,.meteo-hours,.meteo-hours .hour-heading,.meteogram-plot{cursor:pointer}
+
+/* ---------- Wybór portu w kafelku ---------- */
+.port-id h2{display:flex;align-items:center;gap:4px;max-width:100%}
+.port-id h2>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.port-chev{flex:none;width:15px;height:15px;padding:1px;border-radius:5px;background:#e9f1f2;fill:none;stroke:#3f6a77;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:background .15s}
+.port:hover .port-chev{background:#d8e9ea}
+/* Przezroczysta lista nad nazwą portu: klik w nazwę otwiera wybór portu */
+.port-pick{position:absolute;left:8px;top:6px;width:calc(100% - 118px);height:26px;z-index:3;cursor:pointer}
+.port-pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;border:0}
+.port-pick:focus-within~.port-main .port-chev,.port-pick:focus-within{outline:none}
+.port:has(.port-pick select:focus-visible) .port-chev{box-shadow:0 0 0 2px var(--accent)}
+/* Pusty kafelek */
+.port-empty{display:flex;align-items:center;min-height:118px;border-style:dashed!important;border-color:#c9d8dc!important;background:rgba(255,255,255,.55)!important;box-shadow:none!important}
+.port-empty-body{padding:12px 14px}
+.port-empty h2{display:flex;align-items:center;gap:6px;color:#3f6a77;font-size:15px}
+.port-empty small{display:block;margin-top:5px;color:var(--muted);font-size:10px}
+.port-empty .port-pick{inset:0;width:auto;height:auto;left:0;top:0}
+.port-pin-hidden{display:none}
+:root[data-theme="dark"] .port-chev{background:#1b3640;stroke:#9cc6dd}
+:root[data-theme="dark"] .port:hover .port-chev{background:#24434f}
+:root[data-theme="dark"] .port-empty{background:#0f2028!important;border-color:#2c4a56!important}
+:root[data-theme="dark"] .port-empty h2{color:#9cc6dd}

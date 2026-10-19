@@ -50,12 +50,13 @@ test('cards no longer show port codes and mark the chosen flags', () => {
 
 test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and flags at both berths', () => {
   const src = fs.readFileSync('dist/app.js', 'utf8');
-  const opening = src.match(/async function start\(\)\{Object\.assign\(state,\{([^}]*)\}\)/)[1];
+  const opening = src.match(/async function start\(\)\{(?:loadSlots\(\);)?Object\.assign\(state,\{([^}]*)\}\)/)[1];
   assert.match(opening, /model:'icon_eu'/);
   assert.match(opening, /waveSource:'ecmwf_wam'/);
   assert.match(opening, /animate:true/);
   assert.match(opening, /routeWaves:true/);
-  assert.match(opening, /flagPorts:new Set\(\[1,2\]\)/);
+  assert.match(opening, /flagPorts:new Set\(slotPorts\(\)\.filter\(i=>i!==0\)\)/);
+  assert.match(src, /const DEFAULT_SLOTS=\[0,1,2\];/);
   assert(!/localStorage\.setItem\('baltic-flag-ports'/.test(src));
   const html = fs.readFileSync('dist/index.html', 'utf8');
   assert.match(html, /<html lang="en">/);
