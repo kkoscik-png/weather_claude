@@ -48,8 +48,7 @@ export function parseDapAscii(text) {
 
 const valid = v => Number.isFinite(v) && v !== FILL && v > -9000;
 
-// Pick the nearest cell (same window) that has values; height/period and direction are
-// masked differently in this product, so each uses its own nearest wet cell.
+// Pick the nearest cell in the requested window that passes the test.
 function nearestCell(window, test, point) {
   let best = null, dist = Infinity;
   for (let y = 0; y < window.ny; y++) for (let x = 0; x < window.nx; x++) {
@@ -66,8 +65,10 @@ export function fcooRecord(point, meta, data, window, times) {
   const timeOf = (data['u_v.time'] || []).map(r => Math.round((meta.base + r.value * 86400000) / HOUR) * 3600);
   const at = (map, k, c) => map.get([k, c.y, c.x].join(','));
   const first = timeOf.length ? 0 : null;
-  const cellH = first == null ? null : nearestCell(window, (y, x) => valid(at(hs, 0, { y, x })) && at(hs, 0, { y, x }) >= 0, point);
-  const cellD = first == null ? null : nearestCell(window, (y, x) => valid(at(u, 0, { y, x })) && valid(at(v, 0, { y, x })), point);
+  // Prefer native 3 NM cells (u/v defined): open-water values like the other models.
+  // The merged 600 m harbour cells only carry Hs and report sheltered basins.
+  const cellD = first == null ? null : nearestCell(window, (y, x) => valid(at(u, 0, { y, x })) && valid(at(v, 0, { y, x })) && valid(at(hs, 0, { y, x })), point);
+  const cellH = cellD || (first == null ? null : nearestCell(window, (y, x) => valid(at(hs, 0, { y, x })) && at(hs, 0, { y, x }) >= 0, point));
   const index = new Map(timeOf.map((t, k) => [t, k]));
   const record = {
     id: point.id, latitude: cellH ? window.lats[cellH.y] : point.lat, longitude: cellH ? window.lons[cellH.x] : point.lon,

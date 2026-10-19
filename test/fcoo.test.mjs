@@ -23,8 +23,8 @@ const DDS = `Dataset {
 } x;`;
 const LISTING = ['2026101900', RUN].map(r => `<a href="ww3c_NSBALT3NM_${r}.nc.html">ww3c_NSBALT3NM_${r}.nc</a> <a href="ww3c_NSBALT3NM_${r}.nc.das">das</a>`).join('\n');
 
-// Mimics pydap's ASCII Grid response. Row y0 is land for height; direction is only
-// defined from row y0+2 upwards (the product masks u/v more strictly than Hs).
+// Mimics pydap's ASCII Grid response. Row y0 is land; row y0+1 is a merged harbour
+// cell (Hs only, sheltered); native 3 NM cells with u/v start at row y0+2.
 function ascii(query) {
   let out = 'Dataset {\n} x;\n---------------------------------------------\n';
   for (const part of decodeURIComponent(query).split(',')) {
@@ -32,7 +32,7 @@ function ascii(query) {
     const [, name, t1, y0, y1, x0, x1] = m, T = +t1 + 1, Y = y1 - y0 + 1, X = x1 - x0 + 1;
     out += `${name}.${name}\n`;
     for (let t = 0; t < T; t++) for (let y = 0; y < Y; y++) for (let x = 0; x < X; x++) {
-      const value = { u_v: y === 0 ? -9999 : 0.5 + t / 100, TMN: y === 0 ? -9999 : 4.2, u: y < 2 ? -9999 : -0.3, v: y < 2 ? -9999 : -0.4 }[name];
+      const value = { u_v: y === 0 ? -9999 : y === 1 ? 0.03 : 0.5 + t / 100, TMN: y === 0 ? -9999 : 4.2, u: y < 2 ? -9999 : -0.3, v: y < 2 ? -9999 : -0.4 }[name];
       out += `[${t}][${y}][${x}] ${value}\n`;
     }
     out += `\n${name}.time\n` + Array.from({ length: T }, (_, t) => `[${t}] ${t / 24}`).join('\n');
@@ -77,7 +77,7 @@ test('FCOO WW3 ports: nearest wet cell, hourly axis and "from" direction', async
   assert.equal(h.time[0], Date.parse('2026-10-19T10:00:00Z') / 1000);
   assert.equal(h.time.length, 73);
   // 10:00 UTC is step 5 of a file starting at 05:00.
-  assert.equal(h.wave_height[0], 0.55);
+  assert.equal(h.wave_height[0], 0.55, 'open-water 3 NM cell, not the sheltered harbour cell');
   assert.equal(h.wave_period[0], 4.2);
   assert.equal(h.wave_direction[0], 37);
   // The file ends 55 h after 05:00 (12:00 on day 3); later hours stay empty.
