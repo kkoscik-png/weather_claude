@@ -6,7 +6,8 @@
   "workers_dev": false,
   "preview_urls": false,
   "routes": [
-    { "pattern": "pogoda.seasync.co", "custom_domain": true }
+    { "pattern": "pogoda.seasync.co", "custom_domain": true },
+    { "pattern": "weather.seasync.co", "custom_domain": true }
   ],
   "assets": {
     "directory": "./dist",
