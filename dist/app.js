@@ -76,13 +76,15 @@ function compassName(d){return COMPASS[Math.round((((d%360)+360)%360)/22.5)%16];
 function directionArrowSVG(from,w=58,h=40,pad=5){
  const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),t=Math.min(Math.abs(vx)>1e-6?(w/2-pad)/Math.abs(vx):Infinity,Math.abs(vy)>1e-6?(h/2-pad)/Math.abs(vy):Infinity);
  const f=n=>n.toFixed(1),sx=w/2-vx*t,sy=h/2-vy*t,ex=w/2+vx*t,ey=h/2+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
- // Thin shaft with dashes drifting toward the open chevron head: the wind's flow direction.
- return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}"/><path class="dir-head" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
+ // Faint shaft and open chevron head; two short streaks travel along the full length of the
+// arrow, tail to head, so the movement shows which way the wind blows.
+ const len=(2*t).toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
+ return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" style="--len:${len}px"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
 }
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="Brak kierunku"><small>Kier.</small><b>—</b></span>';
  const from=((d%360)+360)%360,hue=Math.round((from+200)%360);
- const duration=valid(speed)?Math.max(.45,Math.min(2.4,2.6-speed*.12)).toFixed(2):'1.6';
+ const duration=valid(speed)?Math.max(.8,Math.min(2.2,2.4-speed*.09)).toFixed(2):'1.6';
  return `<span class="wind-chip dir-chip" style="background:hsl(${hue} 62% 91%);color:hsl(${hue} 50% 32%);--flow-duration:${duration}s" title="Wiatr z ${Math.round(from)}° (${compassName(from)})" aria-label="Kierunek wiatru: z ${Math.round(from)}°, ${compassName(from)}">${directionArrowSVG(from)}<small class="dir-name">${compassName(from)}</small></span>`;
 }
 function renderPorts(){const flags=flagPorts(); $('ports').innerHTML=PORTS.map((p,i)=>{const v=windAt(i,'wind_speed_10m'),g=windAt(i,'wind_gusts_10m'),d=windAt(i,'wind_direction_10m'),on=flags.has(i);return `<div class="port ${i===state.port?'active':''}"><button class="port-main" data-port="${i}" aria-pressed="${i===state.port}" aria-label="${p.name}: wiatr ${format(v)} m/s, porywy ${format(g)} m/s. Pokaż na wykresie i w tabeli"><div class="port-top"><h2>${p.name}</h2></div><small>${p.lat.toFixed(4)}°N · ${p.lon.toFixed(4)}°E</small><div class="port-wind">${windChip(v,'Wiatr')}${windChip(g,'Porywy','gust')}${directionChip(d,v)}</div></button><button class="port-flag ${on?'on':''}" data-flag-port="${i}" aria-pressed="${on}" aria-label="Flagi modeli na mapie: ${p.name}" title="${on?'Ukryj':'Pokaż'} flagi modeli na mapie dla ${p.name}">${FLAG_ICON}</button></div>`;}).join('');}
