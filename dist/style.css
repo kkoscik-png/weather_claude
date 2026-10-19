@@ -331,3 +331,11 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .model-label{align-items:flex-start;padding-left:14px;text-align:left}
 .model-label>span{justify-content:flex-start}
 @media(max-width:760px){.model-label{padding-left:9px}}
+/* Nagłówek kafelka: nazwa i współrzędne po lewej, pogoda (teraz + min/maks) jako jeden blok po prawej */
+.port-top{align-items:flex-start}
+.port-id{min-width:0;flex:1}
+.port-id h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.port-id small{display:block;margin-top:2px}
+.port-wx{flex-direction:column;align-items:center;gap:0;margin-left:auto}
+.port-wx-now{display:flex;align-items:center;gap:2px}
+.port-wx .port-range{gap:5px;margin-top:-1px;font-size:10.5px}
