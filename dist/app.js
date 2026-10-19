@@ -88,7 +88,7 @@ function choosePort(slot,port){
  state.viewTouched=false;state.flagFitDone=false;renderAll();if(map&&!fitFlags())fitPorts();
 }
 const CHEVRON='<svg class="port-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>';
-function portPicker(slot,current){return `<label class="port-pick"><select data-slot="${slot}" aria-label="Choose the port for tile ${slot+1}"><option value=""${current===null?' selected':''}>Choose your port</option>${PORTS.map((p,i)=>`<option value="${i}"${i===current?' selected':''}>${p.name}</option>`).join('')}</select></label>`;}
+function portPicker(slot,current){return `<label class="port-pick"><select data-slot="${slot}" aria-label="Choose the port for tile ${slot+1}">${current===null?'<option value="" selected disabled hidden></option>':''}${PORTS.map((p,i)=>`<option value="${i}"${i===current?' selected':''}>${p.name}</option>`).join('')}</select></label>`;}
 function loadFlagPorts(){try{const saved=JSON.parse(localStorage.getItem('baltic-flag-ports'));if(Array.isArray(saved))state.flagPorts=new Set(saved.filter(i=>Number.isInteger(i)&&i>=0&&i<PORTS.length));}catch{}}
 const FLAG_ICON='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 14.5V2m0 .8c3-2.2 5 2.2 8.5 0v6.4c-3.5 2.2-5.5-2.2-8.5 0"/></svg>';
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
