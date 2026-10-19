@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const nodes=new Map(),el=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',style:{},classList:{toggle(){}},setAttribute(){},append(){}});return nodes.get(id);};
 const c={console,Intl,Date,Math,Number,Array,Object,String,Map,Set,URLSearchParams,AbortSignal,matchMedia:()=>({matches:false}),document:{getElementById:el,querySelector:el,querySelectorAll:()=>[],createElement:()=>({})}};
 vm.createContext(c);vm.runInContext(fs.readFileSync('dist/app.js','utf8').replace(/start\(\);\s*$/,'')+';globalThis.test={state,MODELS,PORTS,windFlagsSVG,buildWindyTable,renderChart,renderTableLabels,windHeat,flowArrow,markerIcon,updateMarkers,setHour,windFlagLayout,windFlagsOverlap,advanceFlagCycle};',c);
-const {state,MODELS,PORTS,windFlagsSVG,buildWindyTable,renderChart,windHeat,flowArrow}=c.test;
+const {state,MODELS,PORTS,windFlagsSVG,buildWindyTable,renderChart,windHeat,flowArrow}=c.test;state.slots=[0,1,2];
 // Around midnight in Swedish time: table day groups must not use the host timezone.
 state.times=[Date.parse('2026-10-16T21:00:00Z')/1000,Date.parse('2026-10-16T22:00:00Z')/1000,Date.parse('2026-10-16T23:00:00Z')/1000];state.base=state.times[0];
 state.wind=Object.fromEntries(Object.keys(MODELS).map((model,j)=>[model,PORTS.map((p,i)=>({hourly:{time:state.times,wind_speed_10m:[5+j,10+j,15+j],wind_gusts_10m:[8+j,15+j,21+j],wind_direction_10m:[220+j*5,70+j*5,120+j*5]}}))]));

@@ -16,7 +16,7 @@ test('Stormglass status reports port data without recreating removed map plaques
  const c={Intl,URLSearchParams,AbortSignal,matchMedia:()=>({matches:false}),document:{getElementById:el,querySelector:el,querySelectorAll:()=>[]},L:{divIcon:options=>options}};
  vm.createContext(c);vm.runInContext(fs.readFileSync('dist/app.js','utf8').replace(/start\(\);\s*$/,'')+';globalThis.t={state,markerIcon,stormglassMapStatus};',c);
  const {state,markerIcon,stormglassMapStatus}=c.t;
- state.waveSource='stormglass';state.stormglassStatus={configured:true,routeEnabled:false};state.flags=false;
+ state.slots=[0,1,2];state.waveSource='stormglass';state.stormglassStatus={configured:true,routeEnabled:false};state.flags=false;
  state.times=fixture.hours.map(r=>Date.parse(r.time)/1000);state.stormglassWave=[0,1,2].map(()=>normalizeStormglass(fixture,{lat:58,lon:20},Date.now()));
  for(const i of [0,1,2]){assert.match(markerIcon(i).html,/pin-dot/);assert.doesNotMatch(markerIcon(i).html,/pin-label|pin-wave|pin-weather-label/);}
  assert.match(stormglassMapStatus(),/3\/3/);assert.match(stormglassMapStatus(),/ is off/);

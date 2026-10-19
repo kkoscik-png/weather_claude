@@ -75,13 +75,13 @@ function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v
 function flagPorts(){return state.flagPorts||new Set([state.port]);}
 function toggleFlagPort(i){const set=new Set(flagPorts());if(set.has(i))set.delete(i);else set.add(i);state.flagPorts=set;renderPorts();updateMarkers();}
 // Three port tiles ("slots"), each showing one chosen port or empty ("Choose your port").
-const DEFAULT_SLOTS=[0,1,2];
+// Every visit opens with Ventspils Berth and Norvik Berth; the third tile is free to choose.
+const DEFAULT_SLOTS=[1,2,null];
 function slotPorts(){return (state.slots||DEFAULT_SLOTS).filter(i=>i!==null&&i!==undefined);}
 function inSlots(i){return (state.slots||DEFAULT_SLOTS).includes(i);}
-function loadSlots(){let saved=null;try{saved=JSON.parse(localStorage.getItem('baltic-port-slots'));}catch{}const ok=Array.isArray(saved)&&saved.length===3&&saved.every(i=>i===null||(Number.isInteger(i)&&i>=0&&i<PORTS.length))&&new Set(saved.filter(i=>i!==null)).size===saved.filter(i=>i!==null).length;state.slots=ok?saved:[...DEFAULT_SLOTS];}
+function loadSlots(){state.slots=[...DEFAULT_SLOTS];try{localStorage.removeItem('baltic-port-slots');}catch{}}
 function choosePort(slot,port){
  const slots=[...(state.slots||DEFAULT_SLOTS)];if(port!==null){const other=slots.indexOf(port);if(other>=0&&other!==slot)slots[other]=slots[slot];}slots[slot]=port;state.slots=slots;
- try{localStorage.setItem('baltic-port-slots',JSON.stringify(slots));}catch{}
  if(port!==null){const set=new Set(flagPorts());set.add(port);state.flagPorts=set;state.port=port;}
  if(!inSlots(state.port))state.port=slotPorts()[0]??0;
  // Re-frame the map on the flagged ports that are now on the tiles.

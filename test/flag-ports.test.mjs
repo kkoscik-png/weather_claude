@@ -12,7 +12,7 @@ function app() {
   vm.createContext(c);
   vm.runInContext(fs.readFileSync('dist/app.js', 'utf8').replace(/start\(\);\s*$/, '') + ';globalThis.t={state,PORTS,MODELS,windFlagsSVG,toggleFlagPort,flagPorts,loadFlagPorts,renderPorts};', c);
   const t = c.t, times = [t.state.base];
-  t.state.times = times; t.state.hour = 0;
+  t.state.times = times; t.state.hour = 0; t.state.slots = [0, 1, 2];
   t.state.wind = Object.fromEntries(Object.keys(t.MODELS).map(m => [m, t.PORTS.map(() => ({ hourly: { time: times, wind_speed_10m: [7], wind_gusts_10m: [11], wind_direction_10m: [240] } }))]));
   return { t, el, stored };
 }
@@ -56,7 +56,8 @@ test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and fl
   assert.match(opening, /animate:true/);
   assert.match(opening, /routeWaves:true/);
   assert.match(opening, /flagPorts:new Set\(slotPorts\(\)\.filter\(i=>i!==0\)\)/);
-  assert.match(src, /const DEFAULT_SLOTS=\[0,1,2\];/);
+  assert.match(src, /const DEFAULT_SLOTS=\[1,2,null\];/);
+  assert(!/localStorage\.setItem\('baltic-port-slots'/.test(src));
   assert(!/localStorage\.setItem\('baltic-flag-ports'/.test(src));
   const html = fs.readFileSync('dist/index.html', 'utf8');
   assert.match(html, /<html lang="en">/);
