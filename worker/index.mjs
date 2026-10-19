@@ -21,6 +21,9 @@ export const CONTENT_SECURITY_POLICY = [
   "frame-ancestors 'none'",
 ].join('; ');
 
+// Public addresses of this app. Everything else (workers.dev, previews) is refused.
+export const ALLOWED_HOSTS = new Set(['pogoda.seasync.co', 'weather.seasync.co']);
+
 const YEAR = 31536000, DAY = 86400;
 
 // Versioned files (?v=…) never change, so browsers keep them for a year.
@@ -38,7 +41,7 @@ export function createHandler() {
   return async function fetch(request, env, ctx) {
     // The owner selected public access without a PIN or login.
     const url = new URL(request.url);
-    if (url.hostname !== 'weather.seasync.co') return deny('Niedozwolony adres aplikacji.', 403);
+    if (!ALLOWED_HOSTS.has(url.hostname)) return deny('Niedozwolony adres aplikacji.', 403);
     if (!env.ASSETS?.fetch) return deny('Aplikacja oczekuje na dokończenie wdrożenia.', 503);
     const api = await handleStormglass(request, env, ctx);
     if (api) return api;

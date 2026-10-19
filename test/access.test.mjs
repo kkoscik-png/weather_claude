@@ -36,6 +36,10 @@ test('missing assets are never cached by the browser', async () => {
   assert.equal(response.status, 404);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
+test('the new pogoda.seasync.co address serves the app', async () => {
+  const { env } = assetsEnv();
+  for (const path of ['/', '/app.js?v=1', '/api/stormglass/status']) assert.equal((await handler(request(path, 'pogoda.seasync.co'), env)).status, 200);
+});
 test('legacy Access settings and assertions do not require a login', async () => {
   const { env } = assetsEnv({ ACCESS_TEAM_DOMAIN: 'old.cloudflareaccess.com', ACCESS_AUD: 'old-audience' });
   assert.equal((await handler(request('/', 'weather.seasync.co', 'expired.or.invalid'), env)).status, 200);
