@@ -17,18 +17,12 @@ jobs:
           curl -gs $B | grep -o '<tr>.*ww3c_NSBALT3NM.*</tr>' | tail -2
           curl -gs $B | grep -A2 "$RUN" | head -8
           F=$B$RUN
-          echo ==== DAS; curl -gs "$F.das"
-          echo ==== DDS; curl -gs "$F.dds"
-          echo ==== TIME; curl -gs "$F.ascii?time[0:1:3]"
-          echo ==== TINY; curl -gs "$F.ascii?u_v[0:1:1][177:1:178][307:1:308],u[0:1:0][177:1:178][307:1:308],v[0:1:0][177:1:178][307:1:308],TMN[0:1:0][177:1:178][307:1:308]"
-          echo ==== TINY-ARRAY; curl -gs "$F.ascii?u_v.u_v[0:1:1][177:1:178][307:1:308]"
-          echo ==== MULTI; curl -gs "$F.ascii?u_v.u_v[0:1:0][177:1:177][307:1:307],u_v.u_v[0:1:0][208:1:208][264:1:264]"
-          echo ==== LAT; curl -gs "$F.ascii?latc[175:1:179]"; curl -gs "$F.ascii?lonc[305:1:309]"
-          echo ==== BIG; curl -gs -o big.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v.u_v[0:1:55][175:1:179][305:1:309]"; head -c 400 big.txt
-          echo; echo ==== DODS; curl -gs -o d.bin -w "%{http_code} %{size_download} %{time_total}\n" "$F.dods?u_v.u_v[0:1:1][177:1:178][307:1:308]"; xxd d.bin | tail -8
-          echo ==== GRID-HEAD; curl -sI "$F" | head -12
-          echo ==== OPENMETEO; curl -gs "https://marine-api.open-meteo.com/v1/marine?latitude=57.39,58.94&longitude=21.53,17.98&hourly=wave_height,wave_direction&models=ecmwf_wam&forecast_hours=6&cell_selection=sea" | head -c 1500
-          echo; echo ==== NORVIK; curl -gs "$F.ascii?u_v.u_v[0:1:0][205:1:210][262:1:267],u.u[0:1:0][205:1:210][262:1:267],v.v[0:1:0][205:1:210][262:1:267]"
+          echo ==== NORVIK; curl -gs "$F.ascii?u_v[0:1:0][205:1:210][262:1:267],u[0:1:0][205:1:210][262:1:267],v[0:1:0][205:1:210][262:1:267]" | sed -n '/^u_v.u_v/,/^u_v.time/p;/^u.u/,/^u.time/p;/^v.v/,/^v.time/p;/latc$/,/^$/p;/lonc$/,/^$/p'
+          echo ==== GOTLAND; curl -gs "$F.ascii?u[0:6:12][170:1:170][250:1:250],v[0:6:12][170:1:170][250:1:250],u_v[0:6:12][170:1:170][250:1:250]" | grep -E '^\[|\.(u|v|u_v)$|latc|lonc'
+          echo ==== FULLPOINT; curl -gs -o fp.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v[0:1:55][175:1:179][305:1:309],u[0:1:55][175:1:179][305:1:309],v[0:1:55][175:1:179][305:1:309],TMN[0:1:55][175:1:179][305:1:309]"
+          curl -gs -o fp2.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v[0:1:55][170:1:170][250:1:250],u[0:1:55][170:1:170][250:1:250],v[0:1:55][170:1:170][250:1:250],TMN[0:1:55][170:1:170][250:1:250]"
+          echo ==== OM; curl -gs "https://marine-api.open-meteo.com/v1/marine?latitude=56.04167,57.39,58.94&longitude=16.7639,21.53,17.98&hourly=wave_height,wave_direction&models=ecmwf_wam&start_hour=2026-10-19T05:00&end_hour=2026-10-19T17:00&cell_selection=sea" | grep -o '"hourly":{[^}]*}'
+          echo ==== FILES; curl -gs $B | grep -o 'ww3c_NSBALT3NM_[0-9]*\.nc</a>' | sort -u; curl -gs $B | grep -A12 'ww3c_NSBALT3NM_2026101906.nc.html' | grep -i 'td' | head
           } > probe-out.txt 2>&1
           git config user.name probe; git config user.email probe@example.com
           git add probe-out.txt; git commit -m 'probe output'; git push
