@@ -361,3 +361,84 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .port{transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
 .ports-column .port.active{background:#edf6f4;border-color:#7cc3b6}
 .ports-column .port:not(.active){background:#fff}
+/* ---------- Przełącznik motywu pod zegarem ---------- */
+.theme-switch{display:inline-flex;gap:2px;margin-top:10px;padding:3px;border-radius:999px;background:#e6eef0;border:1px solid #d9e4e7;align-self:center}
+.theme-switch button{width:30px;height:24px;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;color:#7b8f97;padding:0;transition:background .2s,color .2s,box-shadow .2s}
+.theme-switch button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.theme-switch button[data-theme-set="dark"] svg{fill:currentColor;stroke:none}
+.theme-switch button[aria-pressed="true"]{background:#fff;color:#d99a1e;box-shadow:0 1px 4px rgba(16,44,57,.18)}
+.theme-switch button[data-theme-set="dark"][aria-pressed="true"]{color:#6f7fe0}
+.theme-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media(max-width:760px){.theme-switch{margin-top:6px;align-self:flex-end}.theme-switch button{width:28px;height:22px}}
+
+/* ---------- Ciemny motyw ---------- */
+:root[data-theme="dark"]{--ink:#e3edf0;--muted:#8fa5ad;--border:#24404b;--navy:#0b1820;color-scheme:dark}
+:root[data-theme="dark"] body{background:#0b1820;color:var(--ink)}
+:root[data-theme="dark"] .app-layout,:root[data-theme="dark"] main{background:transparent}
+:root[data-theme="dark"] .brand,:root[data-theme="dark"] .brand-clock b{color:var(--ink)}
+:root[data-theme="dark"] .brand-sub,:root[data-theme="dark"] .brand-clock{color:var(--muted)}
+:root[data-theme="dark"] .theme-switch{background:#132a34;border-color:#24404b}
+:root[data-theme="dark"] .theme-switch button{color:#7f97a0}
+:root[data-theme="dark"] .theme-switch button[aria-pressed="true"]{background:#24404d;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+:root[data-theme="dark"] .theme-switch button[data-theme-set="dark"][aria-pressed="true"]{color:#b8c2ff}
+/* kafelki portów i wybór modeli */
+:root[data-theme="dark"] .port,:root[data-theme="dark"] .ports-column .port:not(.active){background:#11232c;border-color:#22404b;box-shadow:none}
+:root[data-theme="dark"] .ports-column .port.active{background:#16352f;border-color:#3f8f7f;box-shadow:0 0 0 3px #3f8f7f26}
+:root[data-theme="dark"] .port h2,:root[data-theme="dark"] .port-wx,:root[data-theme="dark"] .port-wx b{color:var(--ink)}
+:root[data-theme="dark"] .port-id small{color:var(--muted)}
+:root[data-theme="dark"] .port-range .t-min{color:#4cd187}
+:root[data-theme="dark"] .port-range .t-max{color:#ff7a70}
+:root[data-theme="dark"] .port-wx svg [fill="#fff"],:root[data-theme="dark"] .port-wx svg [fill="white"]{fill:#d5e1e6}
+:root[data-theme="dark"] .dir-chip{background:#173040;border-color:#2b4c5d;color:#9cc6dd}
+:root[data-theme="dark"] .picker-card{background:#11232c;border-color:#22404b}
+:root[data-theme="dark"] .picker-title{color:var(--muted)}
+:root[data-theme="dark"] .picker{background:#0d1d25;border-color:#2a4652;color:var(--ink)}
+:root[data-theme="dark"] .picker option{background:#0d1d25;color:var(--ink)}
+/* mapa: ciemne podkłady OSM */
+:root[data-theme="dark"] .map-section{background:#0e2029;border-color:#1d3742}
+:root[data-theme="dark"] .leaflet-container{background:#0e2029}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(185deg) brightness(.82) contrast(.92) saturate(.55)}
+:root[data-theme="dark"] .leaflet-control-attribution{background:#0b1820cc!important;color:#8fa5ad}
+:root[data-theme="dark"] .leaflet-control-attribution a{color:#9cc6dd}
+/* tabela i wykres */
+:root[data-theme="dark"] .forecast{background:#0f2028;border-color:#22404b}
+:root[data-theme="dark"] .chart-labels{background:#0f2028;border-right-color:#22404b;box-shadow:none}
+:root[data-theme="dark"] .table-corner{background:#0f2028}
+:root[data-theme="dark"] .model-label-day{background:#13262f;border-top-color:#22404b;color:#7f97a0}
+:root[data-theme="dark"] .model-label-hour{background:#112530;border-bottom-color:#22404b;color:#8fa5ad}
+:root[data-theme="dark"] .model-label{background:#0f2028;border-bottom-color:#1d3742}
+:root[data-theme="dark"] .model-label>span{color:#d5e3e8}
+:root[data-theme="dark"] .model-label small,:root[data-theme="dark"] .model-label em{color:#7f97a0}
+:root[data-theme="dark"] .model-label.primary-model{background:#16352f;box-shadow:inset 3px 0 #3fbf9f}
+:root[data-theme="dark"] .model-label.primary-model>span{color:#6fe0c2}
+:root[data-theme="dark"] .meteo-days{background:#13262f;color:#9fb3ba}
+:root[data-theme="dark"] .meteo-day{border-right-color:#2a4652}
+:root[data-theme="dark"] .meteo-day:nth-child(even){background:#162b35}
+:root[data-theme="dark"] .meteo-hours{background:#112530}
+:root[data-theme="dark"] .meteo-hours .hour-heading{color:#8fa5ad;border-right-color:#1d3742}
+:root[data-theme="dark"] .meteo-hours .hour-heading.selected{background:#c9a24a;color:#10232b}
+:root[data-theme="dark"] .model-meteogram{border-top-color:#22404b}
+:root[data-theme="dark"] .meteo-cell{border-right-color:#0b182040;border-bottom-color:#0b182066}
+:root[data-theme="dark"] .chart-labels .axis-unit{background:#1a2a26;color:#9fb3ba}
+:root[data-theme="dark"] .axis-unit>span,:root[data-theme="dark"] .chart-wind-scale span{color:#9fbfb0}
+:root[data-theme="dark"] .axis-unit>small{color:#7f97a0}
+:root[data-theme="dark"] .axis-unit>em{color:#5fb0d8}
+:root[data-theme="dark"] .chart-place{color:#6fe0c2}
+:root[data-theme="dark"] .chart-place::before{background:#3fbf9f;box-shadow:0 0 0 2px #3fbf9f40}
+:root[data-theme="dark"] #skyFill stop:first-child{stop-color:#2b2f22}
+:root[data-theme="dark"] #skyFill stop:last-child{stop-color:#1c2a24}
+:root[data-theme="dark"] .meteogram-svg text{fill:#c8d6da}
+:root[data-theme="dark"] .meteogram-svg text[stroke]{fill:#7ee0b8;stroke:#1f2b24}
+:root[data-theme="dark"] .meteogram-svg .precip-bar{fill:#2f9ed6}
+:root[data-theme="dark"] .meteogram-svg .cloud-band{fill:#9aa8ae}
+:root[data-theme="dark"] .table-corner .now-btn{background:#13262f;border-color:#7a3a36;color:#ff7a70;box-shadow:none}
+:root[data-theme="dark"] .page-footer{color:#6f8790}
+:root[data-theme="dark"] .page-footer a{color:#7fd0bd}
+:root[data-theme="dark"] .chart-scroll{scrollbar-color:#2a4652 #0f2028}
+:root[data-theme="dark"] .play,:root[data-theme="dark"] .table-corner .play{background:#1f4552;color:#d5f5ed;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+:root[data-theme="dark"] .table-corner .play[aria-pressed="true"]{background:var(--accent)}
+:root[data-theme="dark"] .port-flag{background:#0d1d25;border-color:#2a4652;color:#7f97a0}
+:root[data-theme="dark"] .port-flag.on{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .wind-chip.no-data{background:#16303a!important;color:#6f8790!important}
+:root[data-theme="dark"] .wind-chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+:root[data-theme="dark"] .brandmark{background:#15363b;color:#6fe0c2;box-shadow:0 0 0 1px #24505a}

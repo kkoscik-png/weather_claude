@@ -84,3 +84,11 @@ test('www. and http:// addresses redirect to the canonical HTTPS address', async
   assert.equal(calls(), 0);
   assert.equal((await handler(new Request('https://www.other.seasync.co/'), env)).status, 403);
 });
+test('the colour theme script loads from the site itself before the page paints', async () => {
+  const fs = await import('node:fs');
+  const html = fs.readFileSync('dist/index.html', 'utf8');
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.match(head, /<script src="theme\.js\?v=[^"]+"><\/script>/);
+  assert(html.includes('data-theme-set="light"') && html.includes('data-theme-set="dark"'));
+  assert(fs.readFileSync('dist/style.css', 'utf8').includes(':root[data-theme="dark"]'));
+});

@@ -706,5 +706,17 @@ function animateWaves(now){
   wctx.beginPath();crestPath(wctx,c.x-w.ux*gap,c.y-w.uy*gap,w.ux,w.uy,h*.8,bulge*.8);wctx.strokeStyle=`rgba(232,246,255,${(.42*fade).toFixed(3)})`;wctx.lineWidth=width*.75;wctx.stroke();
  }
 }
-async function start(){Object.assign(state,{port:1,model:'icon_eu',waveSource:'ecmwf_wam',animate:true,waveAnim:true,routeWaves:true,flags:true,flagPorts:new Set([1,2])});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();updateScale();initMap();requestAnimationFrame(animateWaves);setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();await Promise.allSettled([loadField(),loadRouteWaves(),loadWaveAnimField()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
+// Light / dark theme switch under the clock. The choice is remembered on this device.
+function applyTheme(theme,save=false){
+ document.documentElement.setAttribute('data-theme',theme);
+ for(const b of document.querySelectorAll('[data-theme-set]'))b.setAttribute('aria-pressed',String(b.dataset.themeSet===theme));
+ document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#0b1820':'#102e3b');
+ if(save){try{localStorage.setItem('baltic-theme',theme);}catch{}}
+}
+function bindThemeSwitch(){
+ const current=document.documentElement.getAttribute?.('data-theme')==='dark'?'dark':'light';
+ for(const b of document.querySelectorAll('[data-theme-set]'))b.onclick=()=>applyTheme(b.dataset.themeSet,true);
+ applyTheme(current);
+}
+async function start(){Object.assign(state,{port:1,model:'icon_eu',waveSource:'ecmwf_wam',animate:true,waveAnim:true,routeWaves:true,flags:true,flagPorts:new Set([1,2])});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();bindThemeSwitch();updateScale();initMap();requestAnimationFrame(animateWaves);setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();await Promise.allSettled([loadField(),loadRouteWaves(),loadWaveAnimField()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
 start();
