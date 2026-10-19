@@ -249,3 +249,12 @@ body.map-full-open{overflow:hidden}
 .brand-column{align-items:center;text-align:center}
 .brand-clock{align-items:center}
 @media(max-width:760px){.brand-column{align-items:center}.brand-clock{align-items:flex-end}}
+/* "Now" na czerwono */
+.now-btn{color:#d63a32;border-color:#f3cfcc}
+.now-btn:hover{background:#fdf0ef}
+/* Nazwy modeli w tabeli: wyraźniejsze i nieco większe, bez zmiany rozmiaru komórek */
+.model-label>span{font-size:12.5px;font-weight:700;color:#14323c;letter-spacing:.1px}
+.model-label small{font-size:8.5px;color:#6f8790}
+.model-label em{color:#6f8790}
+.model-label.primary-model>span{color:#0a7a67}
+@media(max-width:760px){.model-label>span{font-size:11.5px}.model-label small{font-size:7.5px}}

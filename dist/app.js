@@ -89,7 +89,7 @@ function directionArrowSVG(from,w=58,h=40,top=12){
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="No direction"><small>Dir.</small><b>—</b></span>';
  const from=((d%360)+360)%360;
- const duration=valid(speed)?Math.max(.8,Math.min(2.2,2.4-speed*.09)).toFixed(2):'1.6';
+ const duration=valid(speed)?Math.min(6,Math.max(.4,14/Math.max(speed,.5))).toFixed(2):'1.6';
  return `<span class="wind-chip dir-chip" style="--flow-duration:${duration}s" title="Wind from ${Math.round(from)}° (${compassName(from)})" aria-label="Wind direction: from ${Math.round(from)}°, ${compassName(from)}">${directionArrowSVG(from)}<small class="dir-name">${compassName(from)}</small></span>`;
 }
 function renderPorts(){const flags=flagPorts(); $('ports').innerHTML=PORTS.map((p,i)=>{const v=windAt(i,'wind_speed_10m'),g=windAt(i,'wind_gusts_10m'),d=windAt(i,'wind_direction_10m'),on=flags.has(i);return `<div class="port ${i===state.port?'active':''}"><button class="port-main" data-port="${i}" aria-pressed="${i===state.port}" aria-label="${p.name}: wind ${format(v)} m/s, gusts ${format(g)} m/s. Show on the chart and table"><div class="port-top"><h2>${p.name}</h2></div><small>${p.lat.toFixed(4)}°N · ${p.lon.toFixed(4)}°E</small><div class="port-wind">${windChip(v,'Wind')}${windChip(g,'Gusts','gust')}${directionChip(d,v)}</div></button><button class="port-flag ${on?'on':''}" data-flag-port="${i}" aria-pressed="${on}" aria-label="Model flags on the map: ${p.name}" title="${on?'Hide':'Show'} model flags on the map for ${p.name}">${FLAG_ICON}</button></div>`;}).join('');}
@@ -156,8 +156,9 @@ function windFlagsSVG(point){
   const {model,v,gust,d,rotation,calm,cycleSize,cycleIndex,front,lane}=flag,title=windModelInfo(model).short+': wind '+format(v)+' m/s, gusts '+format(gust)+' m/s, z '+Math.round(d)+'°'+(calm?' · calm':''),id='wind-flag-'+point+'-'+model,textAngle=rotation>180?90:-90;
   // Pennant with a swallowtail: dark head with the model name, then gust, then mean wind.
   // A light streak runs from the model name down the flag and the mast to the port dot,
-  // i.e. the way the wind blows; stronger wind, faster streak. The tail waves gently.
-  const L=lane-half,R=lane+half,split=top+28,mid=(split+bottom)/2,notch=9,dur=Math.max(.9,2.6-v*.08).toFixed(2)+'s',stem=Math.abs(lane)-bottom;
+  // i.e. the way the wind blows. Its speed is proportional to the mean wind (6 px/s per m/s,
+  // e.g. 3 m/s ≈ 7 s per pass, 10 m/s ≈ 2 s, 20 m/s ≈ 1 s). The tail waves gently.
+  const L=lane-half,R=lane+half,split=top+28,mid=(split+bottom)/2,notch=9,dur=(Math.min(8,Math.max(.5,(WIND_FLAG.far-WIND_FLAG.near+Math.abs(lane)+WIND_FLAG.near)/(6*Math.max(v,.5)))).toFixed(2))+'s',stem=Math.abs(lane)-bottom;
   const tail=(n,dy)=>`M${L},${split} V${top+dy} L${lane},${top+n} L${R},${top-dy} V${split} Z`;
   return `<g class="model-wind-flag${calm?' calm-flag':''}${front?' flag-front':''}" data-flag-model="${model}" data-wind-from="${((d%360)+360)%360}" data-values="${format(v)} – ${format(gust)}" data-cycle-size="${cycleSize}" data-cycle-index="${cycleIndex}" aria-hidden="false" transform="rotate(${rotation})"><title>${title}</title>`+
    `<path class="flag-stem" d="M0,0 V${bottom} H${lane}" fill="none" stroke="#426575" stroke-opacity=".6" stroke-width=".8"${calm?' stroke-dasharray="2 3"':''}/>`+
@@ -237,7 +238,7 @@ function renderChart(){
  document.querySelectorAll('.extra-legend').forEach(x=>x.remove());if(state.compare)Object.keys(MODELS).filter(m=>m!==state.model).forEach(model=>{const span=document.createElement('span');span.className='extra-legend';span.innerHTML=`<i class="line" style="background:${MODELS[model].color}"></i>${windModelInfo(model).short} · wind`;document.querySelector('.forecast-legend').append(span);});
 }
 function renderTableLabels(){
- const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2,5 km',dmi_harmonie:state.metas.dmi_harmonie?.blend?'2/9 km':'2 km'};
+ const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2.5 km',dmi_harmonie:state.metas.dmi_harmonie?.blend?'2/9 km':'2 km'};
  $('tableLabels').innerHTML='<div class="model-label-day">DAY</div><div class="model-label-hour">Hour</div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
 }
 function chartKey(){return [state.port,state.model,state.waveSource,state.range,state.compare,state.times[0],state.times.length].join('|');}
