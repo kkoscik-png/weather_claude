@@ -64,4 +64,4 @@ Weryfikacja: `npm test` (dotychczasowe kontrole i nowe testy adapterów, wyboru 
 - Strona wysyła nagłówki Content-Security-Policy, HSTS i Permissions-Policy. Dozwolone źródła zewnętrzne: kafelki OpenStreetMap i Google Fonts.
 - Bufor serwera pamięta prawdziwy czas pobrania, więc kopia z pamięci Cloudflare nie żyje dłużej niż zakładany czas (`test/cache.test.mjs`).
 - Zmiana godziny przesuwa tylko zaznaczenie w tabeli i kursor wykresu, a mapa liczy geometrię interpolacji raz na widok. Zmiana godziny trwa ok. 5–8 ms zamiast ok. 100 ms; rysowanie pola mapy ok. 2 ms zamiast ok. 18 ms.
-- Interfejs: przyklejony nagłówek, porywy i kierunek na kartach punktów, zakładka DMI, na telefonie kolejność punkty → mapa → tabela → ustawienia, manifest aplikacji i ikony do dodania na ekran główny.
+- Interfejs: przyklejony nagłówek, porywy i kierunek na kartach punktów, zakładka DMI, na telefonie kolejność punkty → mapa → tabela → ustawienia, manifest aplikacji i ikona do dodania na ekran główny.
