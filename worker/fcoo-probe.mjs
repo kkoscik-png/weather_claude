@@ -10,13 +10,12 @@ export async function handleFcooProbe(request){
   if(run){
     const f=BASE+'ww3c_NSBALT3NM_'+run+'.nc';
     const das=await get('das',f+'.das',0);
-    const pick=name=>{const m=das.match(new RegExp(name+' \\{[\\s\\S]*?\\n    \\}'));return m?m[0]:null;};
-    out.push({das_u:pick('u'),das_v:pick('v'),das_uv:pick('u_v'),das_tmn:pick('TMN'),das_time:pick('time')});
-    await get('time',f+'.ascii?time');
-    await get('lat',f+'.ascii?latc[175:1:179]');
-    await get('lon',f+'.ascii?lonc[305:1:309]');
-    await get('ventspils',f+'.ascii?u_v[0:1:2][175:1:179][305:1:309],u[0:1:2][175:1:179][305:1:309],v[0:1:2][175:1:179][305:1:309],TMN[0:1:2][175:1:179][305:1:309]',6000);
-    await get('norvik-hs-all',f+'.ascii?u_v[0:1:55][206:1:209][263:1:266]',2500);
+    const pick=name=>{const i=das.indexOf('\n    '+name+' {');return i<0?null:das.slice(i,das.indexOf('\n    }',i)+6);};
+    out.push({das_u:pick('u'),das_v:pick('v'),das_time:pick('time'),das_global:das.slice(das.indexOf('NC_GLOBAL'),das.indexOf('NC_GLOBAL')+1500)});
+    await get('time',f+'.ascii?time[0:1:3]',800);
+    await get('tiny',f+'.ascii?u_v[0:1:1][177:1:178][307:1:308],u[0:1:0][177:1:178][307:1:308],v[0:1:0][177:1:178][307:1:308]',2000);
+    await get('tinyhs-only',f+'.ascii?u_v.u_v[0:1:1][177:1:178][307:1:308]',1200);
+    const t=Date.now();await get('big',f+'.ascii?u_v.u_v[0:1:55][170:1:185][300:1:315]',0);out.push({bigms:Date.now()-t});
   }
   return new Response(JSON.stringify(out,null,1),{headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
 }
