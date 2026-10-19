@@ -311,3 +311,5 @@ body.map-full-open{overflow:hidden}
 #meteogramContext,.forecast-footer{display:none}
 .forecast{margin-top:12px}
 main>.page-footer{padding:8px 4px 10px;min-height:0}
+/* Kursor czasu: linia przezroczysta w 60 %, żeby nie zasłaniała wartości (uchwyt zostaje pełny) */
+.time-cursor{background:rgba(214,58,50,.4)}
