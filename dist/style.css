@@ -321,3 +321,13 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .port-wx{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none;color:#14323c}
 .port-wx svg{width:20px;height:20px}
 .port-wx b{font:700 13px 'Manrope',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+/* Min/maks temperatury dnia pod ikoną pogody */
+.port-sub-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:2px}
+.port-sub-row small{margin-top:0}
+.port-range{display:flex;gap:6px;flex:none;font:700 11px 'Manrope',sans-serif;font-variant-numeric:tabular-nums}
+.port-range .t-min{color:#1a9b4b}
+.port-range .t-max{color:#d63a32}
+/* Nazwy modeli w tabeli wyrównane do lewej */
+.model-label{align-items:flex-start;padding-left:14px;text-align:left}
+.model-label>span{justify-content:flex-start}
+@media(max-width:760px){.model-label{padding-left:9px}}
