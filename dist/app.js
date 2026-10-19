@@ -29,7 +29,10 @@ const fullFmt=new Intl.DateTimeFormat('pl-PL',{timeZone:'Europe/Stockholm',weekd
 const format=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('pl-PL',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const valid=v=>typeof v==='number'&&Number.isFinite(v);
 const selectedEpoch=()=>state.times[state.hour]||state.base+state.hour*3600;
-function at(series,key,t=selectedEpoch()){if(!series?.hourly)return null;const i=series.hourly.time.indexOf(t);const v=series.hourly[key]?.[i];return valid(v)?v:null;}
+const timeIndexes=new WeakMap();
+// Hourly lookups run thousands of times per map frame; index each time axis once.
+function timeIndex(times,t){if(!Array.isArray(times))return -1;let index=timeIndexes.get(times);if(!index||index.size!==times.length){index=new Map();times.forEach((x,i)=>{if(!index.has(x))index.set(x,i);});timeIndexes.set(times,index);}return index.get(t)??-1;}
+function at(series,key,t=selectedEpoch()){if(!series?.hourly)return null;const i=timeIndex(series.hourly.time,t);const v=series.hourly[key]?.[i];return valid(v)?v:null;}
 function windRecord(p,model=state.model){return state.wind?.[model]?.[p];}
 function windAt(p,key,t,model=state.model){return at(windRecord(p,model),key,t);}
 function selectedWaveRecords(){return state.waveSource==='stormglass'?state.stormglassWave:state.waveSource==='ecmwf_wam'?state.wave:state.waves[state.waveSource];}
@@ -164,25 +167,43 @@ function meteogramSVG(ts){
  svg+=`<g clip-path="url(#windPlotClip)"><path class="gust-trace" d="${linePath(gust,y)}" fill="none" stroke="#98733a" stroke-width="1.3" stroke-dasharray="4 4" opacity=".8"/>`;
  for(const c of comps)svg+=`<path d="${linePath(c.values,y)}" fill="none" stroke="${MODELS[c.model].color}" stroke-width="1.5"/>`;
  svg+=`<path class="wind-trace" d="${linePath(wind,y)}" fill="none" stroke="#13865b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
- wind.forEach((v,i)=>{if(valid(v)){svg+=`<circle cx="${i*48+24}" cy="${y(v)}" r="1.8" fill="#13865b"/>`;if(i%3===0||i===state.hour)svg+=`<text x="${i*48+24}" y="${y(v)-7}" text-anchor="middle" fill="#176a4e" font-size="9" font-weight="600" stroke="#fff5d0" stroke-width="2.5" paint-order="stroke">${format(v)}</text>`;}});svg+='</g>';
+ wind.forEach((v,i)=>{if(valid(v)){svg+=`<circle cx="${i*48+24}" cy="${y(v)}" r="1.8" fill="#13865b"/>`;if(i%3===0)svg+=`<text x="${i*48+24}" y="${y(v)-7}" text-anchor="middle" fill="#176a4e" font-size="9" font-weight="600" stroke="#fff5d0" stroke-width="2.5" paint-order="stroke">${format(v)}</text>`;}});svg+='</g>';
  svg+=`<line x1="0" x2="${width}" y1="148" y2="148" stroke="#b0cbd7"/><path class="wave-trace" d="${linePath(waves,wy)}" fill="none" stroke="#65a8ca" stroke-width="1.7"/>`;
- if(state.hour<ts.length){const x=state.hour*48+24;svg+=`<line class="selected-hour-line" x1="${x}" x2="${x}" y1="0" y2="184" stroke="#d84c45" stroke-width="1.6"/>`;if(valid(wind[state.hour]))svg+=`<circle cx="${x}" cy="${y(wind[state.hour])}" r="3.8" fill="#13865b" stroke="#fff" stroke-width="1.5"/>`;}
+ state.meteogramMarker={y,wind};svg+=`<g class="selected-hour">${selectedHourMarker()}</g>`;
  ts.forEach((t,i)=>{const text=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+fullFmt.format(new Date(t*1000))+' · Wiatr '+format(wind[i])+' m/s · Porywy '+format(gust[i])+' m/s · Chmury '+format(cloud[i],0)+'% · Opady '+formatRain(rain[i])+' mm w poprzedniej godzinie · Fala Hs '+format(waves[i])+' m';svg+=`<g data-hour="${i}"><title>${text}</title><rect class="meteo-hour-hit" x="${i*48}" y="0" width="48" height="184" fill="transparent"/></g>`;});return svg+'</svg>';
+}
+// The red hour cursor is redrawn alone, so stepping through hours does not rebuild the whole chart.
+function selectedHourMarker(){
+ const m=state.meteogramMarker;if(!m||state.hour>=m.wind.length)return '';const x=state.hour*48+24,v=m.wind[state.hour];
+ let svg=`<line class="selected-hour-line" x1="${x}" x2="${x}" y1="0" y2="184" stroke="#d84c45" stroke-width="1.6"/>`;
+ if(valid(v)){svg+=`<circle cx="${x}" cy="${m.y(v)}" r="3.8" fill="#13865b" stroke="#fff" stroke-width="1.5"/>`;if(state.hour%3)svg+=`<text x="${x}" y="${m.y(v)-7}" text-anchor="middle" fill="#176a4e" font-size="9" font-weight="600" stroke="#fff5d0" stroke-width="2.5" paint-order="stroke">${format(v)}</text>`;}
+ return svg;
 }
 let meteogramFrame=false;
 function scheduleMeteogram(){if(meteogramFrame||typeof requestAnimationFrame!=='function')return;meteogramFrame=true;requestAnimationFrame(()=>{meteogramFrame=false;const plot=$('meteogramPlot'),ts=state.times.slice(0,Math.min(state.range,state.times.length));if(plot&&ts.length)plot.innerHTML=meteogramSVG(ts);});}
 function renderChart(){
  const ts=state.times.slice(0,Math.min(state.range,state.times.length));if(!ts.length)return;const width=ts.length*48,scroller=$('chartScroll');
  if(!state.chartPositioned&&scroller.clientWidth){scroller.scrollLeft=0;state.chartPositioned=true;}
- $('chartContent').style.width=width+'px';$('chartContent').innerHTML=buildWindyTable(ts)+'<div id="meteogramPlot" class="meteogram-plot">'+meteogramSVG(ts)+'</div>';renderTableLabels();
+ $('chartContent').style.width=width+'px';$('chartContent').innerHTML=buildWindyTable(ts)+'<div id="meteogramPlot" class="meteogram-plot">'+meteogramSVG(ts)+'</div>';state.renderedChart=chartKey();renderTableLabels();
  document.querySelectorAll('.extra-legend').forEach(x=>x.remove());if(state.compare)Object.keys(MODELS).filter(m=>m!==state.model).forEach(model=>{const span=document.createElement('span');span.className='extra-legend';span.innerHTML=`<i class="line" style="background:${MODELS[model].color}"></i>${windModelInfo(model).short} · wiatr`;document.querySelector('.forecast-legend').append(span);});
 }
 function renderTableLabels(){
  const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2,5 km',dmi_harmonie:state.metas.dmi_harmonie?.blend?'2/9 km':'2 km'};
  $('tableLabels').innerHTML='<div class="model-label-day">DZIEŃ</div><div class="model-label-hour">Godzina</div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Pokaż ${windModelInfo(model).short} na wykresie i mapie"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wiatr / porywy · m/s</em></button>`).join('');
 }
-function setHour(hour,scroll=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));renderPorts();renderSummary();renderTimeline();renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
-function renderAll(){renderWindSource();renderUpdateClocks();renderWaveSource();renderPorts();renderSummary();renderTimeline();renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();}
+function chartKey(){return [state.port,state.model,state.waveSource,state.range,state.compare,state.times[0],state.times.length].join('|');}
+function moveChartSelection(){
+ const content=$('chartContent');if(!content?.querySelectorAll||state.renderedChart!==chartKey())return false;
+ for(const node of content.querySelectorAll('.model-meteogram .selected')){node.classList.remove('selected');if(node.hasAttribute('aria-pressed'))node.setAttribute('aria-pressed','false');}
+ for(const node of content.querySelectorAll('.model-meteogram [data-hour="'+state.hour+'"]')){node.classList.add('selected');if(node.hasAttribute('aria-pressed'))node.setAttribute('aria-pressed','true');}
+ const marker=$('meteogramPlot')?.querySelector?.('.selected-hour');if(marker)marker.innerHTML=selectedHourMarker();
+ const context=$('meteogramContext');if(context){const t=state.times[state.hour];context.textContent=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+shortFmt.format(new Date(t*1000))+' · chmury '+format(windAt(state.port,'cloud_cover',t),0)+'% · opady '+formatRain(windAt(state.port,'precipitation',t))+' mm / 1 h';}return true;
+}
+function setHour(hour,scroll=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));renderPorts();renderSummary();renderTimeline();if(!moveChartSelection())renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
+let renderQueued=false;
+// Several sources finish within milliseconds of each other; draw once per frame.
+function scheduleRenderAll(){if(typeof requestAnimationFrame!=='function'){renderAll();return;}if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderAll();});}
+function renderAll(){renderQueued=false;renderWindSource();renderUpdateClocks();renderWaveSource();renderPorts();renderSummary();renderTimeline();renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();}
 function distanceKm(a,b){const rad=Math.PI/180,dlat=(b.lat-a.lat)*rad,dlon=(b.lon-a.lon)*rad;const h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlon/2)**2;return 6371*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
 function renderPointDetails(){
  const p=PORTS[state.port],r=windRecord(state.port),w=selectedWaveRecords()?.[state.port];
@@ -199,7 +220,7 @@ async function loadPorts(force=false){
    if(records.length!==PORTS.length)throw Error('Niepełna lista punktów');
    state.wind[model]=records;state.metas[model]=r;if(r.timing)state.timings[model]=r.timing;state.errors[model]='';
   }catch(e){state.errors[model]=MODELS[model].api?windModelInfo(model).label+': '+scheduleDMIRetry(model,e):windModelInfo(model).short+': nie udało się pobrać prognozy. Użyj ↻, aby ponowić.';console.warn(model,e.message);}
-  renderAll();
+  scheduleRenderAll();
  });
  jobs.push((async()=>{
   try{
@@ -207,7 +228,7 @@ async function loadPorts(force=false){
    if(records.length!==PORTS.length)throw Error('Niepełna lista punktów');
    state.wave=records;state.metas.wave=r;state.errors.wave='';
   }catch(e){state.errors.wave='Fala: nie udało się pobrać danych ECMWF WAM. Użyj ↻, aby ponowić.';console.warn('wave',e.message);}
-  renderAll();
+  scheduleRenderAll();
  })());
  await Promise.allSettled(jobs);
 }
@@ -289,10 +310,27 @@ async function loadField(force=false){
 }
 function currentGrid(){return state.layer==='wave'?(state.waveSource==='stormglass'?state.stormglassRoute:state.waveSource==='ecmwf_wam'?state.waveGrid:state.waveFields[state.waveSource]):state.windGrid[state.model];}
 function updateFieldStatus(){if(state.waveSource==='stormglass'&&state.layer==='wave'){$('fieldStatus').textContent=stormglassMapStatus();return;}if(state.model==='smhi_snow'&&state.layer!=='wave'){$('fieldStatus').textContent='SMHI SNOW: wiatr i porywy w trzech punktach. Brak regionalnego pola SMHI.';return;}const g=currentGrid(),meta=state.metas['grid-'+(state.layer==='wave'?state.waveSource:state.model)];$('fieldStatus').textContent=g?`${g.length} punktów · interpolacja przestrzenna · ${cacheLabel(meta)}`:'Pole mapy niedostępne';}
-function sample(lat,lon){const g=currentGrid();if(!g)return null;const key=state.layer==='wave'?'wave_height':state.layer==='gust'?'wind_gusts_10m':'wind_speed_10m',dk=state.layer==='wave'?'wave_direction':'wind_direction_10m',t=selectedEpoch();const nearby=g.map(p=>({p,d:(p.lat-lat)**2+((p.lon-lon)*Math.cos(lat*Math.PI/180))**2})).sort((a,b)=>a.d-b.d).slice(0,4);if(!nearby.length||nearby[0].d>5)return null;let sum=0,value=0,u=0,v=0,dsum=0;for(const {p,d} of nearby){const val=at(p.series,key,t),dir=at(p.series,dk,t),weight=1/Math.max(.008,d);if(valid(val)){sum+=weight;value+=weight*val;}if(valid(dir)){dsum+=weight;const rad=dir*Math.PI/180;u+=-Math.sin(rad)*weight;v+=Math.cos(rad)*weight;}}return sum?{value:value/sum,u:dsum?u/dsum:0,v:dsum?v/dsum:0}:null;}
+function nearestGridPoints(g,lat,lon){
+ const c=Math.cos(lat*Math.PI/180),best=[];
+ for(let i=0;i<g.length;i++){const p=g[i],d=(p.lat-lat)**2+((p.lon-lon)*c)**2;if(best.length===4&&d>=best[3].d)continue;let j=best.length;best.push({p,d});while(j>0&&best[j-1].d>d){best[j]=best[j-1];j--;}best[j]={p,d};if(best.length>4)best.pop();}
+ return best;
+}
+function fieldKeys(){return {key:state.layer==='wave'?'wave_height':state.layer==='gust'?'wind_gusts_10m':'wind_speed_10m',dk:state.layer==='wave'?'wave_direction':'wind_direction_10m'};}
+function sampleNearby(nearby,key,dk,t,g=null){if(!nearby.length||nearby[0].d>5)return null;let sum=0,value=0,u=0,v=0,dsum=0;for(const item of nearby){const p=g?g[item.i]:item.p,d=item.d,val=at(p.series,key,t),dir=at(p.series,dk,t),weight=1/Math.max(.008,d);if(valid(val)){sum+=weight;value+=weight*val;}if(valid(dir)){dsum+=weight;const rad=dir*Math.PI/180;u+=-Math.sin(rad)*weight;v+=Math.cos(rad)*weight;}}return sum?{value:value/sum,u:dsum?u/dsum:0,v:dsum?v/dsum:0}:null;}
+function sample(lat,lon){const g=currentGrid();if(!g)return null;const {key,dk}=fieldKeys();return sampleNearby(nearestGridPoints(g,lat,lon),key,dk,selectedEpoch());}
+let fieldGeometry=null;
+// Cell positions, land coverage and interpolation neighbours depend only on the
+// map view and sample grid, not on the hour; compute them once per view.
+function fieldGeometryFor(g,size){
+ const a=map.containerPointToLatLng([0,0]),b=map.containerPointToLatLng([size.x,size.y]),wave=state.layer==='wave',key=[size.x,size.y,a.lat.toFixed(6),a.lng.toFixed(6),b.lat.toFixed(6),b.lng.toFixed(6),wave,g.length,g[0]?.lat,g[0]?.lon,g.at(-1)?.lat,g.at(-1)?.lon].join('|');
+ if(fieldGeometry?.key===key)return fieldGeometry;
+ const step=12,cols=Math.ceil(size.x/step),rows=Math.ceil(size.y/step),cells=[];
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const ll=map.containerPointToLatLng([x*step+step/2,y*step+step/2]);if(!fieldCovers(ll.lng,ll.lat))continue;const nearby=nearestGridPoints(g,ll.lat,ll.lng);if(nearby.length&&nearby[0].d<=5)cells.push({index:y*cols+x,nearby:nearby.map(({p,d})=>({i:g.indexOf(p),d}))});}
+ return fieldGeometry={key,cols,rows,step,cells};
+}
 const stops=[[0,[55,84,134]],[5,[38,156,182]],[10,[72,195,165]],[15,[174,203,105]],[20,[232,177,92]],[25,[208,101,100]]];
 function color(value){if(state.layer!=='wave')return windRGB(value);const val=value*5;for(let i=1;i<stops.length;i++)if(val<stops[i][0]){const [a,ac]=stops[i-1],[b,bc]=stops[i],f=Math.max(0,(val-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return stops.at(-1)[1];}
-function drawField(){if(!map||!fctx)return;const size=map.getSize(),pos=map.containerPointToLayerPoint([0,0]);for(const c of [fieldCanvas,particleCanvas]){L.DomUtil.setPosition(c,pos);c.width=size.x;c.height=size.y;c.style.width=size.x+'px';c.style.height=size.y+'px';}particles=[];screenField=null;fctx.clearRect(0,0,size.x,size.y);const g=currentGrid();if(!g||!state.land)return;const step=12,cols=Math.ceil(size.x/step),rows=Math.ceil(size.y/step);screenField={cols,rows,step,values:Array(cols*rows)};const small=document.createElement('canvas');small.width=cols;small.height=rows;const sc=small.getContext('2d'),im=sc.createImageData(cols,rows);for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){const ll=map.containerPointToLatLng([x*step+step/2,y*step+step/2]);if(!fieldCovers(ll.lng,ll.lat))continue;const s=sample(ll.lat,ll.lng);if(!s)continue;screenField.values[y*cols+x]=s;const c=color(s.value),k=(y*cols+x)*4;im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=state.layer==='wave'?136:102;}sc.putImageData(im,0,0);fctx.imageSmoothingEnabled=true;fctx.drawImage(small,0,0,size.x,size.y); // Clip only the wave field to land; atmospheric wind remains visible over cities and ports.
+function drawField(){if(!map||!fctx)return;const size=map.getSize(),pos=map.containerPointToLayerPoint([0,0]);for(const c of [fieldCanvas,particleCanvas]){L.DomUtil.setPosition(c,pos);c.width=size.x;c.height=size.y;c.style.width=size.x+'px';c.style.height=size.y+'px';}particles=[];screenField=null;fctx.clearRect(0,0,size.x,size.y);const g=currentGrid();if(!g||!state.land)return;const geometry=fieldGeometryFor(g,size),{step,cols,rows}=geometry,{key,dk}=fieldKeys(),t=selectedEpoch(),alpha=state.layer==='wave'?136:102;screenField={cols,rows,step,values:Array(cols*rows)};const small=document.createElement('canvas');small.width=cols;small.height=rows;const sc=small.getContext('2d'),im=sc.createImageData(cols,rows);for(const cell of geometry.cells){const s=sampleNearby(cell.nearby,key,dk,t,g);if(!s)continue;screenField.values[cell.index]=s;const c=color(s.value),k=cell.index*4;im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=alpha;}sc.putImageData(im,0,0);fctx.imageSmoothingEnabled=true;fctx.drawImage(small,0,0,size.x,size.y); // Clip only the wave field to land; atmospheric wind remains visible over cities and ports.
 fctx.globalCompositeOperation='destination-in';fctx.beginPath();BASIN.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();fctx.fillStyle='#000';fctx.fill();if(state.layer==='wave'){fctx.globalCompositeOperation='destination-out';for(const f of state.land.features){const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;for(const poly of polys){fctx.beginPath();for(const ring of poly){ring.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();}fctx.fill('evenodd');}}}fctx.globalCompositeOperation='source-over';for(let i=0;i<Math.min(650,Math.floor(size.x*size.y/900));i++)particles.push(newParticle(size.x,size.y));}
 function newParticle(w,h){for(let i=0;i<15;i++){const p={x:Math.random()*w,y:Math.random()*h,age:Math.random()*80};if(screenAt(p.x,p.y))return p;}return {x:-10,y:-10,age:100};}
 function screenAt(x,y){if(!screenField)return null;const {step,cols,rows,values}=screenField,c=Math.floor(x/step),r=Math.floor(y/step);return c>=0&&r>=0&&c<cols&&r<rows?values[r*cols+c]:null;}
@@ -359,7 +397,7 @@ async function loadExtraWindPorts(model,force=false){
  if(!MODELS[model]?.api)return;if(!force&&state.wind[model]&&providerDataFresh(model,state.metas[model]))return;
  state.providerLoading[model]=true;renderUpdateClocks();
  try{const result=await fetchProvider(model,'ports',force);state.wind[model]=result.records;state.metas[model]=result.meta;state.timings[model]=result.meta.timing;state.errors[model]='';}
- catch(e){state.errors[model]=windModelInfo(model).label+': '+scheduleDMIRetry(model,e);}finally{state.providerLoading[model]=false;renderAll();}
+ catch(e){state.errors[model]=windModelInfo(model).label+': '+scheduleDMIRetry(model,e);}finally{state.providerLoading[model]=false;scheduleRenderAll();}
 }
 async function loadExtraWavePorts(source,force=false){
  if(['ecmwf_wam','stormglass','smhi_swan'].includes(source))return;if(!force&&state.waves[source]&&providerDataFresh(source,state.metas['wave-'+source]))return;
@@ -368,7 +406,7 @@ async function loadExtraWavePorts(source,force=false){
   if(WAVE_SOURCES[source].api){const result=await fetchProvider(source,'ports',force);records=result.records;meta=result.meta;state.timings[source]=meta.timing;}
   else{const r=await requestJSON(url('https://marine-api.open-meteo.com/v1/marine',PORTS,{hourly:'wave_height,wave_direction,wave_period',models:source,cell_selection:'sea'}),'wave-ports-v2-'+source,force);records=list(r.data);meta=r;}
   if(records.length!==PORTS.length)throw Error('Niepełna lista punktów');state.waves[source]=records;state.metas['wave-'+source]=meta;state.errors['wave-'+source]='';
- }catch(e){state.errors['wave-'+source]=WAVE_SOURCES[source].label+': '+scheduleDMIRetry(source,e);}finally{state.providerLoading[source]=false;renderAll();}
+ }catch(e){state.errors['wave-'+source]=WAVE_SOURCES[source].label+': '+scheduleDMIRetry(source,e);}finally{state.providerLoading[source]=false;scheduleRenderAll();}
 }
 function providerDataFresh(model,meta){const next=Date.parse(meta?.refreshAfter||meta?.timing?.nextUpdate);return Number.isFinite(next)?Date.now()<next:Date.now()-(meta?.checkedAt||meta?.saved||0)<3600000;}
 async function refreshDMIIfDue(){

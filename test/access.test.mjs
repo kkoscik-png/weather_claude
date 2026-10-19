@@ -11,14 +11,30 @@ function assetsEnv(extra = {}) {
 
 test('HTML and assets open anonymously without Access configuration', async () => {
   const { env, calls } = assetsEnv();
-  for (const path of ['/', '/app.js', '/assets/leaflet.js']) {
+  const expected = {
+    '/': 'no-cache',
+    '/index.html': 'no-cache',
+    '/app.js': 'no-cache',
+    '/app.js?v=build-1': 'public, max-age=31536000, immutable',
+    '/style.css?v=build-1': 'public, max-age=31536000, immutable',
+    '/assets/leaflet.js': 'public, max-age=604800, stale-while-revalidate=86400',
+  };
+  for (const [path, cacheControl] of Object.entries(expected)) {
     const response = await handler(request(path), env);
     assert.equal(response.status, 200);
     assert.equal(await response.text(), 'weather app');
-    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal(response.headers.get('Cache-Control'), cacheControl, path);
     assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+    assert.match(response.headers.get('Content-Security-Policy'), /frame-ancestors 'none'/);
+    assert.match(response.headers.get('Content-Security-Policy'), /script-src 'self'(;|$)/);
   }
-  assert.equal(calls(), 3);
+  assert.equal(calls(), Object.keys(expected).length);
+});
+test('missing assets are never cached by the browser', async () => {
+  const env = { ASSETS: { async fetch() { return new Response('not found', { status: 404 }); } } };
+  const response = await handler(request('/missing.js?v=1'), env);
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
 test('legacy Access settings and assertions do not require a login', async () => {
   const { env } = assetsEnv({ ACCESS_TEAM_DOMAIN: 'old.cloudflareaccess.com', ACCESS_AUD: 'old-audience' });

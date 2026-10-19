@@ -94,15 +94,20 @@ export function normalizeDMIGeoJSON(data,points,model,referenceTime=null,fetched
  });
  return {records,timing:Number.isFinite(Date.parse(referenceTime))?dmiTiming(referenceTime,model):modelTiming(iso(fetchedAt),HOUR,null,'fetch'),attribution:'Danish Meteorological Institute, CC BY 4.0'};
 }
-export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Date.now(),cache=null,pause}={}) {
-  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),lastGood=createLastGoodCache({now,cache}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt))});
-  async function cached(key,ttl,load,ctx={}) {
+export function createTTLCache({now=()=>Date.now(),cache=null,memory=new Map(),pending=new Map()}={}){
+  return async function cached(key,ttl,load,ctx={}) {
     const old=memory.get(key);if(old&&now()-old.saved<ttl*1000)return old.value;
-    const storage=cache||(typeof caches!=='undefined'?caches.default:null),request=new Request('https://weather.seasync.co/__forecast_cache/v9/'+encodeURIComponent(key));
-    if(storage&&ttl){const hit=await storage.match(request);if(hit){const value=await hit.json();memory.set(key,{saved:now(),value});return value;}}
-    if(!pending.has(key))pending.set(key,(async()=>{const value=await load();if(ttl){if(memory.size>180)memory.delete(memory.keys().next().value);memory.set(key,{saved:now(),value});if(storage){const task=storage.put(request,new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+ttl}}));if(ctx.waitUntil)ctx.waitUntil(task);else await task;}}return value;})().finally(()=>pending.delete(key)));
+    const storage=cache||(typeof caches!=='undefined'?caches.default:null),request=new Request('https://weather.seasync.co/__forecast_cache/v10/'+encodeURIComponent(key));
+    // Keep the original download time: a copy read back from the shared cache
+    // must not receive a fresh TTL in memory, or data could age to twice the TTL.
+    if(storage&&ttl){try{const hit=await storage.match(request);if(hit){const entry=await hit.json();if(Number.isFinite(entry?.saved)&&now()-entry.saved<ttl*1000){memory.set(key,entry);return entry.value;}}}catch{}}
+    if(!pending.has(key))pending.set(key,(async()=>{const value=await load();if(ttl){const entry={saved:now(),value};if(memory.size>180)memory.delete(memory.keys().next().value);memory.set(key,entry);if(storage){const task=storage.put(request,new Response(JSON.stringify(entry),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+ttl}})).catch(()=>{});if(ctx.waitUntil)ctx.waitUntil(task);else await task;}}return value;})().finally(()=>pending.delete(key)));
     return pending.get(key);
   }
+}
+export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Date.now(),cache=null,pause}={}) {
+  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),lastGood=createLastGoodCache({now,cache}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt))});
+  const cached=createTTLCache({now,cache,memory,pending});
   async function response(url) {if(url.startsWith('https://opendataapi.dmi.dk/'))return dmiResponse(url);const r=await fetcher(url,{signal:AbortSignal.timeout(35000),headers:{Accept:'application/json, application/xml, */*'}});if(!r.ok){const e=Error('Źródło chwilowo niedostępne ('+r.status+')');e.status=r.status;throw e;}return r;}
   const getJSON=(url,ttl=300)=>cached(url,ttl,async()=>await(await response(url)).json());
   const getBuffer=async url=>await(await response(url)).arrayBuffer();
