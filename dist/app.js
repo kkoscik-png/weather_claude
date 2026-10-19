@@ -123,7 +123,7 @@ function forecastTimes(now=Date.now()){
  const start=Math.floor(now/3600000)*3600-3600;
  return Array.from({length:73},(_,i)=>start+i*3600);
 }
-function resetForecastWindow(){state.times=forecastTimes();state.base=state.times[0];state.hour=1;state.range=state.times.length;state.chartPositioned=false;}
+function resetForecastWindow(){state.times=forecastTimes();state.base=state.times[0];state.hour=1;state.followingNow=true;state.range=state.times.length;state.chartPositioned=false;}
 const tlDayFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'short',day:'numeric'});
 const tlTimeFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'short',hour:'2-digit',minute:'2-digit'});
 // Full-screen map timeline: day bands, a draggable hour slider and play, in step with the table.
@@ -287,7 +287,7 @@ function renderTableLabels(){
 // Cursor x: start of the selected hour; in the current hour it follows the clock in 10-minute steps (8 px each).
 function nowHourIndex(){const n=Date.now()/1000;return state.times.findIndex(t=>n>=t&&n<t+3600);}
 function cursorX(){const t=state.times[state.hour],n=Date.now()/1000;const off=(t!=null&&n>=t&&n<t+3600)?Math.floor((n-t)/600)*8:0;return state.hour*48+off;}
-function tickNowCursor(){const i=nowHourIndex();if(state.followingNow&&i>=0&&i!==state.hour&&!state.playing)setHour(i);state.followingNow=i>=0&&i===state.hour;positionTimeCursor();}
+function tickNowCursor(){const i=nowHourIndex();if(state.followingNow&&i>=0&&i!==state.hour&&!state.playing)setHour(i,false,true);positionTimeCursor();}
 function timeCursorHTML(){return `<div class="time-cursor" id="timeCursor" style="left:${cursorX()}px" role="slider" aria-label="Forecast hour" aria-valuemin="0" aria-valuemax="${Math.max(0,state.times.length-1)}" aria-valuenow="${state.hour}" tabindex="0"><span class="time-cursor-handle" aria-hidden="true"></span></div>`;}
 function positionTimeCursor(){const c=$('timeCursor');if(!c?.style)return;c.style.left=cursorX()+'px';c.setAttribute('aria-valuenow',state.hour);}
 function bindTimeCursor(){
@@ -307,7 +307,9 @@ function moveChartSelection(){
  const marker=$('meteogramPlot')?.querySelector?.('.selected-hour');if(marker)marker.innerHTML=selectedHourMarker();positionTimeCursor();
  const context=$('meteogramContext');if(context){const t=state.times[state.hour];context.textContent=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+shortFmt.format(new Date(t*1000))+' · clouds '+format(windAt(state.port,'cloud_cover',t),0)+'% · precipitation '+formatRain(windAt(state.port,'precipitation',t))+' mm / 1 h';}return true;
 }
-function setHour(hour,scroll=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));renderPorts();renderSummary();renderTimeline();if(!moveChartSelection())renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
+// Any hour picked by the user stops the cursor from following the clock; only "Now" (or
+// picking the current hour again) resumes it. auto=true is the clock tick itself.
+function setHour(hour,scroll=false,auto=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));if(!auto)state.followingNow=state.hour===nowHourIndex();renderPorts();renderSummary();renderTimeline();if(!moveChartSelection())renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
 let renderQueued=false;
 // Several sources finish within milliseconds of each other; draw once per frame.
 function scheduleRenderAll(){if(typeof requestAnimationFrame!=='function'){renderAll();return;}if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderAll();});}
