@@ -65,3 +65,9 @@ Weryfikacja: `npm test` (dotychczasowe kontrole i nowe testy adapterów, wyboru 
 - Bufor serwera pamięta prawdziwy czas pobrania, więc kopia z pamięci Cloudflare nie żyje dłużej niż zakładany czas (`test/cache.test.mjs`).
 - Zmiana godziny przesuwa tylko zaznaczenie w tabeli i kursor wykresu, a mapa liczy geometrię interpolacji raz na widok. Zmiana godziny trwa ok. 5–8 ms zamiast ok. 100 ms; rysowanie pola mapy ok. 2 ms zamiast ok. 18 ms.
 - Interfejs: przyklejony nagłówek, porywy i kierunek na kartach punktów, zakładka DMI, na telefonie kolejność punkty → mapa → tabela → ustawienia, manifest aplikacji i ikona do dodania na ekran główny.
+
+## Stan morza przy wybrzeżu (19.10.2026)
+
+Mapa pokazuje wysokość fali Hs w 20 stałych punktach: 10 wzdłuż wybrzeża Ventspils (reda, podejścia, odcinek od Užavy do Ovīši) i 10 na podejściu do Nynäshamn / Norvik od strony Landsort. Lista jest w `worker/forecast-points.mjs` (`COAST_POINTS`) i w `dist/app.js`; obie muszą być takie same. Punkty pobiera każdy model fal oprócz Stormglass (limit zapytań). DMI WAM używa najbliższej komórki morskiej tego samego modelu. Przycisk „Fale na trasie” włącza i wyłącza zarówno trasę, jak i punkty przy wybrzeżu.
+
+Odtwarzanie prognozy (▶) i przycisk „Teraz” są w lewym górnym rogu tabeli godzinowej; osobny pasek nad tabelą został usunięty.

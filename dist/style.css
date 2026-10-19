@@ -94,3 +94,14 @@ main{order:2}
 .port{flex-basis:78%}
 .topbar{height:62px}
 }
+/* Przycisk odtwarzania w narożniku tabeli (zamiast osobnego paska) */
+.table-corner{position:absolute;top:0;left:0;height:50px;display:flex;align-items:center;gap:5px;padding-left:8px;z-index:3;pointer-events:none}
+.table-corner>*{pointer-events:auto}
+.table-corner .play{margin:0;width:30px;height:30px;font-size:11px;box-shadow:0 2px 6px rgba(16,44,57,.25)}
+.table-corner .play[aria-pressed="true"]{background:var(--accent)}
+.now-btn{font-size:9px;font-weight:650;color:var(--accent);padding:3px 5px;border-radius:5px;background:#fff;border:1px solid #d9ece8}
+.now-btn:hover{filter:none;background:#eef8f6}
+/* Punkty stanu morza przy wybrzeżu */
+.route-wave-value.coast-wave-value{color:#0b5f73;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff}
+.route-wave-value.coast-wave-value::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#0b8fa8;margin-right:3px;vertical-align:middle;box-shadow:0 0 0 1.5px #fff}
+@media(max-width:760px){.table-corner{gap:3px;padding-left:5px}.table-corner .play{width:28px;height:28px}.now-btn{font-size:8px;padding:2px 4px}}

@@ -1,12 +1,12 @@
 import { normalizeOpenWeather, normalizeSnow } from './open-weather.mjs';
 import { createLastGoodCache, normalizeDMIOpenMeteo } from './dmi-resilience.mjs';
 import { STORMGLASS_POINTS } from './stormglass-points.mjs';
-import { FORECAST_GRIDS } from './forecast-points.mjs';
+import { FORECAST_GRIDS, COAST_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 const HOUR=3600000, BATCH=6;
 const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
-const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)}))};
+const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
@@ -171,7 +171,9 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     // Distant app samples must not request a giant rectangular 2-km wind grid.
     // Small fixed-point requests stay below EDR's payload and Worker limits.
     for(const p of points){
-      const sea=model==='dmi_wam'&&group==='ports';
+      // Coastal and harbour cells can be land-masked in the 5 km WAM grid; read a small
+      // cube and use the nearest wet cell of the same model instead of returning nothing.
+      const sea=model==='dmi_wam'&&(group==='ports'||group==='coast');
       const query={crs:'crs84','parameter-name':fields,datetime:queryStart+'/'+queryEnd,f:sea?'CoverageJSON':'GeoJSON'};
       if(sea)query.bbox=[p.lon-.12,p.lat-.08,p.lon+.12,p.lat+.08].join(',');else query.coords='POINT('+p.lon+' '+p.lat+')';
       const url=root+'/'+(sea?'cube':'position')+'?'+new URLSearchParams(query).toString().replace(/\+/g,'%20');
