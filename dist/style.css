@@ -123,3 +123,15 @@ main{order:2}
 .port-dir .flow-arrow{font-style:normal;font-size:15px;line-height:1;color:var(--ink)}
 .port-dir em{font-style:normal;font-size:8px;color:#9aabb1}
 @media(max-width:760px){.port{flex-basis:64%;padding:9px 11px 10px}.wind-chip{min-width:52px;padding:3px 8px 4px}.wind-chip b{font-size:16px}}
+/* Kafelek = przycisk wyboru punktu + przełącznik flag na mapie */
+.port{position:relative;padding:0}
+.port-main{display:block;width:100%;text-align:left;padding:10px 12px 11px;border-radius:inherit;background:none}
+.port-main:hover{filter:none}
+.port-top h2{padding-right:30px}
+.port-flag{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;border:1px solid #dfe8ea;background:#fff;color:#a3b4b9;transition:background .15s,color .15s,border-color .15s}
+.port-flag svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.port-flag.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.port-flag.on svg{fill:rgba(255,255,255,.35)}
+.port-flag:hover{filter:none;border-color:#7cc3b6;color:var(--accent)}
+.port-flag.on:hover{color:#fff;background:#0b7a6a}
+@media(max-width:760px){.port-main{padding:9px 11px 10px}}
