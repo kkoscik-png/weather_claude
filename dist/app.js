@@ -149,7 +149,8 @@ const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',wee
 // Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
 const WIND_COLORS=[[0,[243,243,243]],[3,[243,243,243]],[4,[0,200,254]],[6,[0,230,0]],[10,[254,174,0]],[19,[254,0,150]],[100,[151,50,222]]];
 // Dark theme: calm winds (0–3 m/s) are mid grey instead of near-white, so the table does not glare.
-const isDarkTheme=()=>typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
+let lightPalette=false;// map flags always use the daytime palette
+const isDarkTheme=()=>!lightPalette&&typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
 const WIND_COLORS_DARK=[[0,[86,99,108]],[3,[86,99,108]],...WIND_COLORS.slice(2)];
 function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=isDarkTheme()?WIND_COLORS_DARK:WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
 function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':(isDarkTheme()?'#22343e':'#f0f2f3');}
@@ -193,6 +194,10 @@ function windFlagLayout(point){
 }
 function windFlagsSVG(point){
  if(!state.flags||!flagPorts().has(point))return '';
+ // Flags keep the light (daytime) colours in both themes: white calm cells, dark figures.
+ lightPalette=true;try{return windFlagsSVGInner(point);}finally{lightPalette=false;}
+}
+function windFlagsSVGInner(point){
  const flags=windFlagLayout(point),half=WIND_FLAG.width/2,top=-WIND_FLAG.far,split=top+28,bottom=-WIND_FLAG.near;
  const shapes=flags.map(flag=>{
   const {model,v,gust,d,rotation,calm,cycleSize,cycleIndex,front,lane}=flag,title=windModelInfo(model).short+': wind '+format(v)+' m/s, gusts '+format(gust)+' m/s, z '+Math.round(d)+'°'+(calm?' · calm':''),id='wind-flag-'+point+'-'+model,textAngle=rotation>180?90:-90;
