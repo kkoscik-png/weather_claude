@@ -61,7 +61,8 @@ function renderWindSource(){
  if($('modelDescription'))$('modelDescription').textContent=windModelInfo(state.model).desc;
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
-function windInk(v){if(!valid(v))return '#6f8790';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
+// Dark theme: values on the grey calm-wind background are light green for contrast.
+function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';if(isDarkTheme()&&v<3.5)return '#adffcf';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
 function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v)?'':' no-data'}" style="background:${windHeat(v)};color:${windInk(v)}"><small>${label}</small><b>${format(v)}</b></span>`;}
 // Flags on the map: by default only the selected point; the flag toggles on the cards
 // let you show them on one, two or all three points (remembered in this browser).
