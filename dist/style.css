@@ -281,3 +281,33 @@ body.map-full-open{overflow:hidden}
 .map-tl-range{position:relative;left:auto;right:auto;bottom:auto;flex:0 0 4px;height:4px!important;min-height:0;padding:0;border:0}
 .map-tl-range:focus-visible{outline:none}
 .map-tl-range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px #4fc3b080}
+/* Mniejszy wykres pod tabelą (bez wiersza fali), legenda schowana */
+.meteogram-plot,.meteogram-svg{height:112px}
+.chart-labels .axis-unit{height:112px;padding-top:4px}
+.axis-unit>small{top:40px}
+.axis-unit>em{bottom:2px}
+.forecast-legend{display:none}
+/* Pionowy kursor czasu przez wszystkie modele i wykres */
+.chart-content{position:relative}
+.time-cursor{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#d63a32;z-index:6;pointer-events:none;outline:none}
+.time-cursor::before{content:'';position:absolute;top:0;bottom:0;left:-8px;width:18px;pointer-events:auto;cursor:ew-resize}
+.time-cursor-handle{position:absolute;top:3px;left:-8px;width:18px;height:18px;border-radius:50%;background:#d63a32;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(16,44,57,.35);pointer-events:auto;cursor:grab}
+.time-cursor-handle::before,.time-cursor-handle::after{content:'';position:absolute;top:5px;width:1.5px;height:8px;background:#fff;border-radius:1px}
+.time-cursor-handle::before{left:6px}.time-cursor-handle::after{left:10px}
+.time-cursor:focus-visible .time-cursor-handle{box-shadow:0 0 0 2px #fff,0 0 0 5px #d63a3255}
+.chart-content.cursor-dragging,.chart-content.cursor-dragging *{cursor:ew-resize!important;user-select:none}
+/* Przyciski Play i Now: równe, czytelne */
+.table-corner .play,.table-corner .now-btn{width:32px;height:32px;flex:0 0 32px;border-radius:50%;display:grid;place-items:center;padding:0;margin:0}
+.table-corner .play svg{width:17px;height:17px;fill:currentColor;margin-left:1px}
+.table-corner .play[aria-pressed="true"] svg{margin-left:0}
+.table-corner .now-btn{font-size:9.5px;font-weight:700;letter-spacing:.2px;background:#fff;color:#d63a32;border:1.5px solid #f0b9b5;box-shadow:0 2px 6px rgba(16,44,57,.12)}
+.map-tl-play{display:grid;place-items:center}
+.map-tl-play svg{width:14px;height:14px;fill:currentColor}
+@media(max-width:760px){.table-corner .play,.table-corner .now-btn{width:30px;height:30px;flex-basis:30px}.table-corner .now-btn{font-size:8.5px}}
+.meteogram-plot,.meteogram-svg{height:100px}
+.chart-labels .axis-unit{height:100px}
+.axis-unit>small{top:34px}
+/* Mniej linii pod tabelą, żeby całość mieściła się na ekranie */
+#meteogramContext,.forecast-footer{display:none}
+.forecast{margin-top:12px}
+main>.page-footer{padding:8px 4px 10px;min-height:0}
