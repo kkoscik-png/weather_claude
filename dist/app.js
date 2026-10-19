@@ -266,8 +266,23 @@ function routeGeometry(){const a=PORTS[0],b=PORTS[2],length=distanceKm(a,b),bear
  for(let station=1;station<9;station++)for(const offset of [-22.5,-7.5,7.5])points.push(pointAt((station+.5)/10,offset,'centre'));
  return {axis,polygon:[...left,...right.reverse()],points:points.filter(p=>isSea(p.lon,p.lat)),length};}
 function routeWaveValues(){return ((state.waveSource==='stormglass'?state.stormglassRoute:state.waveSource==='ecmwf_wam'?state.routeWaveGrid:state.waveRoutes[state.waveSource])||[]).map(p=>({...p,value:at(p.series,'wave_height'),direction:at(p.series,'wave_direction'),period:at(p.series,'wave_period')}));}
-function routeWaveIcon(p){const missing=!valid(p.value),coast=p.kind==='coast',v=missing?'—':format(p.value),title=`Fala znacząca Hs ${v} m · ${fullFmt.format(new Date(selectedEpoch()*1000))} · ${waveSourceLabel()} · ${coast?p.name+(valid(p.period)?' · okres '+format(p.period)+' s':''):p.offset===0?'oś trasy':Math.abs(p.offset)+' Mm od osi'} · punkt ${p.lat.toFixed(3)}°N ${p.lon.toFixed(3)}°E`+(valid(p.series?.latitude)&&valid(p.series?.longitude)?` · siatka modelu ${p.series.latitude.toFixed(3)}°N ${p.series.longitude.toFixed(3)}°E`:'')+(routeWaveMeta()?.stale?' · kopia z pamięci':'');return L.divIcon({className:'route-wave-marker',iconSize:[36,22],iconAnchor:[18,11],html:`<span class="route-wave-value ${missing?'missing':''}${coast?' coast-wave-value':''}"${coast?' data-coast-point="'+p.id+'"':''} data-wave-height="${missing?'':p.value}" title="${title}" aria-label="${title}">${v}</span>`});}
-function visibleRouteWaves(values,project,size,extra=[]){const chosen=[];const sorted=[...values].sort((a,b)=>(a.kind==='centre')-(b.kind==='centre')||(b.station%2)-(a.station%2)||a.station-b.station);for(const p of sorted){const screen=project(p);if(screen.x<18||screen.y<11||screen.x>size.x-18||screen.y>size.y-11)continue;if(chosen.some(q=>Math.abs(q.screen.x-screen.x)<40&&Math.abs(q.screen.y-screen.y)<22))continue;chosen.push({p,screen});}for(const p of extra){const screen=project(p);if(screen.x<18||screen.y<11||screen.x>size.x-18||screen.y>size.y-11)continue;if(chosen.some(q=>Math.abs(q.screen.x-screen.x)<40&&Math.abs(q.screen.y-screen.y)<22))continue;chosen.push({p,screen});}return chosen.map(x=>x.p);}
+// Darkened wave-scale colour: readable on the light map, still telling calm from rough at a glance.
+function waveInk(v){if(!valid(v))return '#879ca6';const val=v*5;let rgb=stops.at(-1)[1];for(let i=1;i<stops.length;i++)if(val<stops[i][0]){const [a,ac]=stops[i-1],[b,bc]=stops[i],f=Math.max(0,(val-a)/(b-a));rgb=ac.map((x,j)=>x+(bc[j]-x)*f);break;}return 'rgb('+rgb.map(x=>Math.round(x*.5)).join(',')+')';}
+function routeWaveIcon(p){const missing=!valid(p.value),coast=p.kind==='coast',v=missing?'—':format(p.value),title=`Fala znacząca Hs ${v} m · ${fullFmt.format(new Date(selectedEpoch()*1000))} · ${waveSourceLabel()} · ${coast?p.name+(valid(p.period)?' · okres '+format(p.period)+' s':''):p.offset===0?'oś trasy':Math.abs(p.offset)+' Mm od osi'} · punkt ${p.lat.toFixed(3)}°N ${p.lon.toFixed(3)}°E`+(valid(p.series?.latitude)&&valid(p.series?.longitude)?` · siatka modelu ${p.series.latitude.toFixed(3)}°N ${p.series.longitude.toFixed(3)}°E`:'')+(routeWaveMeta()?.stale?' · kopia z pamięci':'');return L.divIcon({className:'route-wave-marker',iconSize:[36,22],iconAnchor:[18,11],html:`<span class="route-wave-value ${missing?'missing':''}${coast?' coast-wave-value':''}" style="${missing?'':'color:'+waveInk(p.value)}"${coast?' data-coast-point="'+p.id+'"':''} data-wave-height="${missing?'':p.value}" title="${title}" aria-label="${title}">${v}</span>`});}
+// Wave numbers are thinned to one even spacing on screen, so the dense coastal points
+// never look more crowded than the open-sea route. The spacing follows the route's own
+// point spacing at the current zoom (58–84 px); values stay direct model samples.
+function waveLabelSpacing(values,project,size){
+ const seen=values.map(project).filter(q=>q.x>=0&&q.y>=0&&q.x<=size.x&&q.y<=size.y);if(seen.length<3)return 58;
+ const gaps=seen.map((a,i)=>Math.min(...seen.filter((_,j)=>j!==i).map(b=>Math.hypot(a.x-b.x,(a.y-b.y)*1.6)))).sort((a,b)=>a-b);
+ return Math.max(58,Math.min(84,gaps[Math.floor(gaps.length/2)]*.85));
+}
+function visibleRouteWaves(values,project,size,extra=[]){
+ const spacing=waveLabelSpacing(values,project,size),chosen=[];
+ const sorted=[...values].sort((a,b)=>(a.kind==='centre')-(b.kind==='centre')||(b.station%2)-(a.station%2)||a.station-b.station);
+ for(const p of [...sorted,...extra]){const screen=project(p);if(screen.x<18||screen.y<11||screen.x>size.x-18||screen.y>size.y-11)continue;if(chosen.some(q=>Math.abs(q.screen.x-screen.x)<Math.max(40,spacing)&&Math.abs(q.screen.y-screen.y)<Math.max(22,spacing*.62)))continue;chosen.push({p,screen});}
+ return chosen.map(x=>x.p);
+}
 function updateRouteWaves(){const button=$('routeWaves'),readout=$('routeWaveReadout');if(button){button.setAttribute('aria-pressed',state.routeWaves);button.classList.toggle('active',state.routeWaves);}const values=routeWaveValues(),known=values.filter(p=>valid(p.value)),meta=routeWaveMeta();
  if(readout){const summary=known.length?`Hs ${format(Math.min(...known.map(p=>p.value)))}–${format(Math.max(...known.map(p=>p.value)))} m · ${shortFmt.format(new Date(selectedEpoch()*1000))}${known.length<values.length?' · część punktów bez danych':''}`:state.waveSource==='stormglass'&&!state.stormglassStatus.routeEnabled?stormglassMapStatus():state.routeWaveLoading?'Pobieranie fal na trasie…':state.routeWaveError?'Fale na trasie niedostępne · użyj ↻':waveMissingMessage(values.map(p=>p.series));readout.textContent=summary+(meta?.stale?' · kopia z pamięci':'')+(known.length&&state.routeWaveError?' · odświeżenie nieudane':'');readout.hidden=!state.routeWaves;readout.title='Zakres Hs w punktach Ventspils–Norvik: dodatkowy rząd 15 Mm w stronę Gotlandu oraz odczyty w środkach komórek. '+waveSourceLabel()+'. '+cacheLabel(meta);}
  if(!map||!routeWaveLayer)return;routeWaveLayer.clearLayers();if(!state.routeWaves)return;
@@ -279,7 +294,7 @@ async function loadCoastWaves(force=false){
  const source=state.waveSource;if(source==='stormglass'||!WAVE_SOURCES[source]?.api)return;if(!force&&state.coastWaves[source])return;
  try{const result=await fetchProvider(source,'coast',force);if(result.records.length!==COAST_POINTS.length)throw Error('Niepełne dane wybrzeża');state.coastWaves[source]=COAST_POINTS.map((p,i)=>result.records.find(r=>r.id===p.id)||result.records[i]||null);state.metas['coast-wave-'+source]=result.meta;}
  catch(e){console.warn('coast-wave',source,e.message);}
- finally{if(state.waveSource===source)updateRouteWaves();}
+ finally{if(state.waveSource===source){updateRouteWaves();if(state.layer==='wave'){drawField();updateFieldStatus();}}}
 }
 async function loadRouteWaves(force=false){
  const source=state.waveSource;loadCoastWaves(force).catch(e=>console.warn('coast-wave',e.message));if(source==='stormglass')return loadStormglassRoute(force);
@@ -290,7 +305,7 @@ async function loadRouteWaves(force=false){
   if(records.length!==points.length)throw Error('Niepełne dane korytarza');const entries=records.map((series,i)=>({...points[i],series}));
   if(source==='ecmwf_wam'){state.routeWaveGrid=entries;state.metas['route-wave']=r;}else{state.waveRoutes[source]=entries;state.metas['route-wave-'+source]=r;}
  }catch(e){if(state.waveSource===source)state.routeWaveError=true;console.warn('route-wave',source,e.message);}
- finally{if(state.waveSource===source){state.routeWaveLoading=false;updateRouteWaves();}}
+ finally{if(state.waveSource===source){state.routeWaveLoading=false;updateRouteWaves();if(state.layer==='wave'){drawField();updateFieldStatus();}}}
 }
 function stormglassMapStatus(){
  if(state.stormglassLoading)return 'Stormglass AI: pobieranie fal dla 3 pozycji portowych…';
@@ -317,7 +332,16 @@ async function loadField(force=false){
   state.metas['grid-'+source]=r;if(pending===state.fieldLoading){drawField();updateFieldStatus();}
  }catch(e){if(pending===state.fieldLoading){$('fieldStatus').textContent='Pole modelu niedostępne · użyj ↻, aby ponowić.';drawField();}console.warn('grid',source,e.message);}
 }
-function currentGrid(){return state.layer==='wave'?(state.waveSource==='stormglass'?state.stormglassRoute:state.waveSource==='ecmwf_wam'?state.waveGrid:state.waveFields[state.waveSource]):state.windGrid[state.model];}
+let mergedWaveField={key:null,points:null};
+// The regional wave grid is coarse (about 1–2.5°); adding the route and coastal samples of
+// the same model gives a much finer, smoother field along the route and near both ports.
+function waveFieldPoints(source){
+ const base=source==='ecmwf_wam'?state.waveGrid:state.waveFields[source],route=source==='ecmwf_wam'?state.routeWaveGrid:state.waveRoutes[source],coast=state.coastWaves[source];
+ if(mergedWaveField.base===base&&mergedWaveField.route===route&&mergedWaveField.coast===coast&&mergedWaveField.source===source)return mergedWaveField.points;
+ const extra=[...(route||[]).filter(p=>p.series).map(p=>({lat:p.lat,lon:p.lon,series:p.series})),...(coast||[]).map((series,i)=>series?{lat:COAST_POINTS[i].lat,lon:COAST_POINTS[i].lon,series}:null).filter(Boolean)];
+ const points=base||extra.length?[...(base||[]),...extra]:null;mergedWaveField={base,route,coast,source,points};return points;
+}
+function currentGrid(){return state.layer==='wave'?(state.waveSource==='stormglass'?state.stormglassRoute:waveFieldPoints(state.waveSource)):state.windGrid[state.model];}
 function updateFieldStatus(){if(state.waveSource==='stormglass'&&state.layer==='wave'){$('fieldStatus').textContent=stormglassMapStatus();return;}if(state.model==='smhi_snow'&&state.layer!=='wave'){$('fieldStatus').textContent='SMHI SNOW: wiatr i porywy w trzech punktach. Brak regionalnego pola SMHI.';return;}const g=currentGrid(),meta=state.metas['grid-'+(state.layer==='wave'?state.waveSource:state.model)];$('fieldStatus').textContent=g?`${g.length} punktów · interpolacja przestrzenna · ${cacheLabel(meta)}`:'Pole mapy niedostępne';}
 function nearestGridPoints(g,lat,lon){
  const c=Math.cos(lat*Math.PI/180),best=[];

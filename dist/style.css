@@ -102,6 +102,5 @@ main{order:2}
 .now-btn{font-size:9px;font-weight:650;color:var(--accent);padding:3px 5px;border-radius:5px;background:#fff;border:1px solid #d9ece8}
 .now-btn:hover{filter:none;background:#eef8f6}
 /* Punkty stanu morza przy wybrzeżu */
-.route-wave-value.coast-wave-value{color:#0b5f73;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff}
-.route-wave-value.coast-wave-value::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#0b8fa8;margin-right:3px;vertical-align:middle;box-shadow:0 0 0 1.5px #fff}
+.route-wave-value{font-size:13px;font-weight:700;letter-spacing:-.2px;text-shadow:0 0 2px #fff,0 0 4px #fff,0 0 7px rgba(255,255,255,.9),0 1px 1px #fff}
 @media(max-width:760px){.table-corner{gap:3px;padding-left:5px}.table-corner .play{width:28px;height:28px}.now-btn{font-size:8px;padding:2px 4px}}

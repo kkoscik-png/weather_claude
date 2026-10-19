@@ -71,3 +71,7 @@ Weryfikacja: `npm test` (dotychczasowe kontrole i nowe testy adapterów, wyboru 
 Mapa pokazuje wysokość fali Hs w 20 stałych punktach: 10 wzdłuż wybrzeża Ventspils (reda, podejścia, odcinek od Užavy do Ovīši) i 10 na podejściu do Nynäshamn / Norvik od strony Landsort. Lista jest w `worker/forecast-points.mjs` (`COAST_POINTS`) i w `dist/app.js`; obie muszą być takie same. Punkty pobiera każdy model fal oprócz Stormglass (limit zapytań). DMI WAM używa najbliższej komórki morskiej tego samego modelu. Przycisk „Fale na trasie” włącza i wyłącza zarówno trasę, jak i punkty przy wybrzeżu.
 
 Odtwarzanie prognozy (▶) i przycisk „Teraz” są w lewym górnym rogu tabeli godzinowej; osobny pasek nad tabelą został usunięty.
+
+## Mapa fal: równe rozmieszczenie (19.10.2026)
+
+Liczby Hs na mapie są przerzedzane do jednego, równego odstępu na ekranie (58–84 px, dopasowanego do rozstawu punktów trasy przy danym przybliżeniu), więc punkty przy brzegu nie tworzą skupisk, a trasa nie wygląda na pustą. Kolor liczby odpowiada wysokości fali (przyciemniona skala legendy). Kolorowe pole fali korzysta ze wszystkich bezpośrednich punktów wybranego modelu: siatki regionalnej, trasy i wybrzeża.
