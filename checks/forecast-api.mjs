@@ -79,7 +79,7 @@ test('selected wave models isolate ports, route, map, and Swedish update clocks'
  }
  assert.equal(t.selectWaveSource('smhi_swan'),false);assert.equal(t.MODELS.dmi_harmonie.api,true);
  t.state.waveSource='ecmwf_wam';assert.equal(t.waveAt(0,'wave_height'),9);assert.equal(t.currentGrid()[0].series.hourly.wave_height[0],9);
- const html=fs.readFileSync('dist/index.html','utf8');for(const model of ['fmi_wam','dwd_ewam','copernicus_baltic','dmi_harmonie'])assert(html.includes('value="'+model+'"'));for(const model of ['dmi_wam','stormglass','smhi_swan'])assert(!html.includes('value="'+model+'"'));assert(html.includes('id="windSource"'));assert(html.includes('id="mapUpdated"'));assert(!html.includes('class="sidebar"'));
+ const html=fs.readFileSync('dist/index.html','utf8');for(const model of ['fmi_wam','dwd_ewam','copernicus_baltic','fcoo_ww3','dmi_harmonie'])assert(html.includes('value="'+model+'"'));for(const model of ['dmi_wam','stormglass','smhi_swan'])assert(!html.includes('value="'+model+'"'));assert(html.includes('id="windSource"'));assert(html.includes('id="mapUpdated"'));assert(!html.includes('class="sidebar"'));
 });
 
 

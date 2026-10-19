@@ -1,6 +1,5 @@
 import { handleStormglass } from './stormglass.mjs';
 import { handleForecast } from './forecast.mjs';
-import { handleFcooProbe } from './fcoo-probe.mjs';
 
 const deny = (message, status) => new Response(message, {
   status,
@@ -44,8 +43,6 @@ export function createHandler() {
     const url = new URL(request.url);
     if (!ALLOWED_HOSTS.has(url.hostname)) return deny('This address is not allowed.', 403);
     if (!env.ASSETS?.fetch) return deny('The app is waiting for the deployment to finish.', 503);
-    const probe = await handleFcooProbe(request);
-    if (probe) return probe;
     const api = await handleStormglass(request, env, ctx);
     if (api) return api;
     const forecast = await handleForecast(request, env, ctx);

@@ -3,8 +3,9 @@ import { createLastGoodCache, normalizeDMIOpenMeteo } from './dmi-resilience.mjs
 import { STORMGLASS_POINTS } from './stormglass-points.mjs';
 import { FORECAST_GRIDS, COAST_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
+import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
 const HOUR=3600000, BATCH=6;
-const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR}};
+const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
 const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
@@ -111,6 +112,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   async function response(url) {if(url.startsWith('https://opendataapi.dmi.dk/'))return dmiResponse(url);const r=await fetcher(url,{signal:AbortSignal.timeout(35000),headers:{Accept:'application/json, application/xml, */*'}});if(!r.ok){const e=Error('Source temporarily unavailable ('+r.status+')');e.status=r.status;throw e;}return r;}
   const getJSON=(url,ttl=300)=>cached(url,ttl,async()=>await(await response(url)).json());
   const getBuffer=async url=>await(await response(url)).arrayBuffer();
+  const getText=(url,ttl=300)=>cached('text/'+url,ttl,async()=>await(await response(url)).text());
   async function getSchedule(model,delivery='auto'){
     return schedules(model+'/'+delivery,async()=>{
       let timing;
@@ -118,6 +120,8 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
         const root='https://opendataapi.dmi.dk/v1/forecastedr/collections/'+SOURCES[model].collection,runs=await getJSON(root+'/instances',0);
         const ids=runs.instances.map(r=>r.id).sort().reverse(),id=ids.find(id=>Date.parse(id.replace(/T(\d{2})(\d{2})(\d{2})Z$/,'T$1:$2:$3Z'))+165*60000<=now())||ids[0];
         timing=dmiTiming(id.replace(/T(\d{2})(\d{2})(\d{2})Z$/,'T$1:$2:$3Z'),model);
+      }else if(model==='fcoo_ww3'){
+        timing=fcooTiming(await fcooMeta({getText,cached}));
       }else if(model==='copernicus_baltic'){
         const d=await copernicusDataset(url=>getJSON(url,0),now());timing=modelTiming(d.properties.admp_updated_data||d.properties.admp_updated,12*HOUR);
       }else{
@@ -144,6 +148,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     // Match the shared UI axis: previous full hour through 71 hours ahead.
     const start=iso(Math.floor(now()/HOUR)*HOUR-(model==='dmi_harmonie'?2:1)*HOUR),end=iso(Math.floor(now()/HOUR)*HOUR+71*HOUR);
     if(model==='copernicus_baltic')return loadCopernicus(points,{getJSON,getBuffer,now:now()});
+    if(model==='fcoo_ww3')return loadFcoo(points,group,{getText,cached,now:now()});
     if(model==='fmi_wam'){
       // The documented stored query accepts one location. Repeated latlon
       // parameters are not reliably honoured, so fetch every point explicitly.

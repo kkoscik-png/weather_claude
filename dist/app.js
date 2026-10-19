@@ -9,7 +9,7 @@ const PORTS=[
 MODELS.dmi_harmonie={label:'DMI HARMONIE DINI',short:'DMI',desc:'DMI · HARMONIE DINI · 2 km · cycle every 3 h',color:'#d38c4f',api:true};
 const WAVE_MODEL='ecmwf_wam';
 const WAVE_SOURCES={ecmwf_wam:{label:'ECMWF WAM',available:true},smhi_swan:{label:'SMHI SWAN',available:false},stormglass:{label:'Stormglass AI',available:false}};
-Object.assign(WAVE_SOURCES,{fmi_wam:{label:'FMI WAM',available:true,api:true,desc:'FMI · Baltic · 1.85 km · peak period Tp'},dmi_wam:{label:'DMI WAM',available:false,api:true,desc:'DMI · North Sea and Baltic · 5 km · mean period'},dwd_ewam:{label:'DWD EWAM',available:true,desc:'DWD · Europa · 5 km · Open-Meteo'},copernicus_baltic:{label:'Copernicus Baltic WAM',available:true,api:true,desc:'Copernicus Marine / FMI · 1.85 km · peak period Tp'}});
+Object.assign(WAVE_SOURCES,{fmi_wam:{label:'FMI WAM',available:true,api:true,desc:'FMI · Baltic · 1.85 km · peak period Tp'},dmi_wam:{label:'DMI WAM',available:false,api:true,desc:'DMI · North Sea and Baltic · 5 km · mean period'},dwd_ewam:{label:'DWD EWAM',available:true,desc:'DWD · Europa · 5 km · Open-Meteo'},fcoo_ww3:{label:'FCOO WW3',available:true,api:true,desc:'FCOO · North Sea and Baltic · 3 NM · mean period · ~2.3 days'},copernicus_baltic:{label:'Copernicus Baltic WAM',available:true,api:true,desc:'Copernicus Marine / FMI · 1.85 km · peak period Tp'}});
 const WAVE_LABEL='ECMWF WAM';
 Object.values(MODELS).forEach(model=>model.api=true);WAVE_SOURCES.ecmwf_wam.api=true;WAVE_SOURCES.dwd_ewam.api=true;
 function waveSourceLabel(){return WAVE_SOURCES[state.waveSource].label;}
