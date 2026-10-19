@@ -12,17 +12,22 @@ jobs:
         run: |
           {
           B=https://data.fcoo.dk/webmap/v2/data/NETCDF/FCOO/WW3/
-          RUN=$(curl -gs $B | grep -o 'ww3c_NSBALT3NM_[0-9]\{10\}\.nc' | sort -u | tail -1)
-          echo "RUN=$RUN"
-          curl -gs $B | grep -o '<tr>.*ww3c_NSBALT3NM.*</tr>' | tail -2
-          curl -gs $B | grep -A2 "$RUN" | head -8
-          F=$B$RUN
-          echo ==== NORVIK; curl -gs "$F.ascii?u_v[0:1:0][205:1:210][262:1:267],u[0:1:0][205:1:210][262:1:267],v[0:1:0][205:1:210][262:1:267]" | sed -n '/^u_v.u_v/,/^u_v.time/p;/^u.u/,/^u.time/p;/^v.v/,/^v.time/p;/latc$/,/^$/p;/lonc$/,/^$/p'
-          echo ==== GOTLAND; curl -gs "$F.ascii?u[0:6:12][170:1:170][250:1:250],v[0:6:12][170:1:170][250:1:250],u_v[0:6:12][170:1:170][250:1:250]" | grep -E '^\[|\.(u|v|u_v)$|latc|lonc'
-          echo ==== FULLPOINT; curl -gs -o fp.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v[0:1:55][175:1:179][305:1:309],u[0:1:55][175:1:179][305:1:309],v[0:1:55][175:1:179][305:1:309],TMN[0:1:55][175:1:179][305:1:309]"
-          curl -gs -o fp2.txt -w "%{http_code} %{size_download} %{time_total}\n" "$F.ascii?u_v[0:1:55][170:1:170][250:1:250],u[0:1:55][170:1:170][250:1:250],v[0:1:55][170:1:170][250:1:250],TMN[0:1:55][170:1:170][250:1:250]"
-          echo ==== OM; curl -gs "https://marine-api.open-meteo.com/v1/marine?latitude=56.04167,57.39,58.94&longitude=16.7639,21.53,17.98&hourly=wave_height,wave_direction&models=ecmwf_wam&start_hour=2026-10-19T05:00&end_hour=2026-10-19T17:00&cell_selection=sea" | grep -o '"hourly":{[^}]*}'
-          echo ==== FILES; curl -gs $B | grep -o 'ww3c_NSBALT3NM_[0-9]*\.nc</a>' | sort -u; curl -gs $B | grep -A12 'ww3c_NSBALT3NM_2026101906.nc.html' | grep -i 'td' | head
+          sleep 150
+          for g in ports route wave-grid coast; do echo "==== $g"; curl -gs -w "\nHTTP %{http_code} %{time_total}s\n" "https://weather.seasync.co/api/forecast?model=fcoo_ww3&group=$g" | head -c 2500; echo; done
+          echo ==== updates; curl -gs "https://weather.seasync.co/api/model-updates?model=fcoo_ww3"
+          echo; echo ==== ecmwf; curl -gs "https://weather.seasync.co/api/forecast?model=fcoo_ww3&group=ports" | python3 -c "
+          import json,sys,time
+          d=json.load(sys.stdin)
+          for r in d['records']:
+              h=r['hourly'];print(r['id'],r['latitude'],r['longitude'],'n=',sum(v is not None for v in h['wave_height']))
+              for k in range(0,60,6): print('  ',time.strftime('%d %H:%M',time.gmtime(h['time'][k])),h['wave_height'][k],h['wave_direction'][k],h['wave_period'][k])
+          "
+          curl -gs "https://marine-api.open-meteo.com/v1/marine?latitude=57.407578,57.398842,58.939033&longitude=21.525557,21.576607,17.979752&hourly=wave_height,wave_direction,wave_period&models=ecmwf_wam&forecast_hours=60&cell_selection=sea" | python3 -c "
+          import json,sys
+          for r in json.load(sys.stdin):
+              h=r['hourly'];print(r['latitude'],r['longitude'])
+              for k in range(0,60,6): print('  ',h['time'][k],h['wave_height'][k],h['wave_direction'][k],h['wave_period'][k])
+          "
           } > probe-out.txt 2>&1
           git config user.name probe; git config user.email probe@example.com
           git add probe-out.txt; git commit -m 'probe output'; git push
