@@ -142,7 +142,7 @@ function renderTimeline(){renderMapTimeline();
 
 }
 
-const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie'];
+const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'});
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
 // Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
@@ -178,8 +178,9 @@ function windFlagsOverlap(a,b){
  return true;
 }
 function windFlagLayout(point){
- const sources=[state.model,...TABLE_MODELS.filter(model=>model!==state.model)];
- const flags=sources.map(model=>{const v=windAt(point,'wind_speed_10m',selectedEpoch(),model),gust=windAt(point,'wind_gusts_10m',selectedEpoch(),model),d=windAt(point,'wind_direction_10m',selectedEpoch(),model);return valid(v)&&valid(d)?{model,v,gust,d,calm:v<.2,rotation:v<.2?0:((d%360)+360)%360}:null;}).filter(Boolean).slice(0,3);
+ // Map flags: ICON-EU, ECMWF, SMHI and DMI only (ICON Global stays in the table).
+ const sources=[...FLAG_MODELS.filter(model=>model===state.model),...FLAG_MODELS.filter(model=>model!==state.model)];
+ const flags=sources.map(model=>{const v=windAt(point,'wind_speed_10m',selectedEpoch(),model),gust=windAt(point,'wind_gusts_10m',selectedEpoch(),model),d=windAt(point,'wind_direction_10m',selectedEpoch(),model);return valid(v)&&valid(d)?{model,v,gust,d,calm:v<.2,rotation:v<.2?0:((d%360)+360)%360}:null;}).filter(Boolean);
  const parents=flags.map((_,i)=>i),root=i=>parents[i]===i?i:(parents[i]=root(parents[i]));
  for(let i=0;i<flags.length;i++)for(let j=0;j<i;j++)if(windFlagsOverlap(flags[i].rotation,flags[j].rotation))parents[root(i)]=root(j);
  const groups=new Map();flags.forEach((flag,i)=>{const key=root(i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(flag);});
@@ -217,7 +218,7 @@ function advanceFlagCycle(){
  state.flagCycle=(state.flagCycle||0)+1;
  for(const node of flags){const front=state.flagCycle%Number(node.dataset.cycleSize)===Number(node.dataset.cycleIndex);node.classList.toggle('flag-front',front);if(front&&Number(node.dataset.cycleSize)>1)node.parentNode.append(node);}
 }
-function renderFlagCycleStatus(){const node=$('flagCycleStatus');if(!node)return;const overlaps=state.flags&&windFlagLayout(state.port).some(flag=>flag.cycleSize>1);node.hidden=!overlaps;node.textContent=overlaps?'3 flags · order changes every 3 s':'';}
+function renderFlagCycleStatus(){const node=$('flagCycleStatus');if(!node)return;const overlaps=state.flags&&windFlagLayout(state.port).some(flag=>flag.cycleSize>1);node.hidden=!overlaps;node.textContent=overlaps?Math.max(...windFlagLayout(state.port).map(flag=>flag.cycleSize))+' flags · order changes every 3 s':'';}
 
 function linePath(values,yFn){let path='',open=false;values.forEach((v,i)=>{if(!valid(v)){open=false;return;}path+=(open?'L':'M')+(i*48+24)+','+yFn(v).toFixed(2)+' ';open=true;});return path;}
 function windChartScale(values){
