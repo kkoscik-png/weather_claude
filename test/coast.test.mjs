@@ -93,3 +93,27 @@ test('the route-gk group is served in batches of six for marine models', async (
   } while (offset !== null);
   assert.deepEqual(records.map(r => r.id), GK_ROUTE_POINTS.map(p => p.id));
 });
+
+test('wide zoomed-out wind grid: one Open-Meteo request for all points, wind models only', async () => {
+  const { FORECAST_GRIDS } = await import('../worker/forecast-points.mjs');
+  let requests = 0;
+  const api = createForecastAPI({
+    now: () => Date.parse('2026-10-19T08:00:00Z'),
+    fetcher: async url => {
+      const u = new URL(url);
+      if (u.pathname.includes('/static/meta.json')) return Response.json({ last_run_availability_time: 1760853600, last_run_initialisation_time: 1760853600, update_interval_seconds: 10800 });
+      requests++;
+      const lats = u.searchParams.get('latitude').split(','), lons = u.searchParams.get('longitude').split(',');
+      return Response.json(lats.map((lat, i) => ({ latitude: Number(lat), longitude: Number(lons[i]), hourly: { time: [1760860800], wind_speed_10m: [7], wind_gusts_10m: [11], wind_direction_10m: [250] } })));
+    },
+  });
+  const response = await api(new Request('https://weather.seasync.co/api/forecast?model=icon_eu&group=wide-grid'), {});
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.equal(data.records.length, FORECAST_GRIDS.wideGrid.length);
+  assert.equal(data.nextOffset, null);
+  assert.equal(requests, 1);
+  assert.equal((await api(new Request('https://weather.seasync.co/api/forecast?model=dmi_harmonie&group=wide-grid'), {})).status, 400);
+  const fs = await import('node:fs');
+  assert.deepEqual(JSON.parse(fs.readFileSync('dist/app.js', 'utf8').match(/const WIDE_GRID=(\[.*?\]);/)[1]), FORECAST_GRIDS.wideGrid);
+});

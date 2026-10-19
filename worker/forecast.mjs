@@ -4,10 +4,10 @@ import { STORMGLASS_POINTS } from './stormglass-points.mjs';
 import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
-const HOUR=3600000, BATCH=6;
+const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs'];
 const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
-const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon})),'route-gk':GK_ROUTE_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
+const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),'wide-grid':FORECAST_GRIDS.wideGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon})),'route-gk':GK_ROUTE_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 // Bump a model's revision when its sampling changes, so stored cycles are not reused.
@@ -211,9 +211,10 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       catch(e){return json({error:'Update time temporarily unavailable.',...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
     }
     const group=u.searchParams.get('group')||'ports',text=u.searchParams.get('offset')||'0',points=GROUPS[group];
-    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&group!=='ports'))return json({error:'Invalid model or group.'},400);
-    const offset=Number(text);if(offset%BATCH||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
-    const selected=points.slice(offset,offset+BATCH);
+    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&group!=='ports')||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
+    // The wide zoomed-out wind grid is one Open-Meteo multi-point request, cached per model cycle.
+    const batch=group==='wide-grid'?points.length:BATCH,offset=Number(text);if(offset%batch||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
+    const selected=points.slice(offset,offset+batch);
     try {
       const payload=await lastGood(cycleKey(model,group,offset),()=>fetchModel(model,selected,group),model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
       return json({...payload,model,group,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
