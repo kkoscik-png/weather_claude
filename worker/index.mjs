@@ -23,6 +23,8 @@ export const CONTENT_SECURITY_POLICY = [
 
 // Public addresses of this app. Everything else (workers.dev, previews) is refused.
 export const ALLOWED_HOSTS = new Set(['pogoda.seasync.co', 'weather.seasync.co']);
+// "www." variants are only redirects to the canonical address.
+export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'pogoda.seasync.co']]);
 
 const YEAR = 31536000, DAY = 86400;
 
@@ -41,7 +43,13 @@ export function createHandler() {
   return async function fetch(request, env, ctx) {
     // The owner selected public access without a PIN or login.
     const url = new URL(request.url);
-    if (!ALLOWED_HOSTS.has(url.hostname)) return deny('This address is not allowed.', 403);
+    const canonical = REDIRECT_HOSTS.get(url.hostname) || (ALLOWED_HOSTS.has(url.hostname) ? url.hostname : null);
+    if (!canonical) return deny('This address is not allowed.', 403);
+    // Always serve the canonical host over HTTPS (typed "www." or "http://" addresses land here).
+    if (canonical !== url.hostname || url.protocol === 'http:') {
+      const target = new URL(url); target.protocol = 'https:'; target.hostname = canonical; target.port = '';
+      return new Response(null, { status: 301, headers: { Location: target.href, 'Cache-Control': 'public, max-age=3600' } });
+    }
     if (!env.ASSETS?.fetch) return deny('The app is waiting for the deployment to finish.', 503);
     const api = await handleStormglass(request, env, ctx);
     if (api) return api;

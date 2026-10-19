@@ -68,3 +68,18 @@ test('Stormglass without a runtime secret reports 503 without serving assets', a
   assert.equal(response.status, 503);
   assert.equal(calls(), 0);
 });
+test('www. and http:// addresses redirect to the canonical HTTPS address', async () => {
+  const { env, calls } = assetsEnv();
+  const cases = [
+    ['https://www.weather.seasync.co/?x=1', 'https://weather.seasync.co/?x=1'],
+    ['http://www.pogoda.seasync.co/app.js', 'https://pogoda.seasync.co/app.js'],
+    ['http://weather.seasync.co/', 'https://weather.seasync.co/'],
+  ];
+  for (const [from, to] of cases) {
+    const response = await handler(new Request(from), env);
+    assert.equal(response.status, 301);
+    assert.equal(response.headers.get('Location'), to);
+  }
+  assert.equal(calls(), 0);
+  assert.equal((await handler(new Request('https://www.other.seasync.co/'), env)).status, 403);
+});
