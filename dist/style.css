@@ -347,3 +347,13 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .axis-unit>span{display:block;font-size:8.5px;line-height:12px;color:#5f796e}
 .axis-unit>small{top:32px;line-height:1.45}
 @media(max-width:760px){.chart-place{font-size:9.5px}}
+/* Niższe wiersze modeli (38 px zamiast 48 px, te same rozmiary liczb i strzałek); wykres dostaje odzyskane miejsce */
+.model-row{height:38px}
+.meteo-cell{height:38px}
+.model-row:not(.wave-model-row) .meteo-cell .meteo-wind{height:21px;min-height:21px;line-height:18px}
+.model-row:not(.wave-model-row) .meteo-cell .meteo-gust{height:17px;min-height:17px;line-height:17px}
+.model-label{height:38px;padding-top:2px;padding-bottom:2px}
+.model-label em{margin-top:1px}
+.meteogram-plot,.meteogram-svg{height:100px}
+.chart-labels .axis-unit{height:100px}
+.axis-unit>small{top:36px}

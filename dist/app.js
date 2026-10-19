@@ -231,14 +231,14 @@ function cloudRibbon(values,center,halfHeight){
 }
 function formatRain(v){return format(v,valid(v)&&v>0&&v<.1?2:1);}
 // Compact meteogram (wind, gusts, cloud layers, precipitation). Height MG_H; no wave row.
-const MG_H=84;
+const MG_H=100;
 function meteogramSVG(ts){
  const width=ts.length*48,scroller=$('chartScroll'),left=scroller.scrollLeft||0,viewport=scroller.clientWidth||width,from=Math.max(0,Math.floor(left/48)-1),to=Math.min(ts.length,Math.ceil((left+viewport)/48)+1);
  const series=key=>ts.map(t=>windAt(state.port,key,t)),wind=series('wind_speed_10m'),gust=series('wind_gusts_10m'),cloud=series('cloud_cover'),rain=series('precipitation');
  const comps=state.compare?Object.keys(MODELS).filter(m=>m!==state.model).map(m=>({model:m,values:ts.map(t=>windAt(state.port,'wind_speed_10m',t,m))})):[];
  const scale=windChartScale([...wind.slice(from,to),...gust.slice(from,to),...comps.flatMap(c=>c.values.slice(from,to))]),yb=MG_H*.86,yt=MG_H*.16,y=v=>yb-(v-scale.min)/(scale.max-scale.min)*(yb-yt);
  const rainMax=Math.max(1,...rain.slice(from,to).filter(valid)),rainH=MG_H*.26;
- const placeEl=$('chartPlace');if(placeEl){placeEl.textContent=PORTS[state.port].name;placeEl.title='Chart and table for '+PORTS[state.port].name+' · '+windModelInfo(state.model).label;}const every=Math.ceil(scale.ticks.length/3);$('chartWindScale').innerHTML=scale.ticks.filter((_,i)=>i%every===0).map(v=>`<span style="top:${y(v)-5}px">${format(v,v%1?1:0)}</span>`).join('');
+ const placeEl=$('chartPlace');if(placeEl){placeEl.textContent=PORTS[state.port].name;placeEl.title='Chart and table for '+PORTS[state.port].name+' · '+windModelInfo(state.model).label;}const every=Math.ceil(scale.ticks.length/4);$('chartWindScale').innerHTML=scale.ticks.filter((_,i)=>i%every===0).map(v=>`<span style="top:${y(v)-5}px">${format(v,v%1?1:0)}</span>`).join('');
  const active=state.times[state.hour]??ts[0],cloudNow=windAt(state.port,'cloud_cover',active),rainNow=windAt(state.port,'precipitation',active);
  $('meteogramContext').textContent=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+shortFmt.format(new Date(active*1000))+' · clouds '+format(cloudNow,0)+'% · precipitation '+formatRain(rainNow)+' mm / 1 h';
  let svg=`<svg class="chart-svg meteogram-svg" width="${width}" height="${MG_H}" role="img" aria-label="${PORTS[state.port].name}: hourly meteogram of wind, gusts, cloud and precipitation; ${windModelInfo(state.model).label}" data-scale-min="${scale.min}" data-scale-max="${scale.max}"><defs><linearGradient id="skyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe49b"/><stop offset="1" stop-color="#fff3c7"/></linearGradient><clipPath id="windPlotClip"><rect width="${width}" y="${MG_H*.1}" height="${MG_H*.82}"/></clipPath></defs><rect width="${width}" height="${MG_H}" fill="url(#skyFill)"/>`;
