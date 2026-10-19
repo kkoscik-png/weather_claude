@@ -467,3 +467,5 @@ main{row-gap:14px}
 }
 :root[data-theme="dark"] .brand-column{background:#11232c;border-color:#22404b;box-shadow:none}
 @media(min-width:761px){main>.forecast{margin-top:0}}
+/* Ciemny motyw: nagłówki tabeli (dzień, godzina) w tym samym kolorze co kolumna nazw modeli */
+:root[data-theme="dark"] .model-label-day,:root[data-theme="dark"] .model-label-hour,:root[data-theme="dark"] .meteo-days,:root[data-theme="dark"] .meteo-day,:root[data-theme="dark"] .meteo-day:nth-child(even),:root[data-theme="dark"] .meteo-hours,:root[data-theme="dark"] .table-corner,:root[data-theme="dark"] .chart-labels{background:#0f2028}
