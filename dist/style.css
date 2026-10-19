@@ -135,3 +135,15 @@ main{order:2}
 .port-flag:hover{filter:none;border-color:#7cc3b6;color:var(--accent)}
 .port-flag.on:hover{color:#fff;background:#0b7a6a}
 @media(max-width:760px){.port-main{padding:9px 11px 10px}}
+/* Kafelki na szerokość trzech pól: wiatr, porywy, kierunek */
+.ports{display:grid;grid-template-columns:max-content;justify-content:start}
+.port{width:auto}
+.port-wind{gap:5px;margin-top:8px}
+.wind-chip{width:58px;min-width:0;height:40px;padding:4px 8px;box-sizing:border-box;position:relative;overflow:hidden}
+.dir-chip{padding:0;align-items:center}
+.dir-arrow{position:absolute;inset:0;width:100%;height:100%}
+.dir-arrow line{stroke:currentColor;stroke-width:2.6;stroke-linecap:round}
+.dir-arrow path{fill:currentColor}
+.dir-chip .dir-name{position:absolute;left:6px;top:3px;font-size:7.5px;font-weight:700;letter-spacing:.2px;opacity:.8;text-transform:none}
+.port-top h2{white-space:nowrap}
+@media(max-width:760px){.sidebar>.ports{display:flex}.port{flex:0 0 auto}.wind-chip{width:54px;height:38px}}
