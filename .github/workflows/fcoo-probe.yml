@@ -1,0 +1,33 @@
+name: fcoo-probe
+on: push
+permissions:
+  contents: write
+jobs:
+  probe:
+    if: "!contains(github.event.head_commit.message, 'probe output')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: bash {0}
+        run: |
+          {
+          F=https://data.fcoo.dk/webmap/v2/data/NETCDF/FCOO/WW3/ww3c_NSBALT3NM_2026101906.nc
+          for c in "[204:1:208][264:1:266]"; do curl -gs "$F.ascii?u_v[0:1:12]$c,u[0:1:12]$c,v[0:1:12]$c" | python3 -c "
+          import sys,re,collections
+          cur=None;d=collections.defaultdict(dict)
+          for l in sys.stdin:
+              m=re.match(r'^(\w+)\.(\w+)\s*$',l)
+              if m: cur=m.group(0).strip();continue
+              m=re.match(r'^\[(\d+)\]\[(\d+)\]\[(\d+)\] (\S+)',l)
+              if m and cur: d[cur][tuple(map(int,m.groups()[:3]))]=float(m.group(4))
+          for t in range(13):
+              print('t',t,' '.join('%d,%d:%.2f/%s'%(y,x,d['u_v.u_v'][(t,y,x)],'D' if d['u.u'][(t,y,x)]>-9000 else '-') for y in range(5) for x in range(3)))
+          "; done
+          echo === nested
+          N=https://data.fcoo.dk/webmap/v2/data/NETCDF/FCOO/WW3/
+          curl -gs $N | grep -o 'ww3_nsbalt_nested_[0-9]*\.nc' | sort -u | tail -1
+          curl -gs "${N}ww3_nsbalt_nested_2026101906.nc.dds"
+          curl -gs "${N}DKinner_2026101906.nc.dds" | head -20
+          } > probe-out.txt 2>&1
+          git config user.name probe; git config user.email probe@example.com
+          git add probe-out.txt; git commit -m 'probe output'; git push
