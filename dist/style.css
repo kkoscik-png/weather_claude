@@ -357,3 +357,303 @@ main>.page-footer{padding:8px 4px 10px;min-height:0}
 .meteogram-plot,.meteogram-svg{height:100px}
 .chart-labels .axis-unit{height:100px}
 .axis-unit>small{top:36px}
+/* Aktywny kafelek (dla niego jest tabela i wykres): to samo jasnozielone tło co aktywny model w tabeli */
+.port{transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+.ports-column .port.active{background:#edf6f4;border-color:#7cc3b6}
+.ports-column .port:not(.active){background:#fff}
+/* ---------- Przełącznik motywu pod zegarem ---------- */
+.theme-switch{display:inline-flex;gap:2px;margin-top:10px;padding:3px;border-radius:999px;background:#e6eef0;border:1px solid #d9e4e7;align-self:center}
+.theme-switch button{width:30px;height:24px;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;color:#7b8f97;padding:0;transition:background .2s,color .2s,box-shadow .2s}
+.theme-switch button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.theme-switch button[data-theme-set="dark"] svg{fill:currentColor;stroke:none}
+.theme-switch button[aria-pressed="true"]{background:#fff;color:#d99a1e;box-shadow:0 1px 4px rgba(16,44,57,.18)}
+.theme-switch button[data-theme-set="dark"][aria-pressed="true"]{color:#6f7fe0}
+.theme-switch button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media(max-width:760px){.theme-switch{margin-top:6px;align-self:flex-end}.theme-switch button{width:28px;height:22px}}
+
+/* ---------- Ciemny motyw ---------- */
+:root[data-theme="dark"]{--ink:#e3edf0;--muted:#8fa5ad;--border:#24404b;--navy:#0b1820;color-scheme:dark}
+:root[data-theme="dark"] body{background:#0b1820;color:var(--ink)}
+:root[data-theme="dark"] .app-layout,:root[data-theme="dark"] main{background:transparent}
+:root[data-theme="dark"] .brand,:root[data-theme="dark"] .brand-clock b{color:var(--ink)}
+:root[data-theme="dark"] .brand-sub,:root[data-theme="dark"] .brand-clock{color:var(--muted)}
+:root[data-theme="dark"] .theme-switch{background:#132a34;border-color:#24404b}
+:root[data-theme="dark"] .theme-switch button{color:#7f97a0}
+:root[data-theme="dark"] .theme-switch button[aria-pressed="true"]{background:#24404d;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+:root[data-theme="dark"] .theme-switch button[data-theme-set="dark"][aria-pressed="true"]{color:#b8c2ff}
+/* kafelki portów i wybór modeli */
+:root[data-theme="dark"] .port,:root[data-theme="dark"] .ports-column .port:not(.active){background:#11232c;border-color:#22404b;box-shadow:none}
+:root[data-theme="dark"] .ports-column .port.active{background:#16352f;border-color:#3f8f7f;box-shadow:0 0 0 3px #3f8f7f26}
+:root[data-theme="dark"] .port h2,:root[data-theme="dark"] .port-wx,:root[data-theme="dark"] .port-wx b{color:var(--ink)}
+:root[data-theme="dark"] .port-id small{color:var(--muted)}
+:root[data-theme="dark"] .port-range .t-min{color:#4cd187}
+:root[data-theme="dark"] .port-range .t-max{color:#ff7a70}
+:root[data-theme="dark"] .port-wx svg [fill="#fff"],:root[data-theme="dark"] .port-wx svg [fill="white"]{fill:#d5e1e6}
+:root[data-theme="dark"] .dir-chip{background:#173040;border-color:#2b4c5d;color:#9cc6dd}
+:root[data-theme="dark"] .picker-card{background:#11232c;border-color:#22404b}
+:root[data-theme="dark"] .picker-title{color:var(--muted)}
+:root[data-theme="dark"] .picker{background:#0d1d25;border-color:#2a4652;color:var(--ink)}
+:root[data-theme="dark"] .picker option{background:#0d1d25;color:var(--ink)}
+/* mapa: ciemne podkłady OSM */
+:root[data-theme="dark"] .map-section{background:#0e2029;border-color:#1d3742}
+:root[data-theme="dark"] .leaflet-container{background:#0e2029}
+:root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(185deg) brightness(.82) contrast(.92) saturate(.55)}
+:root[data-theme="dark"] .leaflet-control-attribution{background:#0b1820cc!important;color:#8fa5ad}
+:root[data-theme="dark"] .leaflet-control-attribution a{color:#9cc6dd}
+/* tabela i wykres */
+:root[data-theme="dark"] .forecast{background:#0f2028;border-color:#22404b}
+:root[data-theme="dark"] .chart-labels{background:#0f2028;border-right-color:#22404b;box-shadow:none}
+:root[data-theme="dark"] .table-corner{background:#0f2028}
+:root[data-theme="dark"] .model-label-day{background:#13262f;border-top-color:#22404b;color:#7f97a0}
+:root[data-theme="dark"] .model-label-hour{background:#112530;border-bottom-color:#22404b;color:#8fa5ad}
+:root[data-theme="dark"] .model-label{background:#0f2028;border-bottom-color:#1d3742}
+:root[data-theme="dark"] .model-label>span{color:#d5e3e8}
+:root[data-theme="dark"] .model-label small,:root[data-theme="dark"] .model-label em{color:#7f97a0}
+:root[data-theme="dark"] .model-label.primary-model{background:#16352f;box-shadow:inset 3px 0 #3fbf9f}
+:root[data-theme="dark"] .model-label.primary-model>span{color:#6fe0c2}
+:root[data-theme="dark"] .meteo-days{background:#13262f;color:#9fb3ba}
+:root[data-theme="dark"] .meteo-day{border-right-color:#2a4652}
+:root[data-theme="dark"] .meteo-day:nth-child(even){background:#162b35}
+:root[data-theme="dark"] .meteo-hours{background:#112530}
+:root[data-theme="dark"] .meteo-hours .hour-heading{color:#8fa5ad;border-right-color:#1d3742}
+:root[data-theme="dark"] .meteo-hours .hour-heading.selected{background:#c9a24a;color:#10232b}
+:root[data-theme="dark"] .model-meteogram{border-top-color:#22404b}
+:root[data-theme="dark"] .meteo-cell{border-right-color:#0b182040;border-bottom-color:#0b182066}
+:root[data-theme="dark"] .chart-labels .axis-unit{background:#1a2a26;color:#9fb3ba}
+:root[data-theme="dark"] .axis-unit>span,:root[data-theme="dark"] .chart-wind-scale span{color:#9fbfb0}
+:root[data-theme="dark"] .axis-unit>small{color:#7f97a0}
+:root[data-theme="dark"] .axis-unit>em{color:#5fb0d8}
+:root[data-theme="dark"] .chart-place{color:#6fe0c2}
+:root[data-theme="dark"] .chart-place::before{background:#3fbf9f;box-shadow:0 0 0 2px #3fbf9f40}
+:root[data-theme="dark"] #skyFill stop:first-child{stop-color:#2b2f22}
+:root[data-theme="dark"] #skyFill stop:last-child{stop-color:#1c2a24}
+:root[data-theme="dark"] .meteogram-svg text{fill:#c8d6da}
+:root[data-theme="dark"] .meteogram-svg text[stroke]{fill:#7ee0b8;stroke:#1f2b24}
+:root[data-theme="dark"] .meteogram-svg .precip-bar{fill:#2f9ed6}
+:root[data-theme="dark"] .meteogram-svg .cloud-band{fill:#9aa8ae}
+:root[data-theme="dark"] .table-corner .now-btn{background:#13262f;border-color:#7a3a36;color:#ff7a70;box-shadow:none}
+:root[data-theme="dark"] .page-footer{color:#6f8790}
+:root[data-theme="dark"] .page-footer a{color:#7fd0bd}
+:root[data-theme="dark"] .chart-scroll{scrollbar-color:#2a4652 #0f2028}
+:root[data-theme="dark"] .play,:root[data-theme="dark"] .table-corner .play{background:#1f4552;color:#d5f5ed;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+:root[data-theme="dark"] .table-corner .play[aria-pressed="true"]{background:var(--accent)}
+:root[data-theme="dark"] .port-flag{background:#0d1d25;border-color:#2a4652;color:#7f97a0}
+:root[data-theme="dark"] .port-flag.on{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .wind-chip.no-data{background:#16303a!important;color:#6f8790!important}
+:root[data-theme="dark"] .wind-chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+:root[data-theme="dark"] .brandmark{background:#15363b;color:#6fe0c2;box-shadow:0 0 0 1px #24505a}
+
+/* ---------- Pasek marki w poziomie: logo po lewej, motyw i godzina po prawej, jeden delikatny kafelek ---------- */
+.brand-column{flex-direction:row!important;align-items:center!important;justify-content:space-between;gap:14px;text-align:left;padding:8px 14px 8px 10px!important;background:rgba(255,255,255,.85);border:1px solid #e6edef;border-radius:14px;box-shadow:0 1px 2px rgba(16,44,57,.04)}
+.brand-column .brand{font-size:19px;gap:9px}
+.brand-column .brandmark{width:34px;height:34px;font-size:32px;border-radius:9px}
+.brand-tools{display:flex;align-items:center;gap:14px;margin-left:auto}
+.brand-tools .theme-switch{margin:0;align-self:center}
+.brand-tools .brand-clock{align-items:flex-end;margin:0;text-align:right}
+.brand-tools .brand-clock b{font-size:15px;line-height:1.15}
+@media(min-width:761px){
+main{grid-template-columns:max-content minmax(0,1fr)}
+.brand-column{grid-column:1 / -1;align-self:stretch}
+main>.forecast,main>.page-footer{grid-column:1 / -1}
+main{row-gap:14px}
+}
+@media(max-width:760px){
+.brand-column{padding:7px 10px 7px 8px!important;border-radius:12px}
+.brand-column .brand{font-size:16px}
+.brand-column .brandmark{width:30px;height:30px;font-size:28px}
+.brand-tools{gap:10px}
+.brand-tools .brand-clock b{font-size:13px}
+.brand-tools .theme-switch button{width:26px;height:22px}
+}
+:root[data-theme="dark"] .brand-column{background:#11232c;border-color:#22404b;box-shadow:none}
+@media(min-width:761px){main>.forecast{margin-top:0}}
+/* Ciemny motyw: nagłówki tabeli (dzień, godzina) w tym samym kolorze co kolumna nazw modeli */
+:root[data-theme="dark"] .model-label-day,:root[data-theme="dark"] .model-label-hour,:root[data-theme="dark"] .meteo-days,:root[data-theme="dark"] .meteo-day,:root[data-theme="dark"] .meteo-day:nth-child(even),:root[data-theme="dark"] .meteo-hours,:root[data-theme="dark"] .table-corner,:root[data-theme="dark"] .chart-labels{background:#0f2028}
+.meteo-days,.meteo-hours,.meteo-hours .hour-heading,.meteogram-plot{cursor:pointer}
+
+/* ---------- Wybór portu w kafelku ---------- */
+.port-id h2{display:flex;align-items:center;gap:4px;max-width:100%}
+.port-id h2>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.port-chev{flex:none;width:15px;height:15px;padding:1px;border-radius:5px;background:#e9f1f2;fill:none;stroke:#3f6a77;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:background .15s}
+.port:hover .port-chev{background:#d8e9ea}
+/* Przezroczysta lista nad nazwą portu: klik w nazwę otwiera wybór portu */
+.port-pick{position:absolute;left:8px;top:6px;width:calc(100% - 118px);height:26px;z-index:3;cursor:pointer}
+.port-pick select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;border:0}
+.port-pick:focus-within~.port-main .port-chev,.port-pick:focus-within{outline:none}
+.port:has(.port-pick select:focus-visible) .port-chev{box-shadow:0 0 0 2px var(--accent)}
+/* Pusty kafelek */
+.port-empty{display:flex;align-items:center;min-height:118px;border-style:dashed!important;border-color:#c9d8dc!important;background:rgba(255,255,255,.55)!important;box-shadow:none!important}
+.port-empty-body{padding:12px 14px}
+.port-empty h2{display:flex;align-items:center;gap:6px;color:#3f6a77;font-size:15px}
+.port-empty small{display:block;margin-top:5px;color:var(--muted);font-size:10px}
+.port-empty .port-pick{inset:0;width:auto;height:auto;left:0;top:0}
+.port-pin-hidden{display:none}
+:root[data-theme="dark"] .port-chev{background:#1b3640;stroke:#9cc6dd}
+:root[data-theme="dark"] .port:hover .port-chev{background:#24434f}
+:root[data-theme="dark"] .port-empty{background:#0f2028!important;border-color:#2c4a56!important}
+:root[data-theme="dark"] .port-empty h2{color:#9cc6dd}
+
+/* Przycisk instalacji aplikacji (PWA) w pasku marki */
+.install-app{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 10px;border-radius:999px;border:1px solid #bfe3da;background:#e9f7f3;color:#0a7a67;font:650 12px 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.install-app[hidden]{display:none}
+.install-app svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.install-app:hover{background:#dcf2ec}
+:root[data-theme="dark"] .install-app{background:#16352f;border-color:#2f6b5e;color:#7fe6cb}
+@media(max-width:760px){.install-app span{display:none}.install-app{width:30px;padding:0;justify-content:center}}
+/* W zainstalowanej aplikacji: miejsce na pasek stanu telefonu */
+.pwa-standalone body{padding-top:env(safe-area-inset-top)}
+
+/* Dwa kafelki portów: równo rozciągnięte na całą wysokość nad wyborem modeli */
+@media(min-width:761px){
+.ports-column>.ports{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+.ports-column>.ports .port{flex:1 1 0;display:flex;flex-direction:column;min-height:0}
+.ports-column>.ports .port-main{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:14px 14px 15px}
+.ports-column>.ports .port-id h2{font-size:17px}
+.ports-column>.ports .port-id small{font-size:10px}
+.ports-column>.ports .port-wx svg{width:26px;height:26px}
+.ports-column>.ports .port-wx-now b{font-size:16px}
+.ports-column>.ports .port-range{font-size:12px}
+.ports-column>.ports .port-wind{gap:7px;margin-top:12px}
+.ports-column>.ports .port-wind>.wind-chip{flex:1 1 0;width:auto;height:56px;border-radius:10px}
+.ports-column>.ports .wind-chip small{font-size:9px}
+.ports-column>.ports .wind-chip b{font-size:22px}
+.ports-column>.ports .dir-chip .dir-name{font-size:9px;top:5px}
+.ports-column>.ports .port-pick{top:10px;height:30px}
+.ports-column>.ports .port-flag{top:10px;right:10px;width:30px;height:30px}
+}
+@media(max-width:760px){.ports-column>.ports{overflow:visible}.ports-column>.ports .port{flex:1 1 0;min-width:0}}
+@media(max-width:760px){.ports-column>.ports .port-id h2>span{white-space:normal;line-height:1.12;overflow:visible}.ports-column>.ports .port-id h2{font-size:14px;align-items:flex-start}.ports-column>.ports .port-id small{display:none}.ports-column>.ports .port-pick{width:calc(100% - 96px)}}
+@media(max-width:760px){.ports-column>.ports .port-wind>.wind-chip{flex:1 1 0;width:auto;min-width:0}.ports-column>.ports .port-wind{gap:4px}}
+
+/* Nazwa portu + trójkącik = jedna lista wyboru (przezroczysty select nad oboma) */
+.port-name-pick{position:relative;display:inline-flex;align-items:center;gap:3px;max-width:100%;min-width:0;cursor:pointer}
+.port-name-pick>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.port-name-pick select{position:absolute;inset:-4px -6px -4px -4px;width:calc(100% + 10px);height:calc(100% + 8px);opacity:0;cursor:pointer;font-size:16px;border:0}
+.port-chev,.ports-column>.ports .port-chev{width:16px;height:16px;padding:0;background:none!important;border-radius:0;stroke:#7d969e;stroke-width:1.5;opacity:.85;transition:opacity .15s,stroke .15s,transform .15s}
+.port-name-pick:hover .port-chev{opacity:1;stroke:#14323c;transform:translateY(1px)}
+.port-name-pick:has(select:focus-visible) .port-chev{stroke:var(--accent);opacity:1}
+:root[data-theme="dark"] .port-chev{stroke:#8fa5ad}
+:root[data-theme="dark"] .port-name-pick:hover .port-chev{stroke:#e3edf0}
+.port-main{cursor:pointer}
+.port-main:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:inherit}
+@media(max-width:760px){.ports-column>.ports .port-name-pick>span{white-space:normal;line-height:1.12}}
+
+/* Strzałka kierunku: środek zawsze w środku pola, własny jasnoniebieski kolor; nazwa kierunku nad strzałką */
+.dir-chip{position:relative;overflow:hidden}
+.dir-chip .dir-arrow{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);color:#6aaed6;z-index:1}
+.dir-chip .dir-name{z-index:2;color:#17496a;opacity:1;font-weight:800;text-shadow:0 0 3px #e4f2fb,0 0 3px #e4f2fb,0 0 2px #e4f2fb}
+:root[data-theme="dark"] .dir-chip .dir-arrow{color:#4f95c0}
+:root[data-theme="dark"] .dir-chip .dir-name{color:#d6ecf8;text-shadow:0 0 3px #173040,0 0 3px #173040,0 0 2px #173040}
+
+/* Wybór modelu: oba pola listy tej samej szerokości i wysokości */
+#windSource,#waveSource{margin-top:0;width:100%}
+.model-pickers{align-items:stretch}
+.model-pickers>.picker-card{min-width:0;display:flex;flex-direction:column}
+.picker-card .picker-select{width:100%}
+@media(max-width:760px){.model-pickers{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+/* Podpowiedź przy próbie przesuwania mapy jednym palcem */
+.map-gesture-hint{position:absolute;inset:0;z-index:900;display:grid;place-items:center;pointer-events:none;background:rgba(11,24,32,.45);color:#fff;font:650 15px 'DM Sans',system-ui,sans-serif;opacity:0;transition:opacity .25s}
+.map-gesture-hint.show{opacity:1}
+@media(max-width:760px){.ports-column>.ports .port-id h2{font-size:13px;letter-spacing:-.2px}.ports-column>.ports .port-chev{width:14px;height:14px}}
+@media(max-width:380px){.ports-column>.ports .port-id h2{font-size:12px}}
+@media(max-width:760px){
+.ports-column>.ports .port-wx svg{width:20px;height:20px}
+.ports-column>.ports .port-wx-now b{font-size:13px}
+.ports-column>.ports .port-range{font-size:10px;gap:3px}
+.ports-column>.ports .port-top{gap:3px;padding-right:28px}
+.ports-column>.ports .port-name-pick{gap:1px}
+.ports-column>.ports .port-name-pick>span{text-overflow:clip;overflow:visible}
+}
+
+/* Dotyk: jeden palec przewija stronę (pan-x pan-y), szczypanie dwoma palcami obsługuje mapa */
+@media(pointer:coarse),(any-pointer:coarse){.map-section:not(.map-full) .leaflet-container{touch-action:pan-x pan-y!important}}
+
+/* Bez napisów DAY / Hour: węższa kolumna nazw modeli, tabela przesunięta w lewo */
+:root{--weather-label-width:112px}
+.chart-labels{flex:0 0 var(--weather-label-width)!important;width:var(--weather-label-width)}
+.model-label{padding-left:10px!important;padding-right:6px!important}
+.model-label>span{white-space:nowrap}
+.table-corner{padding-left:9px;gap:6px}
+@media(max-width:760px){:root{--weather-label-width:100px}.model-label{padding-left:8px!important;padding-right:4px!important}.table-corner{padding-left:6px;gap:4px}}
+:root{--weather-label-width:106px}
+@media(max-width:760px){:root{--weather-label-width:90px}}
+/* Nazwa miejsca nad wykresem: może przejść do drugiej linii zamiast się ucinać */
+.chart-place{white-space:normal;overflow:visible;text-overflow:clip;align-items:flex-start;line-height:12px;font-size:10px;max-width:calc(100% - 16px)}
+.chart-place::before{margin-top:3px}
+.axis-unit>small{top:44px}
+@media(max-width:760px){.chart-place{font-size:9px;line-height:11px}.axis-unit>small{top:42px}}
+.axis-unit>small{max-width:62px}
+@media(max-width:760px){.axis-unit>small{max-width:54px}}
+/* Play i Now równo rozłożone w rogu tabeli (cała szerokość kolumny nazw, środek wysokości dwóch wierszy nagłówka) */
+.table-corner{left:0;width:var(--weather-label-width);height:50px;padding:0!important;gap:0!important;justify-content:space-evenly;align-items:center}
+
+/* Róg tabeli: nazwa portu (dla którego jest tabela) nad przyciskami Play i Now */
+.table-corner{flex-direction:column;justify-content:center!important;align-items:stretch!important;gap:3px!important}
+.table-corner .chart-place{display:flex;align-items:center;justify-content:center;gap:4px;max-width:none;width:100%;padding:0 4px;box-sizing:border-box;font:700 10px 'Manrope',sans-serif;line-height:12px;color:#0a7a67;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.table-corner .chart-place::before{width:6px;height:6px;margin:0}
+.corner-buttons{display:flex;justify-content:space-evenly;align-items:center}
+.table-corner .play,.table-corner .now-btn{width:27px;height:27px;flex:0 0 27px}
+.table-corner .play svg{width:14px;height:14px}
+.table-corner .now-btn{font-size:8.5px}
+.chart-labels .axis-unit{padding-top:6px}
+.axis-unit>small{top:22px}
+@media(max-width:760px){.table-corner .chart-place{font-size:9px}.table-corner .play,.table-corner .now-btn{width:25px;height:25px;flex-basis:25px}.table-corner .now-btn{font-size:7.5px}.axis-unit>small{top:22px}}
+:root[data-theme="dark"] .table-corner .chart-place{color:#6fe0c2}
+/* ---------- Róg tabeli: zielony pas z nazwą portu (opcja 4) + tekstowe klawisze PLAY / NOW jeden pod drugim (opcja 10) ---------- */
+.table-corner{display:flex;flex-direction:column;justify-content:flex-start!important;align-items:stretch!important;gap:0!important;height:50px;padding:0!important}
+.table-corner .chart-place{flex:0 0 26px;height:26px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px;margin:0;width:100%;max-width:none;background:linear-gradient(90deg,#0a7a67,#14a58c);color:#fff;font:800 10px 'Manrope',system-ui,sans-serif;letter-spacing:.2px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:inset 0 -1px rgba(0,0,0,.08)}
+.table-corner .chart-place::before{content:'';flex:none;width:6px;height:6px;margin:0;border-radius:50%;background:#bfffee;box-shadow:0 0 0 0 rgba(191,255,238,.7);animation:place-pulse 2.4s ease-out infinite}
+@keyframes place-pulse{0%{box-shadow:0 0 0 0 rgba(191,255,238,.75)}70%{box-shadow:0 0 0 6px rgba(191,255,238,0)}100%{box-shadow:0 0 0 0 rgba(191,255,238,0)}}
+.table-corner .chart-place.changed{animation:place-in .45s ease-out}
+@keyframes place-in{from{filter:brightness(1.35)}to{filter:none}}
+.corner-buttons{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:1px 0;background:#f8f8fa}
+.table-corner .play,.table-corner .now-btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:11px;width:auto;flex:none;cursor:pointer;font:800 8px 'DM Sans',system-ui,sans-serif;letter-spacing:.6px;text-transform:uppercase;line-height:1;border-radius:3px;padding:0 3px}
+.table-corner .play{color:#14323c}
+.table-corner .play svg{width:8px;height:8px;margin:0;fill:currentColor}
+.table-corner .play::after{content:'Play'}
+.table-corner .play[aria-pressed="true"]{color:#0a7a67;background:none}
+.table-corner .play[aria-pressed="true"]::after{content:'Pause'}
+.table-corner .now-btn{color:#d63a32;font-size:0}
+.table-corner .now-btn::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.table-corner .now-btn::after{content:'Now';font-size:8px}
+.table-corner .play:hover,.table-corner .now-btn:hover{background:#e9eef0}
+.table-corner .play:focus-visible,.table-corner .now-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media(max-width:760px){.table-corner .chart-place{font-size:9px;padding:0 4px;gap:4px}.table-corner .play,.table-corner .now-btn{font-size:7.5px}.table-corner .now-btn{font-size:0}.table-corner .now-btn::after{font-size:7.5px}}
+:root[data-theme="dark"] .table-corner .chart-place{background:linear-gradient(90deg,#0d5f52,#127a68);color:#e8fff8}
+:root[data-theme="dark"] .corner-buttons{background:#0f2028}
+:root[data-theme="dark"] .table-corner .play{color:#d5e6ea;background:none;box-shadow:none}
+:root[data-theme="dark"] .table-corner .now-btn{color:#ff7a70;background:none;border:0;box-shadow:none}
+:root[data-theme="dark"] .table-corner .play:hover,:root[data-theme="dark"] .table-corner .now-btn:hover{background:#1b3640}
+/* PLAY i NOW w jednej kolumnie: ikony i napisy wyrównane do siebie, cała grupa na środku */
+.table-corner .play,.table-corner .now-btn{width:46px;justify-content:flex-start;gap:5px}
+.table-corner .play svg{flex:0 0 8px}
+.table-corner .now-btn::before{flex:none;margin:0 1px}
+@media(max-width:760px){.table-corner .play,.table-corner .now-btn{width:42px;gap:4px}}
+/* PLAY i NOW obok siebie pod pasem z nazwą portu: zaokrąglone prostokąty (styl jak na wzorze), dopasowane do wiersza 24 px */
+.corner-buttons{flex-direction:row!important;justify-content:center!important;align-items:center;gap:6px;padding:0 6px!important}
+.table-corner .play,.table-corner .now-btn{width:38px!important;height:18px!important;justify-content:center!important;gap:0!important;padding:0!important;border-radius:6px!important;font-size:0!important;letter-spacing:.3px}
+.table-corner .play{background:#14323c!important;color:#e6f6f2!important;box-shadow:0 1px 3px rgba(16,44,57,.25)}
+.table-corner .play::after{content:none!important}
+.table-corner .play svg{width:9px!important;height:9px!important;flex:none!important;margin-left:1px!important}
+.table-corner .play[aria-pressed="true"]{background:var(--accent)!important;color:#fff!important}
+.table-corner .play[aria-pressed="true"] svg{margin-left:0!important}
+.table-corner .now-btn{background:#fff!important;border:1.3px solid #f0b9b5!important;color:#d63a32!important}
+.table-corner .now-btn::before{content:none!important}
+.table-corner .now-btn::after{content:'NOW'!important;font:800 8px 'DM Sans',system-ui,sans-serif!important;letter-spacing:.4px}
+.table-corner .play:hover{filter:brightness(1.15);background:#14323c!important}
+.table-corner .now-btn:hover{background:#fdf0ef!important}
+@media(max-width:760px){.table-corner .play,.table-corner .now-btn{width:34px!important;height:17px!important}.corner-buttons{gap:5px;padding:0 4px!important}.table-corner .now-btn::after{font-size:7.5px!important}}
+:root[data-theme="dark"] .table-corner .play{background:#24505c!important;color:#e6f6f2!important}
+:root[data-theme="dark"] .table-corner .now-btn{background:#13262f!important;border-color:#7a3a36!important;color:#ff7a70!important}
+
+/* iPhone (aplikacja z ekranu początkowego): treść poza wycięciem, paskiem stanu i paskiem gestów */
+.pwa-standalone body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.map-section.map-full{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+
+/* Okienko punktu na mapie */
+.point-popup .leaflet-popup-content{margin:11px 13px}
+.point-pop{display:flex;flex-direction:column;gap:3px;font:500 12px 'DM Sans',system-ui,sans-serif}
+.point-pop b{font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.point-pop .pp-chip{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:6px;font:800 13px 'Manrope',system-ui,sans-serif}
+.point-pop small{opacity:.7;font-size:10.5px;margin-top:2px}
+.pp-loading{color:#7fd0bd}

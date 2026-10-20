@@ -18,8 +18,11 @@ export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=
    let value;
    try{value=await load();}
    catch(error){
-    if(old&&now()-old.saved<RETAIN&&usable(old))return save(key,{...old,stale:true,checkedAt:now(),refreshAfter:new Date(now()+Math.max(15*60000,(error.retryAfter||0)*1000)).toISOString(),notice:'Last good forecast — may be outdated.'});
-    if(!fallback)throw error;value=await fallback(error);
+    // A working fallback source (DMI via Open-Meteo) beats an old snapshot: otherwise a long DMI
+    // outage would keep serving yesterday's cycle. The old snapshot is the last resort.
+    const keepOld=e=>{if(old&&now()-old.saved<RETAIN&&usable(old))return save(key,{...old,stale:true,checkedAt:now(),refreshAfter:new Date(now()+Math.max(15*60000,(e.retryAfter||0)*1000)).toISOString(),notice:'Last good forecast — may be outdated.'});throw e;};
+    if(!fallback)return keepOld(error);
+    try{value=await fallback(error);}catch(fallbackError){return keepOld(fallbackError);}
    }
    if(!usable(value))throw Error('No usable forecast data.');
    value={...value,saved:value.saved??now(),checkedAt:now(),stale:false};value.refreshAfter=new Date(forecastRefreshAfter(value)).toISOString();

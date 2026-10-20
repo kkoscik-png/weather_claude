@@ -4,7 +4,9 @@ const MODELS={ecmwf_ifs:{label:'ECMWF',short:'ECMWF',desc:'IFS · global · grid
 const PORTS=[
 {id:'bw-ventspils',name:'Ventspils BW',portName:'Ventspils',country:'Latvia',code:'LV VNT · BW',lat:57.407578,lon:21.525557,mapUrl:'https://maps.app.goo.gl/8yP1vpuotDnaFp2M9'},
 {id:'ventspils-berth',name:'Ventspils Berth',portName:'Ventspils',country:'Latvia',code:'LV VNT · BERTH',lat:57.398842,lon:21.576607,mapUrl:'https://maps.app.goo.gl/Mr2t1ju1dLLCRthV7'},
-{id:'norvik-berth',name:'Norvik Berth',portName:'Nynäshamn / Norvik',country:'Sweden',code:'SE NYN · NORVIK',lat:58.939033,lon:17.979752,mapUrl:'https://maps.app.goo.gl/DCB23vAFyfPnwjSVA'}
+{id:'norvik-berth',name:'Norvik Berth',portName:'Nynäshamn / Norvik',country:'Sweden',code:'SE NYN · NORVIK',lat:58.939033,lon:17.979752,mapUrl:'https://maps.app.goo.gl/DCB23vAFyfPnwjSVA'},
+{id:'gdynia-berth',name:'Gdynia Berth',portName:'Gdynia',country:'Poland',code:'PL GDY · BERTH',lat:54.533221,lon:18.542647,mapUrl:'https://maps.app.goo.gl/R4fUJTLLw8qAxj599'},
+{id:'karlskrona-berth',name:'Karlskrona Berth',portName:'Karlskrona',country:'Sweden',code:'SE KAA · BERTH',lat:56.165452,lon:15.628852,mapUrl:'https://maps.app.goo.gl/xpqze9z8qMG8iAuC9'}
 ];
 MODELS.dmi_harmonie={label:'DMI HARMONIE DINI',short:'DMI',desc:'DMI · HARMONIE DINI · 2 km · cycle every 3 h',color:'#d38c4f',api:true};
 const WAVE_MODEL='ecmwf_wam';
@@ -16,14 +18,18 @@ function waveSourceLabel(){return WAVE_SOURCES[state.waveSource].label;}
 function selectWaveSource(source){
  if(!WAVE_SOURCES[source]?.available)return false;const changed=state.waveSource!==source;state.waveSource=source;if(changed)resetDMIRetryAttempts(source);renderAll();
  if(source==='stormglass')loadStormglassPorts();else if(source!=='ecmwf_wam')loadExtraWavePorts(source);
- loadModelTiming(source);loadRouteWaves();if(state.layer==='wave')loadField();return true;
+ loadModelTiming(source);loadRouteWaves();if(state.layer==='wave')loadField();loadWaveAnimField();return true;
 }
 function waveMeta(){return state.metas[state.waveSource==='stormglass'?'stormglass':state.waveSource==='ecmwf_wam'?'wave':'wave-'+state.waveSource];}
 function routeWaveMeta(){return state.metas[state.waveSource==='stormglass'?'route-wave-stormglass':state.waveSource==='ecmwf_wam'?'route-wave':'route-wave-'+state.waveSource];}
 const state={port:0,model:'ecmwf_ifs',layer:'wind',hour:0,range:72,compare:false,animate:!matchMedia('(prefers-reduced-motion: reduce)').matches,playing:false,wind:{},wave:null,windGrid:{},waveGrid:null,land:null,gridPoints:[],times:[],base:Math.floor(Date.now()/3600000)*3600,errors:{},metas:{},fieldLoading:0,flags:true,waveSource:'ecmwf_wam',stormglassStatus:{configured:false,routeEnabled:false},stormglassWave:null,stormglassLoading:false,stormglassRoute:null,routeWaves:true,routeWaveGrid:null,routeWaveLoading:false,routeWaveError:false};
-Object.assign(state,{waves:{},waveFields:{},waveRoutes:{},timings:{},providerLoading:{},coastWaves:{}});
+Object.assign(state,{waves:{},waveFields:{},waveRoutes:{},gkRoutes:{},wideGrid:{},timings:{},providerLoading:{},coastWaves:{}});
 // Sea-state points near the Ventspils coast and on the approach to Nynäshamn / Norvik (same list as the server).
-const COAST_POINTS=[{"id":"0","name":"Ventspils · roads W","lat":57.405,"lon":21.44,"area":"ventspils"},{"id":"1","name":"Ventspils · approach NW","lat":57.44,"lon":21.46,"area":"ventspils"},{"id":"2","name":"Ventspils · approach SW","lat":57.37,"lon":21.45,"area":"ventspils"},{"id":"3","name":"Ventspils · coast N","lat":57.47,"lon":21.52,"area":"ventspils"},{"id":"4","name":"Ventspils · coast NNE","lat":57.52,"lon":21.58,"area":"ventspils"},{"id":"5","name":"Ventspils · coast NE (Ovīši)","lat":57.57,"lon":21.66,"area":"ventspils"},{"id":"6","name":"Ventspils · coast SSW","lat":57.32,"lon":21.4,"area":"ventspils"},{"id":"7","name":"Ventspils · coast S (Užava)","lat":57.25,"lon":21.35,"area":"ventspils"},{"id":"8","name":"Ventspils · 12 km W","lat":57.4,"lon":21.33,"area":"ventspils"},{"id":"9","name":"Ventspils · 12 km NW","lat":57.48,"lon":21.38,"area":"ventspils"},{"id":"10","name":"Norvik · roads S","lat":58.905,"lon":17.975,"area":"nynashamn"},{"id":"11","name":"Nynäshamn · approach channel 1","lat":58.87,"lon":17.955,"area":"nynashamn"},{"id":"12","name":"Nynäshamn · approach channel 2","lat":58.835,"lon":17.945,"area":"nynashamn"},{"id":"13","name":"Nynäshamn · approach channel 3","lat":58.8,"lon":17.92,"area":"nynashamn"},{"id":"14","name":"Landsort · N","lat":58.77,"lon":17.9,"area":"nynashamn"},{"id":"15","name":"Landsort · S","lat":58.72,"lon":17.86,"area":"nynashamn"},{"id":"16","name":"Nynäshamn · E","lat":58.85,"lon":18.02,"area":"nynashamn"},{"id":"17","name":"Nynäshamn · SE","lat":58.8,"lon":18.0,"area":"nynashamn"},{"id":"18","name":"Landsort · open sea","lat":58.69,"lon":17.95,"area":"nynashamn"},{"id":"19","name":"Landsort · SW","lat":58.75,"lon":17.8,"area":"nynashamn"}];
+const COAST_POINTS=[{"id":"0","name":"Ventspils · roads W","lat":57.405,"lon":21.44,"area":"ventspils"},{"id":"1","name":"Ventspils · approach NW","lat":57.44,"lon":21.46,"area":"ventspils"},{"id":"2","name":"Ventspils · approach SW","lat":57.37,"lon":21.45,"area":"ventspils"},{"id":"3","name":"Ventspils · coast N","lat":57.47,"lon":21.52,"area":"ventspils"},{"id":"4","name":"Ventspils · coast NNE","lat":57.52,"lon":21.58,"area":"ventspils"},{"id":"5","name":"Ventspils · coast NE (Ovīši)","lat":57.57,"lon":21.66,"area":"ventspils"},{"id":"6","name":"Ventspils · coast SSW","lat":57.32,"lon":21.4,"area":"ventspils"},{"id":"7","name":"Ventspils · coast S (Užava)","lat":57.25,"lon":21.35,"area":"ventspils"},{"id":"8","name":"Ventspils · 12 km W","lat":57.4,"lon":21.33,"area":"ventspils"},{"id":"9","name":"Ventspils · 12 km NW","lat":57.48,"lon":21.38,"area":"ventspils"},{"id":"10","name":"Norvik · roads S","lat":58.905,"lon":17.975,"area":"nynashamn"},{"id":"11","name":"Nynäshamn · approach channel 1","lat":58.87,"lon":17.955,"area":"nynashamn"},{"id":"12","name":"Nynäshamn · approach channel 2","lat":58.835,"lon":17.945,"area":"nynashamn"},{"id":"13","name":"Nynäshamn · approach channel 3","lat":58.8,"lon":17.92,"area":"nynashamn"},{"id":"14","name":"Landsort · N","lat":58.77,"lon":17.9,"area":"nynashamn"},{"id":"15","name":"Landsort · S","lat":58.72,"lon":17.86,"area":"nynashamn"},{"id":"16","name":"Nynäshamn · E","lat":58.85,"lon":18.02,"area":"nynashamn"},{"id":"17","name":"Nynäshamn · SE","lat":58.8,"lon":18.0,"area":"nynashamn"},{"id":"18","name":"Landsort · open sea","lat":58.69,"lon":17.95,"area":"nynashamn"},{"id":"19","name":"Landsort · SW","lat":58.75,"lon":17.8,"area":"nynashamn"},{"id":"20","name":"Gdynia · harbour entrance","lat":54.535,"lon":18.6,"area":"gdynia"},{"id":"21","name":"Gdynia · roads S","lat":54.515,"lon":18.64,"area":"gdynia"},{"id":"22","name":"Gdynia · roads N","lat":54.56,"lon":18.625,"area":"gdynia"},{"id":"23","name":"Gdynia · roads E","lat":54.545,"lon":18.69,"area":"gdynia"},{"id":"24","name":"Gulf of Gdańsk · off Sopot","lat":54.495,"lon":18.69,"area":"gdynia"},{"id":"25","name":"Gulf of Gdańsk · mid","lat":54.59,"lon":18.71,"area":"gdynia"},{"id":"26","name":"Puck Bay · south","lat":54.6,"lon":18.62,"area":"gdynia"},{"id":"27","name":"Hel · point S","lat":54.605,"lon":18.8,"area":"gdynia"},{"id":"28","name":"Karlskrona · inner sound","lat":56.13,"lon":15.645,"area":"karlskrona"},{"id":"29","name":"Karlskrona · southern entrance","lat":56.075,"lon":15.645,"area":"karlskrona"},{"id":"30","name":"Karlskrona · approach SE","lat":56.05,"lon":15.72,"area":"karlskrona"},{"id":"31","name":"Karlskrona · approach S","lat":56.04,"lon":15.6,"area":"karlskrona"},{"id":"32","name":"Karlskrona · outer roads","lat":56.0,"lon":15.7,"area":"karlskrona"},{"id":"33","name":"Karlskrona · approach E","lat":56.06,"lon":15.8,"area":"karlskrona"},{"id":"34","name":"Karlskrona · Utklippan route","lat":55.99,"lon":15.84,"area":"karlskrona"},{"id":"35","name":"Karlskrona · approach SW","lat":56.02,"lon":15.52,"area":"karlskrona"}];
+// Coarse 4° × 2° wind samples around the Baltic (Iceland–Urals, 48–70°N), fetched only when the map is zoomed out.
+const WIDE_GRID=[{"lat":48,"lon":-24},{"lat":48,"lon":-20},{"lat":48,"lon":-16},{"lat":48,"lon":-12},{"lat":48,"lon":-8},{"lat":48,"lon":-4},{"lat":48,"lon":0},{"lat":48,"lon":4},{"lat":48,"lon":8},{"lat":48,"lon":12},{"lat":48,"lon":16},{"lat":48,"lon":20},{"lat":48,"lon":24},{"lat":48,"lon":28},{"lat":48,"lon":32},{"lat":48,"lon":36},{"lat":48,"lon":40},{"lat":48,"lon":44},{"lat":48,"lon":48},{"lat":48,"lon":52},{"lat":48,"lon":56},{"lat":48,"lon":60},{"lat":50,"lon":-24},{"lat":50,"lon":-20},{"lat":50,"lon":-16},{"lat":50,"lon":-12},{"lat":50,"lon":-8},{"lat":50,"lon":-4},{"lat":50,"lon":0},{"lat":50,"lon":4},{"lat":50,"lon":8},{"lat":50,"lon":12},{"lat":50,"lon":16},{"lat":50,"lon":20},{"lat":50,"lon":24},{"lat":50,"lon":28},{"lat":50,"lon":32},{"lat":50,"lon":36},{"lat":50,"lon":40},{"lat":50,"lon":44},{"lat":50,"lon":48},{"lat":50,"lon":52},{"lat":50,"lon":56},{"lat":50,"lon":60},{"lat":52,"lon":-24},{"lat":52,"lon":-20},{"lat":52,"lon":-16},{"lat":52,"lon":-12},{"lat":52,"lon":-8},{"lat":52,"lon":-4},{"lat":52,"lon":0},{"lat":52,"lon":4},{"lat":52,"lon":8},{"lat":52,"lon":12},{"lat":52,"lon":16},{"lat":52,"lon":20},{"lat":52,"lon":24},{"lat":52,"lon":28},{"lat":52,"lon":32},{"lat":52,"lon":36},{"lat":52,"lon":40},{"lat":52,"lon":44},{"lat":52,"lon":48},{"lat":52,"lon":52},{"lat":52,"lon":56},{"lat":52,"lon":60},{"lat":54,"lon":-24},{"lat":54,"lon":-20},{"lat":54,"lon":-16},{"lat":54,"lon":-12},{"lat":54,"lon":-8},{"lat":54,"lon":-4},{"lat":54,"lon":0},{"lat":54,"lon":4},{"lat":54,"lon":8},{"lat":54,"lon":24},{"lat":54,"lon":28},{"lat":54,"lon":32},{"lat":54,"lon":36},{"lat":54,"lon":40},{"lat":54,"lon":44},{"lat":54,"lon":48},{"lat":54,"lon":52},{"lat":54,"lon":56},{"lat":54,"lon":60},{"lat":56,"lon":-24},{"lat":56,"lon":-20},{"lat":56,"lon":-16},{"lat":56,"lon":-12},{"lat":56,"lon":-8},{"lat":56,"lon":-4},{"lat":56,"lon":0},{"lat":56,"lon":4},{"lat":56,"lon":8},{"lat":56,"lon":28},{"lat":56,"lon":32},{"lat":56,"lon":36},{"lat":56,"lon":40},{"lat":56,"lon":44},{"lat":56,"lon":48},{"lat":56,"lon":52},{"lat":56,"lon":56},{"lat":56,"lon":60},{"lat":58,"lon":-24},{"lat":58,"lon":-20},{"lat":58,"lon":-16},{"lat":58,"lon":-12},{"lat":58,"lon":-8},{"lat":58,"lon":-4},{"lat":58,"lon":0},{"lat":58,"lon":4},{"lat":58,"lon":8},{"lat":58,"lon":28},{"lat":58,"lon":32},{"lat":58,"lon":36},{"lat":58,"lon":40},{"lat":58,"lon":44},{"lat":58,"lon":48},{"lat":58,"lon":52},{"lat":58,"lon":56},{"lat":58,"lon":60},{"lat":60,"lon":-24},{"lat":60,"lon":-20},{"lat":60,"lon":-16},{"lat":60,"lon":-12},{"lat":60,"lon":-8},{"lat":60,"lon":-4},{"lat":60,"lon":0},{"lat":60,"lon":4},{"lat":60,"lon":8},{"lat":60,"lon":12},{"lat":60,"lon":32},{"lat":60,"lon":36},{"lat":60,"lon":40},{"lat":60,"lon":44},{"lat":60,"lon":48},{"lat":60,"lon":52},{"lat":60,"lon":56},{"lat":60,"lon":60},{"lat":62,"lon":-24},{"lat":62,"lon":-20},{"lat":62,"lon":-16},{"lat":62,"lon":-12},{"lat":62,"lon":-8},{"lat":62,"lon":-4},{"lat":62,"lon":0},{"lat":62,"lon":4},{"lat":62,"lon":8},{"lat":62,"lon":12},{"lat":62,"lon":16},{"lat":62,"lon":28},{"lat":62,"lon":32},{"lat":62,"lon":36},{"lat":62,"lon":40},{"lat":62,"lon":44},{"lat":62,"lon":48},{"lat":62,"lon":52},{"lat":62,"lon":56},{"lat":62,"lon":60},{"lat":64,"lon":-24},{"lat":64,"lon":-20},{"lat":64,"lon":-16},{"lat":64,"lon":-12},{"lat":64,"lon":-8},{"lat":64,"lon":-4},{"lat":64,"lon":0},{"lat":64,"lon":4},{"lat":64,"lon":8},{"lat":64,"lon":12},{"lat":64,"lon":16},{"lat":64,"lon":28},{"lat":64,"lon":32},{"lat":64,"lon":36},{"lat":64,"lon":40},{"lat":64,"lon":44},{"lat":64,"lon":48},{"lat":64,"lon":52},{"lat":64,"lon":56},{"lat":64,"lon":60},{"lat":66,"lon":-24},{"lat":66,"lon":-20},{"lat":66,"lon":-16},{"lat":66,"lon":-12},{"lat":66,"lon":-8},{"lat":66,"lon":-4},{"lat":66,"lon":0},{"lat":66,"lon":4},{"lat":66,"lon":8},{"lat":66,"lon":12},{"lat":66,"lon":16},{"lat":66,"lon":20},{"lat":66,"lon":28},{"lat":66,"lon":32},{"lat":66,"lon":36},{"lat":66,"lon":40},{"lat":66,"lon":44},{"lat":66,"lon":48},{"lat":66,"lon":52},{"lat":66,"lon":56},{"lat":66,"lon":60},{"lat":68,"lon":-24},{"lat":68,"lon":-20},{"lat":68,"lon":-16},{"lat":68,"lon":-12},{"lat":68,"lon":-8},{"lat":68,"lon":-4},{"lat":68,"lon":0},{"lat":68,"lon":4},{"lat":68,"lon":8},{"lat":68,"lon":12},{"lat":68,"lon":16},{"lat":68,"lon":20},{"lat":68,"lon":24},{"lat":68,"lon":28},{"lat":68,"lon":32},{"lat":68,"lon":36},{"lat":68,"lon":40},{"lat":68,"lon":44},{"lat":68,"lon":48},{"lat":68,"lon":52},{"lat":68,"lon":56},{"lat":68,"lon":60},{"lat":70,"lon":-24},{"lat":70,"lon":-20},{"lat":70,"lon":-16},{"lat":70,"lon":-12},{"lat":70,"lon":-8},{"lat":70,"lon":-4},{"lat":70,"lon":0},{"lat":70,"lon":4},{"lat":70,"lon":8},{"lat":70,"lon":12},{"lat":70,"lon":16},{"lat":70,"lon":20},{"lat":70,"lon":24},{"lat":70,"lon":28},{"lat":70,"lon":32},{"lat":70,"lon":36},{"lat":70,"lon":40},{"lat":70,"lon":44},{"lat":70,"lon":48},{"lat":70,"lon":52},{"lat":70,"lon":56},{"lat":70,"lon":60}];
+const WIDE_RING=[[-26,47],[62,47],[62,71],[-26,71]],WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs'];
+const GK_ROUTE_POINTS=[{"id":"0","lat":54.666482,"lon":18.868722,"fraction":0.090909,"station":1.0,"offset":0,"kind":"row"},{"id":"1","lat":54.622286,"lon":19.293662,"fraction":0.090909,"station":1.0,"offset":15,"kind":"row"},{"id":"2","lat":54.742093,"lon":18.483941,"fraction":0.181818,"station":2.0,"offset":-15,"kind":"row"},{"id":"3","lat":54.904354,"lon":18.813685,"fraction":0.181818,"station":2.0,"offset":0,"kind":"row"},{"id":"4","lat":55.065716,"lon":19.14609,"fraction":0.181818,"station":2.0,"offset":15,"kind":"row"},{"id":"5","lat":54.886951,"lon":18.199933,"fraction":0.272727,"station":3.0,"offset":-15,"kind":"row"},{"id":"6","lat":55.072342,"lon":18.491759,"fraction":0.272727,"station":3.0,"offset":0,"kind":"row"},{"id":"7","lat":55.257029,"lon":18.786296,"fraction":0.272727,"station":3.0,"offset":15,"kind":"row"},{"id":"8","lat":54.86645,"lon":17.586759,"fraction":0.363636,"station":4.0,"offset":-30,"kind":"row"},{"id":"9","lat":55.053307,"lon":17.87559,"fraction":0.363636,"station":4.0,"offset":-15,"kind":"row"},{"id":"10","lat":55.239474,"lon":18.167125,"fraction":0.363636,"station":4.0,"offset":0,"kind":"row"},{"id":"11","lat":55.424939,"lon":18.461397,"fraction":0.363636,"station":4.0,"offset":15,"kind":"row"},{"id":"12","lat":54.972877,"lon":17.357486,"fraction":0.454545,"station":5.0,"offset":-30,"kind":"row"},{"id":"13","lat":55.184195,"lon":17.590289,"fraction":0.454545,"station":5.0,"offset":-15,"kind":"row"},{"id":"14","lat":55.395065,"lon":17.825573,"fraction":0.454545,"station":5.0,"offset":0,"kind":"row"},{"id":"15","lat":55.605478,"lon":18.063377,"fraction":0.454545,"station":5.0,"offset":15,"kind":"row"},{"id":"16","lat":55.104899,"lon":16.987685,"fraction":0.545455,"station":6.0,"offset":-30,"kind":"row"},{"id":"17","lat":55.316923,"lon":17.219287,"fraction":0.545455,"station":6.0,"offset":-15,"kind":"row"},{"id":"18","lat":55.528505,"lon":17.453377,"fraction":0.545455,"station":6.0,"offset":0,"kind":"row"},{"id":"19","lat":55.739635,"lon":17.689996,"fraction":0.545455,"station":6.0,"offset":15,"kind":"row"},{"id":"20","lat":55.235785,"lon":16.615435,"fraction":0.636364,"station":7.0,"offset":-30,"kind":"row"},{"id":"21","lat":55.448516,"lon":16.845799,"fraction":0.636364,"station":7.0,"offset":-15,"kind":"row"},{"id":"22","lat":55.660809,"lon":17.078658,"fraction":0.636364,"station":7.0,"offset":0,"kind":"row"},{"id":"23","lat":55.872656,"lon":17.314055,"fraction":0.636364,"station":7.0,"offset":15,"kind":"row"},{"id":"24","lat":55.365454,"lon":16.240929,"fraction":0.727273,"station":8.0,"offset":-30,"kind":"row"},{"id":"25","lat":55.578925,"lon":16.469918,"fraction":0.727273,"station":8.0,"offset":-15,"kind":"row"},{"id":"26","lat":55.791964,"lon":16.701409,"fraction":0.727273,"station":8.0,"offset":0,"kind":"row"},{"id":"27","lat":56.004563,"lon":16.935443,"fraction":0.727273,"station":8.0,"offset":15,"kind":"row"},{"id":"28","lat":55.455033,"lon":15.92218,"fraction":0.818182,"station":9.0,"offset":-30,"kind":"row"},{"id":"29","lat":55.680411,"lon":16.112828,"fraction":0.818182,"station":9.0,"offset":-15,"kind":"row"},{"id":"30","lat":55.90549,"lon":16.305685,"fraction":0.818182,"station":9.0,"offset":0,"kind":"row"},{"id":"31","lat":56.130265,"lon":16.500791,"fraction":0.818182,"station":9.0,"offset":15,"kind":"row"},{"id":"32","lat":55.562441,"lon":15.519952,"fraction":0.909091,"station":10.0,"offset":-30,"kind":"row"},{"id":"33","lat":55.787979,"lon":15.71053,"fraction":0.909091,"station":10.0,"offset":-15,"kind":"row"},{"id":"34","lat":56.013218,"lon":15.903326,"fraction":0.909091,"station":10.0,"offset":0,"kind":"row"},{"id":"35","lat":56.238154,"lon":16.098383,"fraction":0.909091,"station":10.0,"offset":15,"kind":"row"},{"id":"36","lat":54.788149,"lon":18.647054,"fraction":0.136364,"station":1.5,"offset":-7.5,"kind":"centre"},{"id":"37","lat":54.794029,"lon":19.080248,"fraction":0.136364,"station":1.5,"offset":7.5,"kind":"centre"},{"id":"38","lat":54.896039,"lon":18.506743,"fraction":0.227273,"station":2.5,"offset":-7.5,"kind":"centre"},{"id":"39","lat":55.080693,"lon":18.800049,"fraction":0.227273,"station":2.5,"offset":7.5,"kind":"centre"},{"id":"40","lat":54.877088,"lon":17.893268,"fraction":0.318182,"station":3.5,"offset":-22.5,"kind":"centre"},{"id":"41","lat":55.063214,"lon":18.183602,"fraction":0.318182,"station":3.5,"offset":-7.5,"kind":"centre"},{"id":"42","lat":55.248642,"lon":18.476643,"fraction":0.318182,"station":3.5,"offset":7.5,"kind":"centre"},{"id":"43","lat":55.037927,"lon":17.577192,"fraction":0.409091,"station":4.5,"offset":-22.5,"kind":"centre"},{"id":"44","lat":55.227951,"lon":17.860909,"fraction":0.409091,"station":4.5,"offset":-7.5,"kind":"centre"},{"id":"45","lat":55.41731,"lon":18.147344,"fraction":0.409091,"station":4.5,"offset":7.5,"kind":"centre"},{"id":"46","lat":55.14492,"lon":17.288687,"fraction":0.5,"station":5.5,"offset":-22.5,"kind":"centre"},{"id":"47","lat":55.356369,"lon":17.522131,"fraction":0.5,"station":5.5,"offset":-7.5,"kind":"centre"},{"id":"48","lat":55.567369,"lon":17.75808,"fraction":0.5,"station":5.5,"offset":7.5,"kind":"centre"},{"id":"49","lat":55.276728,"lon":16.917052,"fraction":0.590909,"station":6.5,"offset":-22.5,"kind":"centre"},{"id":"50","lat":55.488886,"lon":17.14928,"fraction":0.590909,"station":6.5,"offset":-7.5,"kind":"centre"},{"id":"51","lat":55.7006,"lon":17.38402,"fraction":0.590909,"station":6.5,"offset":7.5,"kind":"centre"},{"id":"52","lat":55.407394,"lon":16.542945,"fraction":0.681818,"station":7.5,"offset":-22.5,"kind":"centre"},{"id":"53","lat":55.620261,"lon":16.773921,"fraction":0.681818,"station":7.5,"offset":-7.5,"kind":"centre"},{"id":"54","lat":55.83269,"lon":17.007416,"fraction":0.681818,"station":7.5,"offset":7.5,"kind":"centre"},{"id":"55","lat":55.513875,"lon":16.216243,"fraction":0.772727,"station":8.5,"offset":-22.5,"kind":"centre"},{"id":"56","lat":55.738792,"lon":16.408874,"fraction":0.772727,"station":8.5,"offset":-7.5,"kind":"centre"},{"id":"57","lat":55.963404,"lon":16.603736,"fraction":0.772727,"station":8.5,"offset":7.5,"kind":"centre"},{"id":"58","lat":55.621319,"lon":15.817671,"fraction":0.863636,"station":9.5,"offset":-22.5,"kind":"centre"},{"id":"59","lat":55.84686,"lon":16.008526,"fraction":0.863636,"station":9.5,"offset":-7.5,"kind":"centre"},{"id":"60","lat":56.072102,"lon":16.201607,"fraction":0.863636,"station":9.5,"offset":7.5,"kind":"centre"}];
 const timeFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
 const shortFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',hour:'2-digit',minute:'2-digit'});
 const dateFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',day:'numeric',month:'short'});
@@ -61,12 +67,28 @@ function renderWindSource(){
  if($('modelDescription'))$('modelDescription').textContent=windModelInfo(state.model).desc;
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
-function windInk(v){if(!valid(v))return '#6f8790';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
+// Dark theme: values on the grey calm-wind background are light green for contrast.
+function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';if(isDarkTheme()&&v<3.5)return '#adffcf';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
 function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v)?'':' no-data'}" style="background:${windHeat(v)};color:${windInk(v)}"><small>${label}</small><b>${format(v)}</b></span>`;}
 // Flags on the map: by default only the selected point; the flag toggles on the cards
 // let you show them on one, two or all three points (remembered in this browser).
 function flagPorts(){return state.flagPorts||new Set([state.port]);}
 function toggleFlagPort(i){const set=new Set(flagPorts());if(set.has(i))set.delete(i);else set.add(i);state.flagPorts=set;renderPorts();updateMarkers();}
+// Three port tiles ("slots"), each showing one chosen port or empty ("Choose your port").
+// Two port tiles; every visit opens with Ventspils Berth and Norvik Berth.
+const DEFAULT_SLOTS=[1,2];
+function slotPorts(){return (state.slots||DEFAULT_SLOTS).filter(i=>i!==null&&i!==undefined);}
+function inSlots(i){return (state.slots||DEFAULT_SLOTS).includes(i);}
+function loadSlots(){state.slots=[...DEFAULT_SLOTS];try{localStorage.removeItem('baltic-port-slots');}catch{}}
+function choosePort(slot,port){
+ const slots=[...(state.slots||DEFAULT_SLOTS)];if(port!==null){const other=slots.indexOf(port);if(other>=0&&other!==slot)slots[other]=slots[slot];}slots[slot]=port;state.slots=slots;
+ if(port!==null){const set=new Set(flagPorts());set.add(port);state.flagPorts=set;state.port=port;}
+ if(!inSlots(state.port))state.port=slotPorts()[0]??0;
+ renderAll();if(port!==null)fitRoute(ROUTE_OF_PORT[port]);
+}
+const CHEVRON='<svg class="port-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>';
+function portSelect(slot,current){return portPicker(slot,current).replace(/^<label class="port-pick">|<\/label>$/g,'');}
+function portPicker(slot,current){return `<label class="port-pick"><select data-slot="${slot}" aria-label="Choose the port for tile ${slot+1}">${current===null?'<option value="" selected disabled hidden></option>':''}${PORTS.map((p,i)=>`<option value="${i}"${i===current?' selected':''}>${p.name}</option>`).join('')}</select></label>`;}
 function loadFlagPorts(){try{const saved=JSON.parse(localStorage.getItem('baltic-flag-ports'));if(Array.isArray(saved))state.flagPorts=new Set(saved.filter(i=>Number.isInteger(i)&&i>=0&&i<PORTS.length));}catch{}}
 const FLAG_ICON='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 14.5V2m0 .8c3-2.2 5 2.2 8.5 0v6.4c-3.5 2.2-5.5-2.2-8.5 0"/></svg>';
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -74,17 +96,15 @@ function compassName(d){return COMPASS[Math.round((((d%360)+360)%360)/22.5)%16];
 // Direction chip (light blue): the arrow points the way the wind blows (from N: top to bottom).
 // The arrow lives in the area below the compass label (top 12 px) and is scaled to 80 %
 // of that area, so it never touches the label, whatever the direction.
-function directionArrowSVG(from,w=58,h=40,top=12){
- const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),cx=w/2,cy=(top+h)/2,halfW=w/2-4,halfH=(h-top)/2-1.5;
- const t=.8*Math.min(Math.abs(vx)>1e-6?halfW/Math.abs(vx):Infinity,Math.abs(vy)>1e-6?halfH/Math.abs(vy):Infinity);
- const f=n=>n.toFixed(1),sx=cx-vx*t,sy=cy-vy*t,ex=cx+vx*t,ey=cy+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
- // Faint shaft and open chevron head; two short streaks travel along the full length of the
-// arrow, tail to head, so the movement shows which way the wind blows.
+// Wind-direction arrow: fixed length, its middle always at the centre of the chip, true angle
+// (square viewBox kept square with 'meet'). The compass label is drawn above it.
+function directionArrowSVG(from){
+ const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),c=20,t=11.5;
+ const f=n=>n.toFixed(1),sx=c-vx*t,sy=c-vy*t,ex=c+vx*t,ey=c+vy*t,bx=ex-vx*5,by=ey-vy*5,px=-vy*3.2,py=vx*3.2;
+ // Faint shaft and open chevron head; two short streaks run tail to head, showing where the wind blows.
  const L=2*t,len=L.toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
- // A streak's front reaches the head at L/(L+9) of its cycle; streaks run half a cycle apart,
- // so the head pulses every half cycle, timed (keyframe peak at 10%) to each arrival.
  const arrive=L/(L+9),headDelay=(((arrive-.05)%.5)+.5)%.5-.5;
- return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" style="--len:${len}px;--head-delay:${headDelay.toFixed(3)}"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" style="transform-origin:${f(ex)}px ${f(ey)}px" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
+ return `<svg class="dir-arrow" viewBox="0 0 40 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true" style="--len:${len}px;--head-delay:${headDelay.toFixed(3)}"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" style="transform-origin:${f(ex)}px ${f(ey)}px" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
 }
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="No direction"><small>Dir.</small><b>—</b></span>';
@@ -116,14 +136,14 @@ function weatherSymbol(i,t=selectedEpoch()){
 function dayTempRange(i,t=selectedEpoch()){const day=DAY_KEY.format(new Date(t*1000)),rec=windRecord(i);if(!rec?.hourly?.time)return null;const v=rec.hourly.time.map((x,k)=>DAY_KEY.format(new Date(x*1000))===day?rec.hourly.temperature_2m?.[k]:null).filter(valid);return v.length?{min:Math.min(...v),max:Math.max(...v)}:null;}
 // Weather block: symbol and current temperature, with the day's min (green) and max (red) below.
 function portWeather(i){const t=windAt(i,'temperature_2m'),sym=weatherSymbol(i),r=dayTempRange(i),label=(sym?sym[1]:'No cloud data')+' · '+(valid(t)?Math.round(t)+' °C':'no temperature')+(r?' · today '+Math.round(r.min)+'° to '+Math.round(r.max)+'°':'')+' · '+windModelInfo(state.model).short;return `<span class="port-wx" title="${label}" aria-label="${label}"><span class="port-wx-now">${sym?`<svg viewBox="0 0 24 24" aria-hidden="true">${WX[sym[0]]}</svg>`:''}<b>${valid(t)?Math.round(t)+'°':'—'}</b></span>${r?`<span class="port-range"><b class="t-min">${Math.round(r.min)}°</b><b class="t-max">${Math.round(r.max)}°</b></span>`:''}</span>`;}
-function renderPorts(){const flags=flagPorts(); $('ports').innerHTML=PORTS.map((p,i)=>{const v=windAt(i,'wind_speed_10m'),g=windAt(i,'wind_gusts_10m'),d=windAt(i,'wind_direction_10m'),on=flags.has(i);return `<div class="port ${i===state.port?'active':''}"><button class="port-main" data-port="${i}" aria-pressed="${i===state.port}" aria-label="${p.name}: wind ${format(v)} m/s, gusts ${format(g)} m/s. Show on the chart and table"><div class="port-top"><div class="port-id"><h2>${p.name}</h2><small>${p.lat.toFixed(4)}°N · ${p.lon.toFixed(4)}°E</small></div>${portWeather(i)}</div><div class="port-wind">${windChip(v,'Wind')}${windChip(g,'Gusts','gust')}${directionChip(d,v)}</div></button><button class="port-flag ${on?'on':''}" data-flag-port="${i}" aria-pressed="${on}" aria-label="Model flags on the map: ${p.name}" title="${on?'Hide':'Show'} model flags on the map for ${p.name}">${FLAG_ICON}</button></div>`;}).join('');}
+function renderPorts(){const flags=flagPorts(); $('ports').innerHTML=(state.slots||DEFAULT_SLOTS).map((i,slot)=>{if(i===null||i===undefined)return `<div class="port port-empty"><div class="port-empty-body"><h2><span>Choose your port</span>${CHEVRON}</h2><small>${PORTS.map(p=>p.portName.split(' /')[0]).filter((n,k,a)=>a.indexOf(n)===k).join(' · ')}</small></div>${portPicker(slot,null)}</div>`;const p=PORTS[i],v=windAt(i,'wind_speed_10m'),g=windAt(i,'wind_gusts_10m'),d=windAt(i,'wind_direction_10m'),on=flags.has(i);return `<div class="port ${i===state.port?'active':''}"><div class="port-main" role="button" tabindex="0" data-port="${i}" aria-pressed="${i===state.port}" aria-label="${p.name}: wind ${format(v)} m/s, gusts ${format(g)} m/s. Show on the chart and table"><div class="port-top"><div class="port-id"><h2><label class="port-name-pick" title="Choose another port"><span>${p.name}</span>${CHEVRON}${portSelect(slot,i)}</label></h2><small>${p.lat.toFixed(4)}°N · ${p.lon.toFixed(4)}°E</small></div>${portWeather(i)}</div><div class="port-wind">${windChip(v,'Wind')}${windChip(g,'Gusts','gust')}${directionChip(d,v)}</div></div><button class="port-flag ${on?'on':''}" data-flag-port="${i}" aria-pressed="${on}" aria-label="Model flags on the map: ${p.name}" title="${on?'Hide':'Show'} model flags on the map for ${p.name}">${FLAG_ICON}</button></div>`;}).join('');}
 function renderSummary(){renderWaveAvailability();const p=PORTS[state.port];$('forecastPort').textContent=p.name;$('forecastLocation').textContent=p.country+' · '+p.portName;renderPointDetails();const ts=state.times.filter(t=>t>=Math.floor(Date.now()/3600000)*3600).slice(0,24),max=arr=>{const a=arr.filter(valid);return a.length?Math.max(...a):null;};if($('maxGust'))$('maxGust').innerHTML=format(max(ts.map(t=>windAt(state.port,'wind_gusts_10m',t))))+' <small>m/s</small>';if($('maxWave'))$('maxWave').innerHTML=format(max(ts.map(t=>waveAt(state.port,'wave_height',t))))+' <small>m</small>';$('forecastSource').textContent='Wind: '+windModelInfo(state.model).label+' · Wave: '+waveSourceLabel()+(state.metas[state.model]?' · '+cacheLabel(state.metas[state.model]):'')+(waveMeta()?.stale?' · Wave from cache: '+cacheLabel(waveMeta()):'');const errors=[...Object.keys(MODELS),waveErrorKey()].map(key=>state.errors[key]).filter(Boolean);const metas=Object.values(state.metas).filter(Boolean);const windMeta=state.metas[state.model],notices=[state.model==='dmi_harmonie'&&windMeta?.delivery==='open-meteo'?'Fallback source: Open-Meteo · DMI Seamless (DMI + ECMWF).':'',windMeta?.stale||waveMeta()?.stale?'Last good forecast — may be outdated.':''].filter(Boolean);$('forecastError').hidden=!errors.length&&!notices.length;$('forecastError').textContent=[...errors,...notices].join(' ');if($('dataStatus'))$('dataStatus').textContent=errors.length?'Some data unavailable':metas.some(x=>x.stale)?'May be outdated · cached copy':state.model==='dmi_harmonie'&&windMeta?.delivery==='open-meteo'?'Fallback source · Open-Meteo':'Model forecast · 1 h';document.querySelector('.sidebar-footer')?.classList.toggle('error',errors.length>0||metas.some(x=>x.stale));$('forecastSource').title=metas.map(cacheLabel).join(' / ');}
 function forecastDayGroups(times){const days=[];times.forEach((t,i)=>{const key=DAY_KEY.format(new Date(t*1000));if(days.at(-1)?.key===key)days.at(-1).count++;else days.push({key,index:i,count:1,t});});return days;}
 function forecastTimes(now=Date.now()){
  const start=Math.floor(now/3600000)*3600-3600;
  return Array.from({length:73},(_,i)=>start+i*3600);
 }
-function resetForecastWindow(){state.times=forecastTimes();state.base=state.times[0];state.hour=1;state.range=state.times.length;state.chartPositioned=false;}
+function resetForecastWindow(){state.times=forecastTimes();state.base=state.times[0];state.hour=1;state.followingNow=true;state.range=state.times.length;state.chartPositioned=false;}
 const tlDayFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'short',day:'numeric'});
 const tlTimeFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'short',hour:'2-digit',minute:'2-digit'});
 // Full-screen map timeline: day bands, a draggable hour slider and play, in step with the table.
@@ -142,13 +162,17 @@ function renderTimeline(){renderMapTimeline();
 
 }
 
-const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie'];
+const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'});
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
 // Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
 const WIND_COLORS=[[0,[243,243,243]],[3,[243,243,243]],[4,[0,200,254]],[6,[0,230,0]],[10,[254,174,0]],[19,[254,0,150]],[100,[151,50,222]]];
-function windRGB(v){if(!valid(v))return [240,242,243];for(let i=1;i<WIND_COLORS.length;i++)if(v<WIND_COLORS[i][0]){const [a,ac]=WIND_COLORS[i-1],[b,bc]=WIND_COLORS[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return WIND_COLORS.at(-1)[1];}
-function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':'#f0f2f3';}
+// Dark theme: calm winds (0–3 m/s) are mid grey instead of near-white, so the table does not glare.
+let lightPalette=false;// map flags always use the daytime palette
+const isDarkTheme=()=>!lightPalette&&typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
+const WIND_COLORS_DARK=[[0,[86,99,108]],[3,[86,99,108]],...WIND_COLORS.slice(2)];
+function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=isDarkTheme()?WIND_COLORS_DARK:WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
+function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':(isDarkTheme()?'#22343e':'#f0f2f3');}
 function flowArrow(degrees){return valid(degrees)?`<i class="flow-arrow" style="transform:rotate(${(degrees+180)%360}deg)" aria-hidden="true">↑</i>`:'<i class="flow-arrow missing" aria-hidden="true">·</i>';}
 function buildWindyTable(ts){
  const count=ts.length,groups=[];ts.forEach((t,i)=>{const key=DAY_KEY.format(new Date(t*1000));const last=groups.at(-1);if(last?.key===key)last.count++;else groups.push({key,count:1,index:i,t});});
@@ -178,8 +202,9 @@ function windFlagsOverlap(a,b){
  return true;
 }
 function windFlagLayout(point){
- const sources=[state.model,...TABLE_MODELS.filter(model=>model!==state.model)];
- const flags=sources.map(model=>{const v=windAt(point,'wind_speed_10m',selectedEpoch(),model),gust=windAt(point,'wind_gusts_10m',selectedEpoch(),model),d=windAt(point,'wind_direction_10m',selectedEpoch(),model);return valid(v)&&valid(d)?{model,v,gust,d,calm:v<.2,rotation:v<.2?0:((d%360)+360)%360}:null;}).filter(Boolean).slice(0,3);
+ // Map flags: ICON-EU, ECMWF, SMHI and DMI only (ICON Global stays in the table).
+ const sources=[...FLAG_MODELS.filter(model=>model===state.model),...FLAG_MODELS.filter(model=>model!==state.model)];
+ const flags=sources.map(model=>{const v=windAt(point,'wind_speed_10m',selectedEpoch(),model),gust=windAt(point,'wind_gusts_10m',selectedEpoch(),model),d=windAt(point,'wind_direction_10m',selectedEpoch(),model);return valid(v)&&valid(d)?{model,v,gust,d,calm:v<.2,rotation:v<.2?0:((d%360)+360)%360}:null;}).filter(Boolean);
  const parents=flags.map((_,i)=>i),root=i=>parents[i]===i?i:(parents[i]=root(parents[i]));
  for(let i=0;i<flags.length;i++)for(let j=0;j<i;j++)if(windFlagsOverlap(flags[i].rotation,flags[j].rotation))parents[root(i)]=root(j);
  const groups=new Map();flags.forEach((flag,i)=>{const key=root(i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(flag);});
@@ -187,7 +212,11 @@ function windFlagLayout(point){
  return flags.sort((a,b)=>Number(a.front)-Number(b.front));
 }
 function windFlagsSVG(point){
- if(!state.flags||!flagPorts().has(point))return '';
+ if(!state.flags||!flagPorts().has(point)||!inSlots(point))return '';
+ // Flags keep the light (daytime) colours in both themes: white calm cells, dark figures.
+ lightPalette=true;try{return windFlagsSVGInner(point);}finally{lightPalette=false;}
+}
+function windFlagsSVGInner(point){
  const flags=windFlagLayout(point),half=WIND_FLAG.width/2,top=-WIND_FLAG.far,split=top+28,bottom=-WIND_FLAG.near;
  const shapes=flags.map(flag=>{
   const {model,v,gust,d,rotation,calm,cycleSize,cycleIndex,front,lane}=flag,title=windModelInfo(model).short+': wind '+format(v)+' m/s, gusts '+format(gust)+' m/s, z '+Math.round(d)+'°'+(calm?' · calm':''),id='wind-flag-'+point+'-'+model,textAngle=rotation>180?90:-90;
@@ -217,7 +246,7 @@ function advanceFlagCycle(){
  state.flagCycle=(state.flagCycle||0)+1;
  for(const node of flags){const front=state.flagCycle%Number(node.dataset.cycleSize)===Number(node.dataset.cycleIndex);node.classList.toggle('flag-front',front);if(front&&Number(node.dataset.cycleSize)>1)node.parentNode.append(node);}
 }
-function renderFlagCycleStatus(){const node=$('flagCycleStatus');if(!node)return;const overlaps=state.flags&&windFlagLayout(state.port).some(flag=>flag.cycleSize>1);node.hidden=!overlaps;node.textContent=overlaps?'3 flags · order changes every 3 s':'';}
+function renderFlagCycleStatus(){const node=$('flagCycleStatus');if(!node)return;const overlaps=state.flags&&windFlagLayout(state.port).some(flag=>flag.cycleSize>1);node.hidden=!overlaps;node.textContent=overlaps?Math.max(...windFlagLayout(state.port).map(flag=>flag.cycleSize))+' flags · order changes every 3 s':'';}
 
 function linePath(values,yFn){let path='',open=false;values.forEach((v,i)=>{if(!valid(v)){open=false;return;}path+=(open?'L':'M')+(i*48+24)+','+yFn(v).toFixed(2)+' ';open=true;});return path;}
 function windChartScale(values){
@@ -238,7 +267,7 @@ function meteogramSVG(ts){
  const comps=state.compare?Object.keys(MODELS).filter(m=>m!==state.model).map(m=>({model:m,values:ts.map(t=>windAt(state.port,'wind_speed_10m',t,m))})):[];
  const scale=windChartScale([...wind.slice(from,to),...gust.slice(from,to),...comps.flatMap(c=>c.values.slice(from,to))]),yb=MG_H*.86,yt=MG_H*.16,y=v=>yb-(v-scale.min)/(scale.max-scale.min)*(yb-yt);
  const rainMax=Math.max(1,...rain.slice(from,to).filter(valid)),rainH=MG_H*.26;
- const placeEl=$('chartPlace');if(placeEl){placeEl.textContent=PORTS[state.port].name;placeEl.title='Chart and table for '+PORTS[state.port].name+' · '+windModelInfo(state.model).label;}const every=Math.ceil(scale.ticks.length/4);$('chartWindScale').innerHTML=scale.ticks.filter((_,i)=>i%every===0).map(v=>`<span style="top:${y(v)-5}px">${format(v,v%1?1:0)}</span>`).join('');
+ const placeEl=$('chartPlace');if(placeEl){if(placeEl.textContent!==PORTS[state.port].name&&placeEl.classList?.add&&placeEl.classList.remove){placeEl.classList.remove('changed');void placeEl.offsetWidth;placeEl.classList.add('changed');}placeEl.textContent=PORTS[state.port].name;placeEl.title='Chart and table for '+PORTS[state.port].name+' · '+windModelInfo(state.model).label;}const every=Math.ceil(scale.ticks.length/4);$('chartWindScale').innerHTML=scale.ticks.filter((_,i)=>i%every===0).map(v=>`<span style="top:${y(v)-5}px">${format(v,v%1?1:0)}</span>`).join('');
  const active=state.times[state.hour]??ts[0],cloudNow=windAt(state.port,'cloud_cover',active),rainNow=windAt(state.port,'precipitation',active);
  $('meteogramContext').textContent=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+shortFmt.format(new Date(active*1000))+' · clouds '+format(cloudNow,0)+'% · precipitation '+formatRain(rainNow)+' mm / 1 h';
  let svg=`<svg class="chart-svg meteogram-svg" width="${width}" height="${MG_H}" role="img" aria-label="${PORTS[state.port].name}: hourly meteogram of wind, gusts, cloud and precipitation; ${windModelInfo(state.model).label}" data-scale-min="${scale.min}" data-scale-max="${scale.max}"><defs><linearGradient id="skyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe49b"/><stop offset="1" stop-color="#fff3c7"/></linearGradient><clipPath id="windPlotClip"><rect width="${width}" y="${MG_H*.1}" height="${MG_H*.82}"/></clipPath></defs><rect width="${width}" height="${MG_H}" fill="url(#skyFill)"/>`;
@@ -277,13 +306,13 @@ function renderChart(){
 }
 function renderTableLabels(){
  const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2.5 km',dmi_harmonie:'2 km'};
- $('tableLabels').innerHTML='<div class="model-label-day">DAY</div><div class="model-label-hour">Hour</div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
+ $('tableLabels').innerHTML='<div class="model-label-day" aria-hidden="true"></div><div class="model-label-hour" aria-hidden="true"></div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
 }
 // Red vertical time cursor across all model rows and the meteogram; drag it to change the hour.
 // Cursor x: start of the selected hour; in the current hour it follows the clock in 10-minute steps (8 px each).
 function nowHourIndex(){const n=Date.now()/1000;return state.times.findIndex(t=>n>=t&&n<t+3600);}
 function cursorX(){const t=state.times[state.hour],n=Date.now()/1000;const off=(t!=null&&n>=t&&n<t+3600)?Math.floor((n-t)/600)*8:0;return state.hour*48+off;}
-function tickNowCursor(){const i=nowHourIndex();if(state.followingNow&&i>=0&&i!==state.hour&&!state.playing)setHour(i);state.followingNow=i>=0&&i===state.hour;positionTimeCursor();}
+function tickNowCursor(){const i=nowHourIndex();if(state.followingNow&&i>=0&&i!==state.hour&&!state.playing)setHour(i,false,true);positionTimeCursor();}
 function timeCursorHTML(){return `<div class="time-cursor" id="timeCursor" style="left:${cursorX()}px" role="slider" aria-label="Forecast hour" aria-valuemin="0" aria-valuemax="${Math.max(0,state.times.length-1)}" aria-valuenow="${state.hour}" tabindex="0"><span class="time-cursor-handle" aria-hidden="true"></span></div>`;}
 function positionTimeCursor(){const c=$('timeCursor');if(!c?.style)return;c.style.left=cursorX()+'px';c.setAttribute('aria-valuenow',state.hour);}
 function bindTimeCursor(){
@@ -303,7 +332,9 @@ function moveChartSelection(){
  const marker=$('meteogramPlot')?.querySelector?.('.selected-hour');if(marker)marker.innerHTML=selectedHourMarker();positionTimeCursor();
  const context=$('meteogramContext');if(context){const t=state.times[state.hour];context.textContent=PORTS[state.port].name+' · '+windModelInfo(state.model).label+' · '+shortFmt.format(new Date(t*1000))+' · clouds '+format(windAt(state.port,'cloud_cover',t),0)+'% · precipitation '+formatRain(windAt(state.port,'precipitation',t))+' mm / 1 h';}return true;
 }
-function setHour(hour,scroll=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));renderPorts();renderSummary();renderTimeline();if(!moveChartSelection())renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
+// Any hour picked by the user stops the cursor from following the clock; only "Now" (or
+// picking the current hour again) resumes it. auto=true is the clock tick itself.
+function setHour(hour,scroll=false,auto=false){state.hour=Math.max(0,Math.min(state.times.length-1,Number(hour)));if(!auto)state.followingNow=state.hour===nowHourIndex();renderPointPopup();renderPorts();renderSummary();renderTimeline();if(!moveChartSelection())renderChart();updateMarkers();updateRouteWaves();drawField();updateFieldStatus();if(scroll){const x=state.hour*48,el=$('chartScroll');if(x<el.scrollLeft||x>el.scrollLeft+el.clientWidth-48)el.scrollLeft=Math.max(0,x-el.clientWidth/2);}}
 let renderQueued=false;
 // Several sources finish within milliseconds of each other; draw once per frame.
 function scheduleRenderAll(){if(typeof requestAnimationFrame!=='function'){renderAll();return;}if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderAll();});}
@@ -341,7 +372,8 @@ const BASIN=[[9.2,53.5],[13,53.4],[22,53.4],[24.5,56],[25,58.5],[30.5,59.5],[30.
 function inRing(lon,lat,ring){let inside=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [x,y]=ring[i],[xx,yy]=ring[j];if((y>lat)!==(yy>lat)&&lon<(xx-x)*(lat-y)/(yy-y)+x)inside=!inside;}return inside;}
 function isLand(lon,lat){return (state.land?.features||[]).some(f=>{const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;return polys.some(poly=>inRing(lon,lat,poly[0])&&!poly.slice(1).some(h=>inRing(lon,lat,h)));});}
 function isSea(lon,lat){return inRing(lon,lat,BASIN)&&!isLand(lon,lat);}
-function fieldCovers(lon,lat,layer=state.layer){return inRing(lon,lat,BASIN)&&(layer!=='wave'||!isLand(lon,lat));}
+function wideActive(layer=state.layer){return layer!=='wave'&&Boolean(state.wideGrid[state.model]);}
+function fieldCovers(lon,lat,layer=state.layer){if(layer!=='wave'&&wideActive(layer)&&inRing(lon,lat,WIDE_RING))return true;return inRing(lon,lat,BASIN)&&(layer!=='wave'||!isLand(lon,lat));}
 function grid(kind='wind'){
  const points=[];
  for(const lat of [54.8,56.0,57.2,58.4,59.6,60.8,62.0,63.2,64.4,65.3])for(const lon of [11.5,14,16.5,19,21.5,24,26.5,29])if(isSea(lon,lat))points.push({lat,lon});
@@ -362,7 +394,7 @@ function fitPorts(){if(!map)return;if(!fitFlags())map.fitBounds(DEFAULT_VIEW,{an
 // clear of the map buttons (left), legend (right) and the layer switch (top left).
 // Flags have a fixed pixel size, so the fit is computed in screen pixels at each zoom.
 function flagPixelOffsets(point){
- if(!state.flags||!flagPorts().has(point))return [{x:0,y:0}];
+ if(!state.flags||!flagPorts().has(point)||!inSlots(point))return [{x:0,y:0}];
  const flags=windFlagLayout(point);if(!flags.length)return null;
  const out=[{x:0,y:0}];
  for(const f of flags){const r=f.rotation*Math.PI/180,c=Math.cos(r),s=Math.sin(r);for(const [x,y] of [[f.lane-12,-WIND_FLAG.far-6],[f.lane+12,-WIND_FLAG.far-6],[f.lane-12,-WIND_FLAG.near],[f.lane+12,-WIND_FLAG.near]])out.push({x:x*c-y*s,y:x*s+y*c});}
@@ -370,7 +402,14 @@ function flagPixelOffsets(point){
 }
 function fitFlags(){
  if(!map)return false;const size=map.getSize();if(!size.x||!size.y)return false;
- const points=PORTS.map((p,i)=>({ll:L.latLng(p.lat,p.lon),off:flagPixelOffsets(i)}));if(points.some(p=>!p.off))return false;
+ const flagged=slotPorts().filter(i=>state.flags&&flagPorts().has(i)),ids=flagged.length?flagged:slotPorts();if(!ids.length)return false;
+ const points=ids.map(i=>({ll:L.latLng(PORTS[i].lat,PORTS[i].lon),off:flagPixelOffsets(i)}));if(points.some(p=>!p.off))return false;
+ return fitPointsView(points,false);
+}
+// Highest zoom (¼ steps) at which every point plus its pixel extents (flags) fits inside the
+// map, clear of the frame margins, the left controls, the legend and the top-left tabs.
+function fitPointsView(points,animate){
+ if(!map)return false;const size=map.getSize();if(!size.x||!size.y)return false;
  const narrow=size.x<560,m={left:narrow?52:58,right:narrow?58:62,top:narrow?112:18,bottom:18},tabs=narrow?{x:0,y:0}:{x:330,y:118};
  for(let z=12;z>=4;z-=.25){
   const px=points.flatMap(p=>{const c=map.project(p.ll,z);return p.off.map(o=>({x:c.x+o.x,y:c.y+o.y}));});
@@ -378,11 +417,35 @@ function fitFlags(){
   if(maxX-minX>size.x-m.left-m.right||maxY-minY>size.y-m.top-m.bottom)continue;
   const origin={x:(minX+maxX)/2-(m.left+(size.x-m.right))/2,y:(minY+maxY)/2-(m.top+(size.y-m.bottom))/2};
   if(px.some(q=>q.x-origin.x<tabs.x&&q.y-origin.y<tabs.y))continue;
-  map.setView(map.unproject(L.point(origin.x+size.x/2,origin.y+size.y/2),z),z,{animate:false});state.flagFitDone=true;return true;
+  const center=map.unproject(L.point(origin.x+size.x/2,origin.y+size.y/2),z);if(animate)map.flyTo(center,z,{duration:.6});else map.setView(center,z,{animate:false});state.flagFitDone=true;return true;
  }
  return false;
 }
-function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');PORTS.forEach((p,i)=>markers.push(L.marker([p.lat,p.lon],{icon:markerIcon(i)}).addTo(map).on('click',()=>selectPort(i))));map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>{if(!fieldCovers(e.latlng.lng,e.latlng.lat))return;const v=sample(e.latlng.lat,e.latlng.lng);const label=state.layer==='wave'?'Wave Hs':state.layer==='gust'?'Gusts':'Wind';L.popup().setLatLng(e.latlng).setContent(`<b>${label} · ${format(v?.value)} ${state.layer==='wave'?'m':'m/s'}</b><br>${fullFmt.format(new Date(selectedEpoch()*1000))}<br>${e.latlng.lat.toFixed(2)}°N ${e.latlng.lng.toFixed(2)}°E<br><small>Interpolated overview grid · ${state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label}</small>`).openOn(map);});new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
+// Map click: a real point forecast of the selected model at that position (not the overview grid).
+const POINT_WAVE_SOURCES=['ecmwf_wam','dwd_ewam'],pointCache=new Map();let pointPopup=null;
+function pointHTML(pp){
+ const t=selectedEpoch(),when=fullFmt.format(new Date(t*1000)),where=`${pp.latlng.lat.toFixed(2)}°N ${pp.latlng.lng.toFixed(2)}°E`;
+ if(pp.loading)return `<div class="point-pop"><b>${pp.title}</b><span class="pp-loading">Loading point forecast…</span><span>${when}</span><span>${where}</span><small>${pp.label}</small></div>`;
+ if(!pp.record){const v=pp.fallback;return `<div class="point-pop"><b>${pp.title} · ${format(v?.value)} ${pp.wave?'m':'m/s'}</b><span>${when}</span><span>${where}</span><small>Point forecast unavailable · interpolated grid · ${pp.label}</small></div>`;}
+ const r=pp.record,cell=valid(r.latitude)&&valid(r.longitude)?` · model cell ${r.latitude.toFixed(2)}°N ${r.longitude.toFixed(2)}°E`:'';
+ if(pp.wave){const h=at(r,'wave_height',t),d=at(r,'wave_direction',t),per=at(r,'wave_period',t);return `<div class="point-pop"><b>Wave Hs ${format(h)} m</b><span>${valid(d)?'from '+compassName(d)+' ('+Math.round(d)+'°)':'direction —'}${valid(per)?' · period '+format(per)+' s':''}</span><span>${when}</span><span>${where}</span><small>Point forecast · ${pp.label}${cell}</small></div>`;}
+ const w=at(r,'wind_speed_10m',t),g=at(r,'wind_gusts_10m',t),d=at(r,'wind_direction_10m',t);
+ return `<div class="point-pop"><b>Wind <span class="pp-chip" style="background:${windHeat(w)};color:${windInk(w)}">${format(w)}</span> · Gusts <span class="pp-chip" style="background:${windHeat(g)};color:${windInk(g)}">${format(g)}</span> m/s</b><span>${valid(d)?'from '+compassName(d)+' ('+Math.round(d)+'°)':'direction —'}</span><span>${when}</span><span>${where}</span><small>Point forecast · ${pp.label}${cell}</small></div>`;
+}
+function renderPointPopup(){if(pointPopup?.popup?.isOpen?.())pointPopup.popup.setContent(pointHTML(pointPopup));}
+async function openPointPopup(latlng){
+ const wave=state.layer==='wave',model=wave?state.waveSource:state.model,direct=wave?POINT_WAVE_SOURCES.includes(model):true;
+ const pp={latlng,wave,title:wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',label:wave?waveSourceLabel():windModelInfo(model).label,fallback:fieldCovers(latlng.lng,latlng.lat)?sample(latlng.lat,latlng.lng):null,loading:direct,record:null};
+ pp.popup=L.popup({className:'point-popup',maxWidth:260}).setLatLng(latlng).setContent(pointHTML(pp)).openOn(map);pointPopup=pp;
+ if(!direct)return;
+ const key=[model,(Math.round(latlng.lat*50)/50).toFixed(2),(Math.round(latlng.lng*50)/50).toFixed(2)].join('/');
+ try{
+  let data=pointCache.get(key);if(!data||Date.now()-data.at>1800000){const res=await fetch('/api/point?'+new URLSearchParams({model,lat:latlng.lat.toFixed(4),lon:latlng.lng.toFixed(4)}),{signal:AbortSignal.timeout(20000)});if(!res.ok)throw Error('HTTP '+res.status);data={...(await res.json()),at:Date.now()};if(pointCache.size>60)pointCache.delete(pointCache.keys().next().value);pointCache.set(key,data);}
+  pp.record=data.record;
+ }catch(e){console.warn('point',e.message);}
+ pp.loading=false;if(pointPopup===pp)renderPointPopup();
+}
+function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');PORTS.forEach((p,i)=>markers.push(L.marker([p.lat,p.lon],{icon:markerIcon(i)}).addTo(map).on('click',()=>selectPort(i))));map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});applyMapGestures();bindTwoFingerHint();bindMouseDragOnTouchDevices();map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>openPointPopup(e.latlng));new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
 
 // Four query rows, extended toward Gotland, with independent marine samples at cell centres.
 const NAUTICAL_MILE_KM=1.852,ROUTE_ROW_OFFSETS_NM=[-30,-15,0,15],EARTH_KM=6371.0088;
@@ -416,7 +479,7 @@ function visibleRouteWaves(values,project,size,extra=[]){
 function updateRouteWaves(){const button=$('routeWaves'),readout=$('routeWaveReadout');if(button){button.setAttribute('aria-pressed',state.routeWaves);button.classList.toggle('active',state.routeWaves);}const values=routeWaveValues(),known=values.filter(p=>valid(p.value)),meta=routeWaveMeta();
  if(readout){const summary=known.length?`Hs ${format(Math.min(...known.map(p=>p.value)))}–${format(Math.max(...known.map(p=>p.value)))} m · ${shortFmt.format(new Date(selectedEpoch()*1000))}${known.length<values.length?' · some points without data':''}`:state.waveSource==='stormglass'&&!state.stormglassStatus.routeEnabled?stormglassMapStatus():state.routeWaveLoading?'Loading route waves…':state.routeWaveError?'Route waves unavailable · use ↻':waveMissingMessage(values.map(p=>p.series));readout.textContent=summary+(meta?.stale?' · cached copy':'')+(known.length&&state.routeWaveError?' · refresh failed':'');readout.hidden=!state.routeWaves;readout.title='Hs range at Ventspils–Norvik points: an extra row 15 NM toward Gotland and cell-centre readings. '+waveSourceLabel()+'. '+cacheLabel(meta);}
  if(!map||!routeWaveLayer)return;routeWaveLayer.clearLayers();if(!state.routeWaves)return;
- const visible=visibleRouteWaves(values,p=>map.latLngToContainerPoint([p.lat,p.lon]),map.getSize(),coastWaveValues());for(const p of visible)L.marker([p.lat,p.lon],{pane:'routeWaves',icon:routeWaveIcon(p),keyboard:false,interactive:false}).addTo(routeWaveLayer);
+ const visible=visibleRouteWaves([...values,...gkRouteValues()],p=>map.latLngToContainerPoint([p.lat,p.lon]),map.getSize(),coastWaveValues());for(const p of visible)L.marker([p.lat,p.lon],{pane:'routeWaves',icon:routeWaveIcon(p),keyboard:false,interactive:false}).addTo(routeWaveLayer);
 }
 function initRouteWaves(){if(!map)return;routeWaveLayer=L.layerGroup().addTo(map);updateRouteWaves();}
 function coastWaveValues(){const records=state.coastWaves[state.waveSource];if(!records)return [];return COAST_POINTS.map((p,i)=>({...p,kind:'coast',series:records[i],value:at(records[i],'wave_height'),direction:at(records[i],'wave_direction'),period:at(records[i],'wave_period')}));}
@@ -426,8 +489,19 @@ async function loadCoastWaves(force=false){
  catch(e){console.warn('coast-wave',source,e.message);}
  finally{if(state.waveSource===source){updateRouteWaves();if(state.layer==='wave'){drawField();updateFieldStatus();}}}
 }
+// Gdynia–Karlskrona corridor: fixed points shared with the server (route-gk group).
+function gkRouteValues(){const entries=state.waveSource==='stormglass'?null:state.gkRoutes[state.waveSource];return (entries||[]).map(p=>({...p,value:at(p.series,'wave_height'),direction:at(p.series,'wave_direction'),period:at(p.series,'wave_period')}));}
+async function loadGkRouteWaves(force=false){
+ const source=state.waveSource;if(source==='stormglass'||(!force&&state.gkRoutes[source]))return;const points=GK_ROUTE_POINTS;
+ try{let records,r;
+  if(WAVE_SOURCES[source].api){const result=await fetchProvider(source,'route-gk',force);r=result.meta;records=result.records;}
+  else{r=await requestJSON(url('https://marine-api.open-meteo.com/v1/marine',points,{hourly:'wave_height,wave_direction,wave_period',models:source,cell_selection:'sea'}),'route-wave-gk-v1-'+source,force);records=list(r.data);}
+  if(records.length!==points.length)throw Error('Incomplete Gdynia–Karlskrona corridor');state.gkRoutes[source]=records.map((series,i)=>({...points[i],series}));state.metas['route-gk-'+source]=r;
+ }catch(e){console.warn('route-gk',source,e.message);}
+ finally{if(state.waveSource===source){updateRouteWaves();if(state.layer==='wave'){drawField();updateFieldStatus();}}}
+}
 async function loadRouteWaves(force=false){
- const source=state.waveSource;loadCoastWaves(force).catch(e=>console.warn('coast-wave',e.message));if(source==='stormglass')return loadStormglassRoute(force);
+ const source=state.waveSource;loadCoastWaves(force).catch(e=>console.warn('coast-wave',e.message));loadGkRouteWaves(force).catch(e=>console.warn('route-gk',e.message));if(source==='stormglass')return loadStormglassRoute(force);
  const points=routeGeometry().points;if(!points.length)return;state.routeWaveLoading=true;state.routeWaveError=false;updateRouteWaves();
  try{let r,records;
   if(WAVE_SOURCES[source].api){const result=await fetchProvider(source,'route',force,partial=>{state.waveRoutes[source]=partial.map((series,i)=>({...points[i],series}));if(state.waveSource===source)updateRouteWaves();});r=result.meta;records=result.records;}
@@ -443,7 +517,7 @@ function stormglassMapStatus(){
  const count=PORTS.filter((p,i)=>valid(waveAt(i,'wave_height'))).length;
  return `Stormglass AI: ${count}/3 positions with waves this hour · readings in the port cards and hourly table. `+(state.stormglassStatus.routeEnabled?'Route: '+(state.routeWaveLoading?'loading…':state.routeWaveError?'data unavailable':state.stormglassRoute?'on.':'waiting for data.'):'Full route grid is off.')+(waveMeta()?.stale?' Cached copy.':'');
 }
-function markerIcon(i){return L.divIcon({className:'port-pin '+(state.port===i?'active':''),iconSize:[1,1],html:`${windFlagsSVG(i)}<span class="pin-dot" title="${PORTS[i].name}" aria-label="${PORTS[i].name}"></span>`});}
+function markerIcon(i){if(!inSlots(i))return L.divIcon({className:'port-pin port-pin-hidden',iconSize:[1,1],html:''});return L.divIcon({className:'port-pin '+(state.port===i?'active':''),iconSize:[1,1],html:`${windFlagsSVG(i)}<span class="pin-dot" title="${PORTS[i].name}" aria-label="${PORTS[i].name}"></span>`});}
 function updateMarkers(){renderFlagCycleStatus();if(!map)return;markers.forEach((m,i)=>{m.setIcon(markerIcon(i));m.setZIndexOffset(i===state.port?1000:0);});}
 function selectPort(i){state.port=i;state.viewTouched=true;renderAll();if(map)map.flyTo([PORTS[i].lat,PORTS[i].lon],Math.max(map.getZoom(),12),{duration:state.animate ? 0.7 : 0});}
 async function loadField(force=false){
@@ -467,11 +541,20 @@ let mergedWaveField={key:null,points:null};
 // the same model gives a much finer, smoother field along the route and near both ports.
 function waveFieldPoints(source){
  const base=source==='ecmwf_wam'?state.waveGrid:state.waveFields[source],route=source==='ecmwf_wam'?state.routeWaveGrid:state.waveRoutes[source],coast=state.coastWaves[source];
- if(mergedWaveField.base===base&&mergedWaveField.route===route&&mergedWaveField.coast===coast&&mergedWaveField.source===source)return mergedWaveField.points;
- const extra=[...(route||[]).filter(p=>p.series).map(p=>({lat:p.lat,lon:p.lon,series:p.series})),...(coast||[]).map((series,i)=>series?{lat:COAST_POINTS[i].lat,lon:COAST_POINTS[i].lon,series}:null).filter(Boolean)];
- const points=base||extra.length?[...(base||[]),...extra]:null;mergedWaveField={base,route,coast,source,points};return points;
+ const gk=state.gkRoutes[source];if(mergedWaveField.base===base&&mergedWaveField.route===route&&mergedWaveField.coast===coast&&mergedWaveField.gk===gk&&mergedWaveField.source===source)return mergedWaveField.points;
+ const extra=[...(route||[]).filter(p=>p.series).map(p=>({lat:p.lat,lon:p.lon,series:p.series})),...(state.gkRoutes[source]||[]).filter(p=>p.series).map(p=>({lat:p.lat,lon:p.lon,series:p.series})),...(coast||[]).map((series,i)=>series?{lat:COAST_POINTS[i].lat,lon:COAST_POINTS[i].lon,series}:null).filter(Boolean)];
+ const points=base||extra.length?[...(base||[]),...extra]:null;mergedWaveField={base,route,coast,gk,source,points};return points;
 }
-function currentGrid(){return state.layer==='wave'?(state.waveSource==='stormglass'?state.stormglassRoute:waveFieldPoints(state.waveSource)):state.windGrid[state.model];}
+let mergedWindField={};
+function currentGrid(){if(state.layer==='wave')return state.waveSource==='stormglass'?state.stormglassRoute:waveFieldPoints(state.waveSource);const base=state.windGrid[state.model],wide=state.wideGrid[state.model];if(!wide)return base;if(mergedWindField.base!==base||mergedWindField.wide!==wide)mergedWindField={base,wide,points:[...(base||[]),...wide]};return mergedWindField.points;}
+// Zoomed out beyond the Baltic: fetch the coarse wide wind grid once per model cycle.
+let wideLoading=null;
+function maybeLoadWide(){
+ if(!map?.getBounds||state.layer==='wave'||!WIDE_MODELS.includes(state.model)||state.wideGrid[state.model]||wideLoading===state.model)return;
+ const b=map.getBounds();if(b.getWest()>=9.2&&b.getEast()<=30.5&&b.getSouth()>=53.4&&b.getNorth()<=66.2)return;
+ const model=wideLoading=state.model;
+ fetchProvider(model,'wide-grid').then(result=>{if(result.records.length!==WIDE_GRID.length)throw Error('Incomplete wide grid');state.wideGrid[model]=result.records.map((series,i)=>({lat:WIDE_GRID[i].lat,lon:WIDE_GRID[i].lon,series}));if(state.model===model)drawField();}).catch(e=>console.warn('wide-grid',model,e.message)).finally(()=>{if(wideLoading===model)wideLoading=null;});
+}
 function updateFieldStatus(){if(state.waveSource==='stormglass'&&state.layer==='wave'){$('fieldStatus').textContent=stormglassMapStatus();return;}if(state.model==='smhi_snow'&&state.layer!=='wave'){$('fieldStatus').textContent='SMHI: wind and gusts at three points. No regional SMHI field.';return;}const g=currentGrid(),meta=state.metas['grid-'+(state.layer==='wave'?state.waveSource:state.model)];$('fieldStatus').textContent=g?`${g.length} points · spatial interpolation · ${cacheLabel(meta)}`:'Map field unavailable';}
 function nearestGridPoints(g,lat,lon){
  const c=Math.cos(lat*Math.PI/180),best=[];
@@ -493,11 +576,11 @@ function fieldGeometryFor(g,size){
 }
 const stops=[[0,[55,84,134]],[5,[38,156,182]],[10,[72,195,165]],[15,[174,203,105]],[20,[232,177,92]],[25,[208,101,100]]];
 function color(value){if(state.layer!=='wave')return windRGB(value);const val=value*5;for(let i=1;i<stops.length;i++)if(val<stops[i][0]){const [a,ac]=stops[i-1],[b,bc]=stops[i],f=Math.max(0,(val-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return stops.at(-1)[1];}
-function drawField(){if(!map||!fctx)return;const size=map.getSize(),pos=map.containerPointToLayerPoint([0,0]);if(!size.x||!size.y)return;for(const c of [fieldCanvas,particleCanvas]){L.DomUtil.setPosition(c,pos);c.width=size.x;c.height=size.y;c.style.width=size.x+'px';c.style.height=size.y+'px';}particles=[];screenField=null;fctx.clearRect(0,0,size.x,size.y);const g=currentGrid();if(!g||!state.land)return;const geometry=fieldGeometryFor(g,size),{step,cols,rows}=geometry,{key,dk}=fieldKeys(),t=selectedEpoch(),alpha=state.layer==='wave'?136:102;screenField={cols,rows,step,values:Array(cols*rows)};const small=document.createElement('canvas');small.width=cols;small.height=rows;const sc=small.getContext('2d'),im=sc.createImageData(cols,rows);for(const cell of geometry.cells){const s=sampleNearby(cell.nearby,key,dk,t,g);if(!s)continue;screenField.values[cell.index]=s;const c=color(s.value),k=cell.index*4;im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=alpha;}sc.putImageData(im,0,0);fctx.imageSmoothingEnabled=true;fctx.drawImage(small,0,0,size.x,size.y); // Clip only the wave field to land; atmospheric wind remains visible over cities and ports.
-fctx.globalCompositeOperation='destination-in';fctx.beginPath();BASIN.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();fctx.fillStyle='#000';fctx.fill();if(state.layer==='wave'){fctx.globalCompositeOperation='destination-out';for(const f of state.land.features){const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;for(const poly of polys){fctx.beginPath();for(const ring of poly){ring.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();}fctx.fill('evenodd');}}}fctx.globalCompositeOperation='source-over';for(let i=0;i<Math.min(650,Math.floor(size.x*size.y/900));i++)particles.push(newParticle(size.x,size.y));}
+function drawField(){if(!map||!fctx)return;maybeLoadWide();const size=map.getSize(),pos=map.containerPointToLayerPoint([0,0]);if(!size.x||!size.y)return;for(const c of [fieldCanvas,particleCanvas]){L.DomUtil.setPosition(c,pos);c.width=size.x;c.height=size.y;c.style.width=size.x+'px';c.style.height=size.y+'px';}particles=[];screenField=null;fctx.clearRect(0,0,size.x,size.y);const g=currentGrid();if(!g||!state.land){drawWaveLayer();return;}const geometry=fieldGeometryFor(g,size),{step,cols,rows}=geometry,{key,dk}=fieldKeys(),t=selectedEpoch(),alpha=state.layer==='wave'?136:102;screenField={cols,rows,step,values:Array(cols*rows)};const small=document.createElement('canvas');small.width=cols;small.height=rows;const sc=small.getContext('2d'),im=sc.createImageData(cols,rows);for(const cell of geometry.cells){const s=sampleNearby(cell.nearby,key,dk,t,g);if(!s)continue;screenField.values[cell.index]=s;const c=color(s.value),k=cell.index*4;im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=alpha;}sc.putImageData(im,0,0);fctx.imageSmoothingEnabled=true;fctx.drawImage(small,0,0,size.x,size.y); // Clip only the wave field to land; atmospheric wind remains visible over cities and ports.
+fctx.globalCompositeOperation='destination-in';fctx.beginPath();(wideActive()?WIDE_RING:BASIN).forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();fctx.fillStyle='#000';fctx.fill();if(state.layer==='wave'){fctx.globalCompositeOperation='destination-out';for(const f of (state.coast||state.land).features){const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;for(const poly of polys){fctx.beginPath();for(const ring of poly){ring.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?fctx.lineTo(p.x,p.y):fctx.moveTo(p.x,p.y);});fctx.closePath();}fctx.fill('evenodd');}}}fctx.globalCompositeOperation='source-over';for(let i=0;i<Math.min(650,Math.floor(size.x*size.y/900));i++)particles.push(newParticle(size.x,size.y));drawWaveLayer();}
 function newParticle(w,h){for(let i=0;i<15;i++){const p={x:Math.random()*w,y:Math.random()*h,age:Math.random()*80};if(screenAt(p.x,p.y))return p;}return {x:-10,y:-10,age:100};}
 function screenAt(x,y){if(!screenField)return null;const {step,cols,rows,values}=screenField,c=Math.floor(x/step),r=Math.floor(y/step);return c>=0&&r>=0&&c<cols&&r<rows?values[r*cols+c]:null;}
-function animate(now){requestAnimationFrame(animate);if(!pctx||!screenField||mapPaused||!state.animate)return;if(now-lastFrame<36)return;const dt=Math.min(2,(now-lastFrame)/36||1);lastFrame=now;pctx.globalCompositeOperation='destination-in';pctx.fillStyle='rgba(0,0,0,.90)';pctx.fillRect(0,0,particleCanvas.width,particleCanvas.height);pctx.globalCompositeOperation='source-over';pctx.strokeStyle=state.layer==='wave'?'rgba(36,88,139,.7)':'rgba(84,77,135,.7)';pctx.lineWidth=state.layer==='wave'?1.6:1.1;for(let i=0;i<particles.length;i++){let p=particles[i],s=screenAt(p.x,p.y);if(!s||p.age++>90){particles[i]=newParticle(particleCanvas.width,particleCanvas.height);continue;}const speed=(state.layer==='wave'?1.1:.45+s.value*.07)*dt,nx=p.x+s.u*speed,ny=p.y+s.v*speed;if(!screenAt(nx,ny)){p.age=100;continue;}pctx.beginPath();pctx.moveTo(p.x,p.y);pctx.lineTo(nx,ny);pctx.stroke();p.x=nx;p.y=ny;}}
+function animate(now){requestAnimationFrame(animate);if(!pctx||!screenField||mapPaused||!state.animate)return;if(state.layer==='wave'&&state.waveAnim){pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);return;}if(now-lastFrame<36)return;const dt=Math.min(2,(now-lastFrame)/36||1);lastFrame=now;pctx.globalCompositeOperation='destination-in';pctx.fillStyle='rgba(0,0,0,.90)';pctx.fillRect(0,0,particleCanvas.width,particleCanvas.height);pctx.globalCompositeOperation='source-over';pctx.strokeStyle=state.layer==='wave'?'rgba(36,88,139,.7)':'rgba(84,77,135,.7)';pctx.lineWidth=state.layer==='wave'?1.6:1.1;for(let i=0;i<particles.length;i++){let p=particles[i],s=screenAt(p.x,p.y);if(!s||p.age++>90){particles[i]=newParticle(particleCanvas.width,particleCanvas.height);continue;}const speed=(state.layer==='wave'?1.1:.45+s.value*.07)*dt,nx=p.x+s.u*speed,ny=p.y+s.v*speed;if(!screenAt(nx,ny)){p.age=100;continue;}pctx.beginPath();pctx.moveTo(p.x,p.y);pctx.lineTo(nx,ny);pctx.stroke();p.x=nx;p.y=ny;}}
 function updateScale(){
  const wave=state.layer==='wave',label=wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',unit=wave?'m':'m/s',values=wave?[5,4,3,2.5,2,1.5,1,.5,0]:[25,20,15,12,10,8,6,5,4,3,2,1,0];
  $('scaleTitle').textContent=label;$('scaleUnit').textContent=unit;$('mapScale').setAttribute('aria-label',label+' · colour legend · '+unit);
@@ -548,7 +631,7 @@ function resumeDMIRetries(){
 async function fetchProvider(model,group,force=false,onProgress){
  const retry=providerRetries.get(model);if(retry&&Date.now()<retry.until)throw retry.error;const key=model+'/'+group;if(providerRequests.has(key))return providerRequests.get(key);
  const job=(async()=>{let offset=0,records=[],timing=null,saved=Infinity,checkedAt=Infinity,refreshAfter=Infinity,stale=false,delivery=null,blend=false;
-  do{const r=await requestJSON('/api/forecast?'+new URLSearchParams({model,group,offset}), 'provider-cycle-v2/'+key+'/'+offset,force,model.startsWith('dmi_')?3600000:1800000);
+  do{const r=await requestJSON('/api/forecast?'+new URLSearchParams({model,group,offset}), 'provider-cycle-v4/'+key+'/'+offset,force,model.startsWith('dmi_')?3600000:1800000);
    if(!Array.isArray(r.data.records)||!r.data.records.length)throw Error('No model records');records.push(...r.data.records);timing=r.data.timing||timing;saved=Math.min(saved,r.data.saved||r.saved);stale=stale||r.stale||r.data.stale;checkedAt=Math.min(checkedAt,r.data.checkedAt||r.saved);const expiry=Date.parse(r.data.refreshAfter||r.data.timing?.nextUpdate);if(Number.isFinite(expiry))refreshAfter=Math.min(refreshAfter,expiry);if(r.data.delivery==='open-meteo'||!delivery)delivery=r.data.delivery||delivery;blend=blend||Boolean(r.data.blend);
    const next=r.data.nextOffset;if(next!==null&&(!Number.isInteger(next)||next<=offset))throw Error('Invalid model range');offset=next;if(onProgress)onProgress(records);
   }while(offset!==null);
@@ -611,7 +694,41 @@ function renderUpdateClocks(){renderMapStamp();
 
 // Map on the whole screen: native fullscreen where the browser allows it for an element,
 // otherwise (e.g. iPhone) a fixed full-window overlay. Esc or the same button returns.
-function setMapFull(on){const section=document.querySelector('.map-section'),btn=$('mapFull');if(!section||!btn)return;section.classList.toggle('map-full',on);document.body.classList.toggle('map-full-open',on);btn.setAttribute('aria-pressed',on);btn.title=btn.ariaLabel=on?'Exit full screen':'Full-screen map';btn.setAttribute('aria-label',btn.title);if(map)setTimeout(()=>{map.invalidateSize();drawField();updateRouteWaves();renderMapTimeline();},60);}
+function setMapFull(on){const section=document.querySelector('.map-section'),btn=$('mapFull');if(!section||!btn)return;section.classList.toggle('map-full',on);setTimeout(applyMapGestures,0);document.body.classList.toggle('map-full-open',on);btn.setAttribute('aria-pressed',on);btn.title=btn.ariaLabel=on?'Exit full screen':'Full-screen map';btn.setAttribute('aria-label',btn.title);if(map)setTimeout(()=>{map.invalidateSize();drawField();updateRouteWaves();renderMapTimeline();},60);}
+// Phones/tablets: one finger scrolls the page; two fingers move and zoom the map (Leaflet's
+// pinch handler pans with the pinch centre). In full-screen map mode one finger moves the map too.
+// Any device with a touch screen counts (some phones/tablets also report a fine pointer, e.g. a
+// stylus, so pointer media queries are not reliable). A mouse on such a device still drags:
+// dragging is switched on for that one mouse press only.
+const touchCapable=()=>typeof navigator!=='undefined'&&(navigator.maxTouchPoints>0||'ontouchstart' in window);
+const mapIsFull=()=>Boolean(document.querySelector('.map-section')?.classList.contains('map-full'));
+function applyMapGestures(){
+ if(!map?.dragging)return;
+ if(touchCapable()&&!mapIsFull())map.dragging.disable();else map.dragging.enable();
+}
+function bindMouseDragOnTouchDevices(){
+ const box=map?.getContainer?.();if(!box||!touchCapable())return;
+ box.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&!mapIsFull())map.dragging.enable();},true);
+ const done=e=>{if(e.pointerType==='mouse')setTimeout(applyMapGestures,0);};
+ window.addEventListener('pointerup',done,true);window.addEventListener('pointercancel',done,true);
+}
+function bindTwoFingerHint(){
+ const box=map?.getContainer?.();if(!box)return;let hint=null,timer=0;
+ const show=()=>{if(!hint){hint=document.createElement('div');hint.className='map-gesture-hint';hint.textContent='Use two fingers to move the map';box.parentNode.appendChild(hint);}hint.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>hint.classList.remove('show'),1300);};
+ box.addEventListener('touchmove',e=>{if(e.touches.length===1&&!map.dragging.enabled())show();else if(hint)hint.classList.remove('show');},{passive:true});
+ // Two fingers belong to the map: never let them scroll the page.
+ box.addEventListener('touchmove',e=>{if(e.touches.length>1&&e.cancelable)e.preventDefault();},{passive:false});
+}
+// Choosing a port on a tile frames its route: Ventspils / Norvik → Ventspils–Nynäshamn,
+// Gdynia / Karlskrona → Gdynia–Karlskrona.
+const ROUTE_OF_PORT={0:'vn',1:'vn',2:'vn',3:'gk',4:'gk'};
+function fitRoute(kind){
+ if(!map)return;const ports=kind==='gk'?[3,4]:[0,1,2],route=kind==='gk'?GK_ROUTE_POINTS:routeGeometry().polygon;
+ // The route corridor plus both ends; ports on the tiles with flags reserve room for their full flags.
+ const points=[...route.map(p=>({ll:L.latLng(p.lat,p.lon),off:[{x:0,y:0}]})),...ports.map(i=>({ll:L.latLng(PORTS[i].lat,PORTS[i].lon),off:(inSlots(i)&&state.flags&&flagPorts().has(i)&&flagPixelOffsets(i))||[{x:0,y:0}]}))];
+ if(!fitPointsView(points,true))map.fitBounds(points.map(p=>p.ll),{padding:[40,40]});
+ state.viewTouched=true;
+}
 function bindMapFullscreen(){
  const btn=$('mapFull'),section=document.querySelector('.map-section');if(!btn||!section)return;
  btn.onclick=async()=>{const on=!section.classList.contains('map-full');
@@ -635,8 +752,99 @@ function bindChartDrag(){
  scroller.addEventListener('click',event=>{if(blockClick){event.preventDefault();event.stopImmediatePropagation();}},true);
  }
 }
-function bindEvents(){ document.addEventListener('visibilitychange',()=>{if(document.hidden)clearDMIRetryTimers();else{resumeDMIRetries();refreshDMIIfDue();}});bindChartDrag();bindTimeCursor();if($('waveAvailableHour'))$('waveAvailableHour').onclick=()=>{const next=nextWaveHour(selectedWaveRecords());if(next!==null)setHour(state.times.indexOf(next),true);}; $('windSource').onchange=e=>selectModel(e.target.value); $('waveSource').onchange=e=>{if(!selectWaveSource(e.target.value))e.target.value=state.waveSource;}; $('ports').addEventListener('click',e=>{const f=e.target.closest('[data-flag-port]');if(f){toggleFlagPort(Number(f.dataset.flagPort));return;}const b=e.target.closest('[data-port]');if(b)selectPort(Number(b.dataset.port));});$('models')?.addEventListener('click',e=>{const b=e.target.closest('[data-model]');if(b)selectModel(b.dataset.model);});$('tableLabels').addEventListener('click',e=>{const b=e.target.closest('[data-select-model]');if(b)selectModel(b.dataset.selectModel);});$('routeWaves').onclick=()=>{state.routeWaves=!state.routeWaves;updateRouteWaves();};$('flags').onclick=()=>{state.flags=!state.flags;$('flags').setAttribute('aria-pressed',state.flags);$('flags').classList.toggle('active',state.flags);updateMarkers();};$('layers').addEventListener('click',e=>{const b=e.target.closest('[data-layer]');if(!b)return;state.layer=b.dataset.layer;document.querySelectorAll('[data-layer]').forEach(x=>x.classList.toggle('active',x===b));updateScale();renderTimeline();updateMarkers();updateRouteWaves();drawField();loadField();});$('ranges').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(!b)return;state.range=Number(b.dataset.range);document.querySelectorAll('[data-range]').forEach(x=>x.classList.toggle('active',x===b));renderChart();});$('compare').onclick=()=>{state.compare=!state.compare;$('compare').setAttribute('aria-pressed',state.compare);renderChart();};$('chartContent').onclick=e=>{const b=e.target.closest('.model-meteogram [data-hour]');if(b)setHour(b.dataset.hour);};let timer;if($('mapTlRange'))$('mapTlRange').addEventListener('input',e=>setHour(Number(e.target.value)));if($('mapPlay'))$('mapPlay').onclick=()=>{$('play').click();};$('play').onclick=()=>{state.playing=!state.playing;$('play').innerHTML=playIcon(state.playing);$('play').setAttribute('aria-pressed',state.playing);$('play').setAttribute('aria-label',state.playing?'Pause forecast':'Play forecast');clearInterval(timer);if(state.playing)timer=setInterval(()=>setHour((state.hour+1)%state.times.length,true),1000);renderMapTimeline();};$('now').onclick=()=>{const now=Math.floor(Date.now()/3600000)*3600;const i=state.times.findIndex(t=>t>=now);setHour(i<0?state.times.length-1:i,true);};$('anim').setAttribute('aria-pressed',state.animate);$('anim').classList.toggle('on',state.animate);$('anim').onclick=()=>{state.animate=!state.animate;$('anim').classList.toggle('on',state.animate);$('anim').setAttribute('aria-pressed',state.animate);if(!state.animate&&pctx)pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);};bindMapFullscreen();document.querySelector('.map-controls')?.addEventListener?.('click',()=>{state.viewTouched=true;},true);$('zoomIn').onclick=()=>map?.zoomIn();$('zoomOut').onclick=()=>map?.zoomOut();$('fit').onclick=()=>{if(map){const geometry=routeGeometry();map.fitBounds(geometry.polygon.map(p=>[p.lat,p.lon]),{padding:[35,45]});}};if($('refresh'))$('refresh').onclick=async()=>{$('refresh').disabled=true;resetDMIRetryAttempts();resetForecastWindow();renderAll();await Promise.allSettled([loadPorts(true),loadField(true),loadRouteWaves(true),loadExtraWavePorts(state.waveSource,true),loadModelTiming(state.model,true),loadModelTiming(state.waveSource,true),...(state.waveSource==='stormglass'?[loadStormglassPorts(true)]:[])]);$('refresh').disabled=false;};for(const id of ['info','sources','about'])if($(id))$(id).onclick=()=>$('aboutDialog').showModal();$('closeDialog').onclick=()=>$('aboutDialog').close();$('aboutDialog').addEventListener('click',e=>{if(e.target===$('aboutDialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});document.addEventListener('keydown',e=>{if($('aboutDialog').open||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();setHour(state.hour+(e.key==='ArrowRight'?1:-1),true);}});}
+function bindEvents(){ document.addEventListener('visibilitychange',()=>{if(document.hidden)clearDMIRetryTimers();else{resumeDMIRetries();refreshDMIIfDue();}});bindChartDrag();bindTimeCursor();if($('waveAvailableHour'))$('waveAvailableHour').onclick=()=>{const next=nextWaveHour(selectedWaveRecords());if(next!==null)setHour(state.times.indexOf(next),true);}; $('windSource').onchange=e=>selectModel(e.target.value); $('waveSource').onchange=e=>{if(!selectWaveSource(e.target.value))e.target.value=state.waveSource;}; $('ports').addEventListener('change',e=>{const sel=e.target.closest?.('select[data-slot]');if(sel)choosePort(Number(sel.dataset.slot),sel.value===''?null:Number(sel.value));});$('ports').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.port-main[data-port]')){e.preventDefault();selectPort(Number(e.target.dataset.port));}});$('ports').addEventListener('click',e=>{if(e.target.closest?.('.port-pick,.port-name-pick'))return;const f=e.target.closest('[data-flag-port]');if(f){toggleFlagPort(Number(f.dataset.flagPort));return;}const b=e.target.closest('[data-port]');if(b)selectPort(Number(b.dataset.port));});$('models')?.addEventListener('click',e=>{const b=e.target.closest('[data-model]');if(b)selectModel(b.dataset.model);});$('tableLabels').addEventListener('click',e=>{const b=e.target.closest('[data-select-model]');if(b)selectModel(b.dataset.selectModel);});$('routeWaves').onclick=()=>{state.routeWaves=!state.routeWaves;updateRouteWaves();};$('flags').onclick=()=>{state.flags=!state.flags;$('flags').setAttribute('aria-pressed',state.flags);$('flags').classList.toggle('active',state.flags);updateMarkers();};$('layers').addEventListener('click',e=>{const b=e.target.closest('[data-layer]');if(!b)return;state.layer=b.dataset.layer;document.querySelectorAll('[data-layer]').forEach(x=>x.classList.toggle('active',x===b));updateScale();renderTimeline();updateMarkers();updateRouteWaves();drawField();loadField();});$('ranges').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(!b)return;state.range=Number(b.dataset.range);document.querySelectorAll('[data-range]').forEach(x=>x.classList.toggle('active',x===b));renderChart();});$('compare').onclick=()=>{state.compare=!state.compare;$('compare').setAttribute('aria-pressed',state.compare);renderChart();};$('chartContent').onclick=e=>{const b=e.target.closest('.model-meteogram [data-hour]');if(b){setHour(b.dataset.hour);return;}
+ // Day strip, hour strip and the chart: move the time cursor to the clicked column.
+ if(e.target.closest?.('.meteo-days,.meteo-hours,.meteogram-plot')&&!e.target.closest('.time-cursor')){const r=$('chartContent').getBoundingClientRect();setHour(Math.floor((e.clientX-r.left)/48));}};let timer;if($('mapTlRange'))$('mapTlRange').addEventListener('input',e=>setHour(Number(e.target.value)));if($('mapPlay'))$('mapPlay').onclick=()=>{$('play').click();};$('play').onclick=()=>{state.playing=!state.playing;$('play').innerHTML=playIcon(state.playing);$('play').setAttribute('aria-pressed',state.playing);$('play').setAttribute('aria-label',state.playing?'Pause forecast':'Play forecast');clearInterval(timer);if(state.playing)timer=setInterval(()=>setHour((state.hour+1)%state.times.length,true),1000);renderMapTimeline();};$('now').onclick=()=>{const now=Math.floor(Date.now()/3600000)*3600;const i=state.times.findIndex(t=>t>=now);setHour(i<0?state.times.length-1:i,true);};$('anim').setAttribute('aria-pressed',state.animate);$('anim').classList.toggle('on',state.animate);if($('waveAnim')){$('waveAnim').setAttribute('aria-pressed',state.waveAnim);$('waveAnim').classList.toggle('on',state.waveAnim);$('waveAnim').onclick=()=>{state.waveAnim=!state.waveAnim;$('waveAnim').classList.toggle('on',state.waveAnim);$('waveAnim').setAttribute('aria-pressed',state.waveAnim);if(state.waveAnim)loadWaveAnimField();else drawWaveLayer();};}$('anim').onclick=()=>{state.animate=!state.animate;$('anim').classList.toggle('on',state.animate);$('anim').setAttribute('aria-pressed',state.animate);if(!state.animate&&pctx)pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);};bindMapFullscreen();document.querySelector('.map-controls')?.addEventListener?.('click',()=>{state.viewTouched=true;},true);$('zoomIn').onclick=()=>map?.zoomIn();$('zoomOut').onclick=()=>map?.zoomOut();$('fit').onclick=()=>{if(map){const geometry=routeGeometry();map.fitBounds([...geometry.polygon,...GK_ROUTE_POINTS,...slotPorts().map(i=>PORTS[i])].map(p=>[p.lat,p.lon]),{padding:[35,45]});}};if($('refresh'))$('refresh').onclick=async()=>{$('refresh').disabled=true;resetDMIRetryAttempts();resetForecastWindow();renderAll();await Promise.allSettled([loadPorts(true),loadField(true),loadRouteWaves(true),loadExtraWavePorts(state.waveSource,true),loadModelTiming(state.model,true),loadModelTiming(state.waveSource,true),...(state.waveSource==='stormglass'?[loadStormglassPorts(true)]:[])]);$('refresh').disabled=false;};for(const id of ['info','sources','about'])if($(id))$(id).onclick=()=>$('aboutDialog').showModal();$('closeDialog').onclick=()=>$('aboutDialog').close();$('aboutDialog').addEventListener('click',e=>{if(e.target===$('aboutDialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});document.addEventListener('keydown',e=>{if($('aboutDialog').open||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();setHour(state.hour+(e.key==='ArrowRight'?1:-1),true);}});}
 // Opening state: ICON-EU wind, ECMWF WAM waves, flags at Ventspils Berth and Norvik Berth,
 // wind animation and sea-state numbers on, every time the page opens.
-async function start(){Object.assign(state,{port:1,model:'icon_eu',waveSource:'ecmwf_wam',animate:true,routeWaves:true,flags:true,flagPorts:new Set([1,2])});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();updateScale();initMap();setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();await Promise.allSettled([loadField(),loadRouteWaves()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
+// ---- Wave direction animation: a separate map layer of fine drifting hatch marks ----
+// Each crest is a short arc drawn across the direction of travel, bulging forward like a
+// breaking line, with a fainter crest one "wavelength" behind it. Crests drift where the
+// waves go (opposite to the "from" direction), their length and weight grow with Hs and
+// their speed with the wave period (deep-water phase speed c = gT/2π). They fade in and out.
+let waveCanvas=null,wctx=null,waveScreen=null,waveCrests=[],waveLastFrame=0,waveLoading=null;
+function waveAnimGrid(){return state.waveSource==='stormglass'?state.stormglassRoute:waveFieldPoints(state.waveSource);}
+async function loadWaveAnimField(force=false){
+ const source=state.waveSource;if(!state.waveAnim||source==='stormglass'||!state.gridPoints.length)return drawWaveLayer();
+ const existing=source==='ecmwf_wam'?state.waveGrid:state.waveFields[source];if(existing&&!force)return drawWaveLayer();
+ if(waveLoading===source)return;waveLoading=source;
+ try{const points=grid('wave');let records,r;
+  if(WAVE_SOURCES[source].api){const result=await fetchProvider(source,'wave-grid',force);r=result.meta;records=result.records;}
+  else{const u=url('https://marine-api.open-meteo.com/v1/marine',points,{hourly:'wave_height,wave_direction,wave_period',models:source,cell_selection:'sea'});r=await requestJSON(u,'grid-v4-'+source,force);records=list(r.data);}
+  const entries=records.map((series,i)=>({lat:points[i].lat,lon:points[i].lon,series}));
+  if(source==='ecmwf_wam')state.waveGrid=entries;else state.waveFields[source]=entries;state.metas['grid-'+source]=r;
+ }catch(e){console.warn('wave animation field',source,e.message);}
+ finally{if(waveLoading===source)waveLoading=null;}
+ drawWaveLayer();
+}
+// Land mask for the current view, drawn once per view at quarter resolution.
+function waveLandMask(size){
+ const s=4,mask=document.createElement('canvas');mask.width=Math.ceil(size.x/s);mask.height=Math.ceil(size.y/s);const m=mask.getContext('2d');m.fillStyle='#000';
+ for(const f of (state.coast||state.land)?.features||[]){const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;for(const poly of polys){m.beginPath();for(const ring of poly){ring.forEach(([lon,lat],i)=>{const p=map.latLngToContainerPoint([lat,lon]);i?m.lineTo(p.x/s,p.y/s):m.moveTo(p.x/s,p.y/s);});m.closePath();}m.fill('evenodd');}}
+ const data=m.getImageData(0,0,mask.width,mask.height).data;return (x,y)=>{const i=(Math.floor(y/s)*mask.width+Math.floor(x/s))*4+3;return data[i]>0;};
+}
+function drawWaveLayer(){
+ if(!map?.getPane||typeof L==='undefined')return;
+ if(!waveCanvas){waveCanvas=L.DomUtil.create('canvas','wave-canvas',map.getPane('weather'));waveCanvas.style.position='absolute';waveCanvas.style.pointerEvents='none';wctx=waveCanvas.getContext('2d');}
+ const size=map.getSize();L.DomUtil.setPosition(waveCanvas,map.containerPointToLayerPoint([0,0]));waveCanvas.width=size.x;waveCanvas.height=size.y;waveCanvas.style.width=size.x+'px';waveCanvas.style.height=size.y+'px';
+ waveScreen=null;waveCrests=[];const g=state.waveAnim?waveAnimGrid():null;if(!g?.length||!state.land||!size.x)return;
+ const step=18,cols=Math.ceil(size.x/step),rows=Math.ceil(size.y/step),land=waveLandMask(size),t=selectedEpoch(),cells=[],values=Array(cols*rows);
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+  const cx=x*step+step/2,cy=y*step+step/2;if(land(cx,cy))continue;const ll=map.containerPointToLatLng([cx,cy]);if(!inRing(ll.lng,ll.lat,BASIN))continue;
+  const nearby=nearestGridPoints(g,ll.lat,ll.lng);const s=sampleNearby(nearby,'wave_height','wave_direction',t);if(!s||!(s.u||s.v))continue;
+  let ps=0,pw=0;for(const {p,d} of nearby){const per=at(p.series,'wave_period',t),w=1/Math.max(.008,d);if(valid(per)){ps+=per*w;pw+=w;}}
+  const len=Math.hypot(s.u,s.v)||1;values[y*cols+x]={hs:s.value,ux:s.u/len,uy:s.v/len,period:pw?ps/pw:5};cells.push(y*cols+x);
+ }
+ waveScreen={cols,rows,step,values,cells,land};const count=Math.min(520,Math.round(cells.length*.95));for(let i=0;i<count;i++)waveCrests.push(newWaveCrest(true));
+}
+function crestWaveAt(x,y){if(!waveScreen)return null;const {step,cols,rows,values,land}=waveScreen,c=Math.floor(x/step),r=Math.floor(y/step);if(c<0||r<0||c>=cols||r>=rows||land(x,y))return null;return values[r*cols+c]||null;}
+function newWaveCrest(spread=false){
+ const cells=waveScreen?.cells;if(!cells?.length)return null;const i=cells[Math.floor(Math.random()*cells.length)],{step,cols}=waveScreen,life=90+Math.random()*60;
+ return {x:(i%cols)*step+Math.random()*step,y:Math.floor(i/cols)*step+Math.random()*step,age:spread?Math.random()*life:0,life};
+}
+// Fine hatching: tiny thin dashes across the wave direction, drifting slowly with the waves.
+// Length and opacity grow with Hs, speed with the period; each dash fades in and out.
+function animateWaves(now){
+ requestAnimationFrame(animateWaves);
+ if(!wctx)return;if(!state.waveAnim||!waveScreen||mapPaused||document.hidden){if(waveCanvas&&(mapPaused||!state.waveAnim))wctx.clearRect(0,0,waveCanvas.width,waveCanvas.height);return;}
+ if(now-waveLastFrame<33)return;const dt=Math.min(2,(now-waveLastFrame)/33||1);waveLastFrame=now;
+ const slow=matchMedia('(prefers-reduced-motion: reduce)').matches?.4:1,land=waveScreen.land;
+ wctx.clearRect(0,0,waveCanvas.width,waveCanvas.height);wctx.lineCap='round';wctx.lineWidth=.9;
+ for(let i=0;i<waveCrests.length;i++){
+  const c=waveCrests[i];if(!c){waveCrests[i]=newWaveCrest(true);continue;}
+  const w=crestWaveAt(c.x,c.y);if(!w||(c.age+=dt)>c.life){waveCrests[i]=newWaveCrest();continue;}
+  const speed=(.22+.04*w.period)*dt*slow;c.x+=w.ux*speed;c.y+=w.uy*speed;
+  const hs=Math.min(4,Math.max(.1,w.hs)),h=3+1.5*Math.sqrt(hs),px=-w.uy,py=w.ux;
+  if(land(c.x-px*h,c.y-py*h)||land(c.x+px*h,c.y+py*h)){waveCrests[i]=newWaveCrest();continue;}
+  const a=Math.sin(Math.PI*c.age/c.life)*(.32+.12*Math.min(2.5,hs));
+  wctx.strokeStyle=`rgba(255,255,255,${a.toFixed(3)})`;wctx.beginPath();wctx.moveTo(c.x-px*h,c.y-py*h);wctx.lineTo(c.x+px*h,c.y+py*h);wctx.stroke();
+ }
+}
+// Light / dark theme switch under the clock. The choice is remembered on this device.
+function applyTheme(theme,save=false){
+ document.documentElement.setAttribute('data-theme',theme);
+ for(const b of document.querySelectorAll('[data-theme-set]'))b.setAttribute('aria-pressed',String(b.dataset.themeSet===theme));
+ document.querySelector('meta[name="theme-color"]')?.setAttribute('content',theme==='dark'?'#0b1820':'#102e3b');
+ if(save){try{localStorage.setItem('baltic-theme',theme);}catch{}
+  // Colours of the wind scale depend on the theme: redraw the table, cards, legend and map field.
+  state.renderedChart=null;renderAll();updateScale();drawField();}
+}
+function bindThemeSwitch(){
+ const current=document.documentElement.getAttribute?.('data-theme')==='dark'?'dark':'light';
+ for(const b of document.querySelectorAll('[data-theme-set]'))b.onclick=()=>applyTheme(b.dataset.themeSet,true);
+ applyTheme(current);
+}
+// Installable app (PWA): service worker, an "Install app" button on Android/Chrome, shortcuts.
+let installPrompt=null;
+function setupPWA(){
+ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('sw',e.message));
+ const button=$('installApp'),standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+ if(standalone)document.documentElement.classList.add('pwa-standalone');
+ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if(button&&!standalone)button.hidden=false;});
+ window.addEventListener('appinstalled',()=>{installPrompt=null;if(button)button.hidden=true;});
+ if(button)button.onclick=async()=>{if(!installPrompt)return;installPrompt.prompt();try{await installPrompt.userChoice;}catch{}installPrompt=null;button.hidden=true;};
+ // App shortcuts: /?layer=wind|wave opens that map layer.
+ const layer=new URLSearchParams(location.search).get('layer');if(layer==='wave'||layer==='wind'||layer==='gust')document.querySelector('[data-layer="'+layer+'"]')?.click();
+}
+async function start(){loadSlots();Object.assign(state,{port:inSlots(1)?1:(slotPorts()[0]??0),model:'icon_eu',waveSource:'ecmwf_wam',animate:true,waveAnim:false,routeWaves:true,flags:true,flagPorts:new Set(slotPorts().filter(i=>i!==0))});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();bindThemeSwitch();setupPWA();updateScale();initMap();requestAnimationFrame(animateWaves);setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();fetch('assets/coast.json').then(c=>c.ok?c.json():null).then(c=>{if(c?.features){state.coast=c;drawField();}}).catch(()=>{});await Promise.allSettled([loadField(),loadRouteWaves(),loadWaveAnimField()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
 start();

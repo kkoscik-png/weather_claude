@@ -14,7 +14,7 @@ assert.equal(linePath([1,null,2],x=>x),'M24,1.00 M120,2.00 ');assert(direction(0
 state.times=[state.base,state.base+3600];
 state.wind=Object.fromEntries(Object.keys(MODELS).map((m,i)=>[m,PORTS.map((p,j)=>({latitude:p.lat+.01,longitude:p.lon+.01,hourly:{time:state.times,wind_speed_10m:[i+j+4,i+j+5],wind_gusts_10m:[i+j+7,i+j+8],wind_direction_10m:[90,110]}}))]));
 state.wave=PORTS.map(p=>({latitude:p.lat+.02,longitude:p.lon+.02,hourly:{time:state.times,wave_height:[0,1.2],wave_direction:[180,200],wave_period:[4,5]}}));
-assert.equal(PORTS.length,3);assert.equal(PORTS[0].lat,57.407578);assert.equal(PORTS[0].lon,21.525557);assert.equal(PORTS[1].lat,57.398842);assert.equal(PORTS[1].lon,21.576607);assert.equal(PORTS[2].lat,58.939033);assert.equal(PORTS[2].lon,17.979752);
+assert.equal(PORTS.length,5);assert.equal(PORTS[3].name,'Gdynia Berth');assert.equal(PORTS[3].lat,54.533221);assert.equal(PORTS[3].lon,18.542647);assert.equal(PORTS[4].name,'Karlskrona Berth');assert.equal(PORTS[4].lat,56.165452);assert.equal(PORTS[4].lon,15.628852);assert.equal(PORTS[0].lat,57.407578);assert.equal(PORTS[0].lon,21.525557);assert.equal(PORTS[1].lat,57.398842);assert.equal(PORTS[1].lon,21.576607);assert.equal(PORTS[2].lat,58.939033);assert.equal(PORTS[2].lon,17.979752);
 assert(distanceKm(PORTS[0],PORTS[1])>3);renderPointDetails();assert(el('pointDetails').innerHTML.includes('57.407578'));assert(el('pointDetails').innerHTML.includes('Grid'));
 for(const model of Object.keys(MODELS)){state.model=model;assert(windAt(0,'wind_speed_10m')>=4);renderPorts();renderChart();renderTimeline();assert(el('chartContent').innerHTML.includes('hour-col'));assert(!el('chartContent').innerHTML.includes('NaN'));assert(!el('ports').innerHTML.includes('NaN'));}
 state.compare=true;el('forecast-legend').append=()=>{};sandbox.document.querySelector=()=>({append(){}});renderChart();assert(el('chartContent').innerHTML.includes('#a18ac8'));
@@ -24,4 +24,4 @@ const requests=Object.fromEntries(Object.keys(MODELS).filter(m=>m!=='smhi_snow'&
 requests.wave=url('https://marine-api.open-meteo.com/v1/marine',PORTS,{hourly:'wave_height,wave_direction,wave_period',models:'ecmwf_wam',cell_selection:'sea'});
 requests.wavegrid=url('https://marine-api.open-meteo.com/v1/marine',grid('wave'),{hourly:'wave_height,wave_direction,wave_period',models:'ecmwf_wam',cell_selection:'sea'});
 fs.writeFileSync('/tmp/baltic-api-requests.json',JSON.stringify(requests));
-console.log('PASS: 3 exact locations, independent model records, hourly lookup, missing/zero values, comparison, chart/table, grid metadata, vectors, spatial interpolation and API requests.');
+console.log('PASS: 5 exact locations, independent model records, hourly lookup, missing/zero values, comparison, chart/table, grid metadata, vectors, spatial interpolation and API requests.');
