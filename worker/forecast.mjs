@@ -198,8 +198,27 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     if(!result.ok)throw Object.assign(Error('Open-Meteo: HTTP '+result.status),{status:result.status});
     const payload=normalizeDMIOpenMeteo(await result.json(),points,now());try{payload.timing=(await getSchedule('dmi_harmonie','open-meteo')).timing;}catch{}dmiTimings.set('dmi_harmonie',payload.timing);return payload;
   }
+  // Point forecast for a map click: the selected model at that exact position (nearest model cell).
+  const POINT_WIND={icon_eu:'icon_eu',icon_global:'icon_global',ecmwf_ifs:'ecmwf_ifs',dmi_harmonie:'dmi_seamless'},POINT_WAVE=['ecmwf_wam','dwd_ewam'];
+  async function pointForecast(model,lat,lon){
+    const p={id:'0',lat,lon};
+    if(model==='smhi_snow'){const url='https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/'+lon+'/lat/'+lat+'/data.json';return {record:normalizeSnow(await(await response(url)).json(),p),source:'SMHI SNOW1gv1'};}
+    const wave=POINT_WAVE.includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
+    const hour=Math.floor(now()/HOUR)*HOUR,query={latitude:lat,longitude:lon,hourly:wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m',models:wave?model:POINT_WIND[model],timeformat:'unixtime',timezone:'UTC',start_hour:iso(hour-HOUR).slice(0,16),end_hour:iso(hour+95*HOUR).slice(0,16),cell_selection:wave?'sea':'nearest',...(wave?{}:{wind_speed_unit:'ms'})};
+    const data=await(await response(host+'?'+new URLSearchParams(query))).json();
+    return {record:normalizeOpenWeather(data,[p],model,wave)[0],source:model==='dmi_harmonie'?'DMI Seamless via Open-Meteo':(wave?'Marine':'Weather')+' forecast via Open-Meteo'};
+  }
   return async function handleForecast(request,env,ctx={}) {
-    const u=new URL(request.url);if(!['/api/forecast','/api/model-updates'].includes(u.pathname))return null;
+    const u=new URL(request.url);
+    if(u.pathname==='/api/point'){
+      if(request.method!=='GET')return json({error:'Method not allowed.'},405);
+      const model=u.searchParams.get('model'),lat=Number(u.searchParams.get('lat')),lon=Number(u.searchParams.get('lon'));
+      if(!(POINT_WIND[model]||POINT_WAVE.includes(model)||model==='smhi_snow')||!(lat>=47&&lat<=71.5)||!(lon>=-26&&lon<=62))return json({error:'Invalid model or position.'},400);
+      const rl=Math.round(lat*50)/50,ro=Math.round(lon*50)/50;
+      try{const result=await cached('point/v1/'+model+'/'+rl+'/'+ro,1800,()=>pointForecast(model,rl,ro));return json({...result,model,lat:rl,lon:ro},200,{'Cache-Control':'private, max-age=600'});}
+      catch(e){return json({error:'Point forecast unavailable.',model},e.status===429?429:502);}
+    }
+    if(!['/api/forecast','/api/model-updates'].includes(u.pathname))return null;
     if(request.method!=='GET')return json({error:'Method not allowed.'},405);
     const model=u.searchParams.get('model');
     if(u.pathname==='/api/model-updates'){

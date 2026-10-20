@@ -649,3 +649,11 @@ main{row-gap:14px}
 /* iPhone (aplikacja z ekranu początkowego): treść poza wycięciem, paskiem stanu i paskiem gestów */
 .pwa-standalone body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .map-section.map-full{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+
+/* Okienko punktu na mapie */
+.point-popup .leaflet-popup-content{margin:11px 13px}
+.point-pop{display:flex;flex-direction:column;gap:3px;font:500 12px 'DM Sans',system-ui,sans-serif}
+.point-pop b{font-size:13px;font-weight:700;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.point-pop .pp-chip{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:6px;font:800 13px 'Manrope',system-ui,sans-serif}
+.point-pop small{opacity:.7;font-size:10.5px;margin-top:2px}
+.pp-loading{color:#7fd0bd}
