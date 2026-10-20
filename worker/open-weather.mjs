@@ -4,7 +4,7 @@ export function normalizeOpenWeather(data,points,model,wave=false){
  return rows.map((row,i)=>{
   if(!Array.isArray(row.hourly?.time))throw Error('Invalid Open-Meteo forecast.');
   const hourly={time:row.hourly.time};for(const field of fields)hourly[field]=hourly.time.map((_,i)=>{const v=row.hourly[field]?.[i];return typeof v==='number'&&Number.isFinite(v)&&(v>=0||field==='temperature_2m')?v:null;});
-  return {id:points[i].id,latitude:row.latitude,longitude:row.longitude,provider:model.startsWith('ecmwf')?'ECMWF via Open-Meteo':'DWD via Open-Meteo',model,hourly};
+  return {id:points[i].id,latitude:row.latitude,longitude:row.longitude,provider:(model.startsWith('ecmwf')?'ECMWF':model.startsWith('dmi')?'DMI':model.startsWith('metno')?'MET Norway':'DWD')+' via Open-Meteo',model,hourly};
  });
 }
 export function normalizeSnow(data,point){

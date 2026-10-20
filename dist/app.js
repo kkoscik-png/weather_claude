@@ -8,7 +8,11 @@ const PORTS=[
 {id:'gdynia-berth',name:'Gdynia Berth',portName:'Gdynia',country:'Poland',code:'PL GDY · BERTH',lat:54.533221,lon:18.542647,mapUrl:'https://maps.app.goo.gl/R4fUJTLLw8qAxj599'},
 {id:'karlskrona-berth',name:'Karlskrona Berth',portName:'Karlskrona',country:'Sweden',code:'SE KAA · BERTH',lat:56.165452,lon:15.628852,mapUrl:'https://maps.app.goo.gl/xpqze9z8qMG8iAuC9'}
 ];
-MODELS.dmi_harmonie={label:'DMI HARMONIE DINI',short:'DMI',desc:'DMI · HARMONIE DINI · 2 km · cycle every 3 h',color:'#d38c4f',api:true};
+MODELS.dmi_harmonie={label:'DMI HARMONIE',short:'DMI',desc:'DMI · HARMONIE AROME · 2 km · cycle every 3 h · via Open-Meteo',color:'#d38c4f',api:true};
+// Free high-resolution regional models. Points outside a model's domain show no data.
+MODELS.metno_nordic={label:'MET Nordic',short:'MET',desc:'MET Norway · MET Nordic (MEPS) · 1 km · updated hourly · about 2.5 days',color:'#4f9fb8',api:true};
+MODELS.fmi_harmonie={label:'FMI HARMONIE',short:'FMI',desc:'FMI · HARMONIE (MEPS) · 2.5 km · FMI open data · about 2.5 days',color:'#5d86c9',api:true};
+MODELS.icon_d2={label:'ICON-D2',short:'ICON-D2',desc:'DWD · ICON-D2 · 2.2 km · every 3 h · about 2 days · covers Gdynia and Karlskrona, not Ventspils or Norvik',color:'#9a7bd0',api:true};
 const WAVE_MODEL='ecmwf_wam';
 const WAVE_SOURCES={ecmwf_wam:{label:'ECMWF WAM',available:true},smhi_swan:{label:'SMHI SWAN',available:false},stormglass:{label:'Stormglass AI',available:false}};
 Object.assign(WAVE_SOURCES,{fmi_wam:{label:'FMI WAM',available:true,api:true,desc:'FMI · Baltic · 1.85 km · peak period Tp'},dmi_wam:{label:'DMI WAM',available:false,api:true,desc:'DMI · North Sea and Baltic · 5 km · mean period'},dwd_ewam:{label:'DWD EWAM',available:true,desc:'DWD · Europa · 5 km · Open-Meteo'},fcoo_ww3:{label:'FCOO WW3',available:true,api:true,desc:'FCOO · North Sea and Baltic · 3 NM · mean period · ~2.3 days'},copernicus_baltic:{label:'Copernicus Baltic WAM',available:true,api:true,desc:'Copernicus Marine / FMI · 1.85 km · peak period Tp'}});
@@ -60,10 +64,10 @@ async function requestJSON(url,key,force=false,ttl=1800000){const dmi=url.starts
 function list(data){return Array.isArray(data)?data:[data];}
 function cacheLabel(meta){return meta?'Downloaded '+timeFmt.format(new Date(meta.saved))+(meta.stale?' · may be outdated':''):'';}
 function windModelInfo(model,meta=state.metas[model]){
- const info=MODELS[model];return model==='dmi_harmonie'&&meta?.delivery==='open-meteo'?{...info,label:'DMI + ECMWF · Open-Meteo',short:'DMI',desc:'Fallback source Open-Meteo · DMI HARMONIE 2 km + ECMWF 9 km'}:info;
+ const info=MODELS[model];return model==='dmi_harmonie'&&meta?.blend?{...info,label:'DMI + ECMWF · Open-Meteo',short:'DMI',desc:'Fallback source Open-Meteo · DMI HARMONIE 2 km + ECMWF 9 km'}:info;
 }
 function renderWindSource(){
- const option=$('windSource')?.querySelector?.('[value="dmi_harmonie"]');if(option)option.textContent=windModelInfo('dmi_harmonie').label.replace(' · Open-Meteo','').replace('DMI HARMONIE DINI','DMI HARMONIE');
+ const option=$('windSource')?.querySelector?.('[value="dmi_harmonie"]');if(option)option.textContent=windModelInfo('dmi_harmonie').label.replace(' · Open-Meteo','');
  if($('modelDescription'))$('modelDescription').textContent=windModelInfo(state.model).desc;
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
@@ -162,7 +166,7 @@ function renderTimeline(){renderMapTimeline();
 
 }
 
-const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
+const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_d2'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'});
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
 // Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
@@ -305,7 +309,7 @@ function renderChart(){
  document.querySelectorAll('.extra-legend').forEach(x=>x.remove());if(state.compare)Object.keys(MODELS).filter(m=>m!==state.model).forEach(model=>{const span=document.createElement('span');span.className='extra-legend';span.innerHTML=`<i class="line" style="background:${MODELS[model].color}"></i>${windModelInfo(model).short} · wind`;document.querySelector('.forecast-legend').append(span);});
 }
 function renderTableLabels(){
- const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2.5 km',dmi_harmonie:'2 km'};
+ const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2.5 km',dmi_harmonie:'2 km',metno_nordic:'1 km',fmi_harmonie:'2.5 km',icon_d2:'2.2 km'};
  $('tableLabels').innerHTML='<div class="model-label-day" aria-hidden="true"></div><div class="model-label-hour" aria-hidden="true"></div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
 }
 // Red vertical time cursor across all model rows and the meteogram; drag it to change the hour.
@@ -662,7 +666,7 @@ async function refreshDMIIfDue(){
  await Promise.allSettled([loadField(true),loadRouteWaves(true)]);
 }
 async function loadModelTiming(model,force=false){
- if(!['ecmwf_ifs','icon_eu','icon_global','ecmwf_wam','dwd_ewam','dmi_harmonie','dmi_wam','copernicus_baltic'].includes(model)){renderUpdateClocks();return;}
+ if(!['ecmwf_ifs','icon_eu','icon_global','ecmwf_wam','dwd_ewam','dmi_harmonie','dmi_wam','copernicus_baltic','metno_nordic','icon_d2'].includes(model)){renderUpdateClocks();return;}
  const meta=model===state.waveSource?waveMeta():state.metas[model],known=meta?.refreshAfter||state.timings[model]?.nextUpdate;if(Date.now()<Date.parse(known)){renderUpdateClocks();return;}
  try{const r=await requestJSON('/api/model-updates?model='+model,'model-timing-cycle-v1-'+model,force,300000);state.timings[model]=r.data.timing;}catch{}renderUpdateClocks();
 }
