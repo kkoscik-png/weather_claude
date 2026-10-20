@@ -306,7 +306,7 @@ function renderChart(){
 }
 function renderTableLabels(){
  const resolution={icon_eu:'7 km',icon_global:'13 km',ecmwf_ifs:'9 km',smhi_snow:'2.5 km',dmi_harmonie:'2 km'};
- $('tableLabels').innerHTML='<div class="model-label-day">DAY</div><div class="model-label-hour">Hour</div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
+ $('tableLabels').innerHTML='<div class="model-label-day" aria-hidden="true"></div><div class="model-label-hour" aria-hidden="true"></div>'+TABLE_MODELS.map(model=>`<button class="model-label ${model===state.model?'primary-model':''}" data-select-model="${model}" title="Show ${windModelInfo(model).short} on the chart and map"><span>${windModelInfo(model).short}<small>${resolution[model]}</small></span><em>wind / gusts · m/s</em></button>`).join('');
 }
 // Red vertical time cursor across all model rows and the meteogram; drag it to change the hour.
 // Cursor x: start of the selected hour; in the current hour it follows the clock in 10-minute steps (8 px each).

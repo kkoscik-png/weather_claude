@@ -567,3 +567,20 @@ main{row-gap:14px}
 
 /* Dotyk: jeden palec przewija stronę (pan-x pan-y), szczypanie dwoma palcami obsługuje mapa */
 @media(pointer:coarse),(any-pointer:coarse){.map-section:not(.map-full) .leaflet-container{touch-action:pan-x pan-y!important}}
+
+/* Bez napisów DAY / Hour: węższa kolumna nazw modeli, tabela przesunięta w lewo */
+:root{--weather-label-width:112px}
+.chart-labels{flex:0 0 var(--weather-label-width)!important;width:var(--weather-label-width)}
+.model-label{padding-left:10px!important;padding-right:6px!important}
+.model-label>span{white-space:nowrap}
+.table-corner{padding-left:9px;gap:6px}
+@media(max-width:760px){:root{--weather-label-width:100px}.model-label{padding-left:8px!important;padding-right:4px!important}.table-corner{padding-left:6px;gap:4px}}
+:root{--weather-label-width:106px}
+@media(max-width:760px){:root{--weather-label-width:90px}}
+/* Nazwa miejsca nad wykresem: może przejść do drugiej linii zamiast się ucinać */
+.chart-place{white-space:normal;overflow:visible;text-overflow:clip;align-items:flex-start;line-height:12px;font-size:10px;max-width:calc(100% - 16px)}
+.chart-place::before{margin-top:3px}
+.axis-unit>small{top:44px}
+@media(max-width:760px){.chart-place{font-size:9px;line-height:11px}.axis-unit>small{top:42px}}
+.axis-unit>small{max-width:62px}
+@media(max-width:760px){.axis-unit>small{max-width:54px}}
