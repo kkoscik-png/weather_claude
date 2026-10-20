@@ -524,3 +524,16 @@ main{row-gap:14px}
 @media(max-width:760px){.ports-column>.ports{overflow:visible}.ports-column>.ports .port{flex:1 1 0;min-width:0}}
 @media(max-width:760px){.ports-column>.ports .port-id h2>span{white-space:normal;line-height:1.12;overflow:visible}.ports-column>.ports .port-id h2{font-size:14px;align-items:flex-start}.ports-column>.ports .port-id small{display:none}.ports-column>.ports .port-pick{width:calc(100% - 96px)}}
 @media(max-width:760px){.ports-column>.ports .port-wind>.wind-chip{flex:1 1 0;width:auto;min-width:0}.ports-column>.ports .port-wind{gap:4px}}
+
+/* Nazwa portu + trójkącik = jedna lista wyboru (przezroczysty select nad oboma) */
+.port-name-pick{position:relative;display:inline-flex;align-items:center;gap:3px;max-width:100%;min-width:0;cursor:pointer}
+.port-name-pick>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.port-name-pick select{position:absolute;inset:-4px -6px -4px -4px;width:calc(100% + 10px);height:calc(100% + 8px);opacity:0;cursor:pointer;font-size:16px;border:0}
+.port-chev,.ports-column>.ports .port-chev{width:16px;height:16px;padding:0;background:none!important;border-radius:0;stroke:#7d969e;stroke-width:1.5;opacity:.85;transition:opacity .15s,stroke .15s,transform .15s}
+.port-name-pick:hover .port-chev{opacity:1;stroke:#14323c;transform:translateY(1px)}
+.port-name-pick:has(select:focus-visible) .port-chev{stroke:var(--accent);opacity:1}
+:root[data-theme="dark"] .port-chev{stroke:#8fa5ad}
+:root[data-theme="dark"] .port-name-pick:hover .port-chev{stroke:#e3edf0}
+.port-main{cursor:pointer}
+.port-main:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:inherit}
+@media(max-width:760px){.ports-column>.ports .port-name-pick>span{white-space:normal;line-height:1.12}}
