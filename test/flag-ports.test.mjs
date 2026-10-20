@@ -56,7 +56,7 @@ test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and fl
   assert.match(opening, /animate:true/);
   assert.match(opening, /routeWaves:true/);
   assert.match(opening, /flagPorts:new Set\(slotPorts\(\)\.filter\(i=>i!==0\)\)/);
-  assert.match(src, /const DEFAULT_SLOTS=\[1,2,null\];/);
+  assert.match(src, /const DEFAULT_SLOTS=\[1,2\];/);
   assert(!/localStorage\.setItem\('baltic-port-slots'/.test(src));
   assert(!/localStorage\.setItem\('baltic-flag-ports'/.test(src));
   const html = fs.readFileSync('dist/index.html', 'utf8');

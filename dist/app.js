@@ -75,8 +75,8 @@ function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v
 function flagPorts(){return state.flagPorts||new Set([state.port]);}
 function toggleFlagPort(i){const set=new Set(flagPorts());if(set.has(i))set.delete(i);else set.add(i);state.flagPorts=set;renderPorts();updateMarkers();}
 // Three port tiles ("slots"), each showing one chosen port or empty ("Choose your port").
-// Every visit opens with Ventspils Berth and Norvik Berth; the third tile is free to choose.
-const DEFAULT_SLOTS=[1,2,null];
+// Two port tiles; every visit opens with Ventspils Berth and Norvik Berth.
+const DEFAULT_SLOTS=[1,2];
 function slotPorts(){return (state.slots||DEFAULT_SLOTS).filter(i=>i!==null&&i!==undefined);}
 function inSlots(i){return (state.slots||DEFAULT_SLOTS).includes(i);}
 function loadSlots(){state.slots=[...DEFAULT_SLOTS];try{localStorage.removeItem('baltic-port-slots');}catch{}}

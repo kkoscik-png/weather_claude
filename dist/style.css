@@ -502,3 +502,25 @@ main{row-gap:14px}
 @media(max-width:760px){.install-app span{display:none}.install-app{width:30px;padding:0;justify-content:center}}
 /* W zainstalowanej aplikacji: miejsce na pasek stanu telefonu */
 .pwa-standalone body{padding-top:env(safe-area-inset-top)}
+
+/* Dwa kafelki portów: równo rozciągnięte na całą wysokość nad wyborem modeli */
+@media(min-width:761px){
+.ports-column>.ports{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+.ports-column>.ports .port{flex:1 1 0;display:flex;flex-direction:column;min-height:0}
+.ports-column>.ports .port-main{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:14px 14px 15px}
+.ports-column>.ports .port-id h2{font-size:17px}
+.ports-column>.ports .port-id small{font-size:10px}
+.ports-column>.ports .port-wx svg{width:26px;height:26px}
+.ports-column>.ports .port-wx-now b{font-size:16px}
+.ports-column>.ports .port-range{font-size:12px}
+.ports-column>.ports .port-wind{gap:7px;margin-top:12px}
+.ports-column>.ports .port-wind>.wind-chip{flex:1 1 0;width:auto;height:56px;border-radius:10px}
+.ports-column>.ports .wind-chip small{font-size:9px}
+.ports-column>.ports .wind-chip b{font-size:22px}
+.ports-column>.ports .dir-chip .dir-name{font-size:9px;top:5px}
+.ports-column>.ports .port-pick{top:10px;height:30px}
+.ports-column>.ports .port-flag{top:10px;right:10px;width:30px;height:30px}
+}
+@media(max-width:760px){.ports-column>.ports{overflow:visible}.ports-column>.ports .port{flex:1 1 0;min-width:0}}
+@media(max-width:760px){.ports-column>.ports .port-id h2>span{white-space:normal;line-height:1.12;overflow:visible}.ports-column>.ports .port-id h2{font-size:14px;align-items:flex-start}.ports-column>.ports .port-id small{display:none}.ports-column>.ports .port-pick{width:calc(100% - 96px)}}
+@media(max-width:760px){.ports-column>.ports .port-wind>.wind-chip{flex:1 1 0;width:auto;min-width:0}.ports-column>.ports .port-wind{gap:4px}}
