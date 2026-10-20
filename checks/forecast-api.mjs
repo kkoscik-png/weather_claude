@@ -213,6 +213,6 @@ test('browser manual refresh returns cached weather until the provider deadline'
 });
 
 test('an existing DMI snapshot also suppresses metadata requests before its deadline',async()=>{
- const cache=forecastStore(),saved=Date.parse(T),snapshot=normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],saved);await cache.put(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent('dmi_harmonie/ports@2/0')),Response.json(snapshot));let calls=0;
+ const cache=forecastStore(),saved=Date.parse(T),snapshot=normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],saved);await cache.put(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent('dmi_harmonie@3/ports@2/0')),Response.json(snapshot));let calls=0;
  const api=createForecastAPI({cache,now:()=>saved+3600000,fetcher:async()=>{calls++;throw Error('must not check DMI');}}),res=await api(new Request('https://weather.seasync.co/api/model-updates?model=dmi_harmonie'),{});assert.equal(res.status,200);assert.equal((await res.json()).refreshAfter,snapshot.timing.nextUpdate);assert.equal(calls,0);
 });

@@ -12,7 +12,7 @@ const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 // Bump a model's revision when its sampling changes, so stored cycles are not reused.
 // Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
-const CYCLE_REVISION={fcoo_ww3:2},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
+const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:3,dmi_wam:3},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};

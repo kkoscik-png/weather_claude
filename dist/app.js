@@ -631,7 +631,7 @@ function resumeDMIRetries(){
 async function fetchProvider(model,group,force=false,onProgress){
  const retry=providerRetries.get(model);if(retry&&Date.now()<retry.until)throw retry.error;const key=model+'/'+group;if(providerRequests.has(key))return providerRequests.get(key);
  const job=(async()=>{let offset=0,records=[],timing=null,saved=Infinity,checkedAt=Infinity,refreshAfter=Infinity,stale=false,delivery=null,blend=false;
-  do{const r=await requestJSON('/api/forecast?'+new URLSearchParams({model,group,offset}), 'provider-cycle-v3/'+key+'/'+offset,force,model.startsWith('dmi_')?3600000:1800000);
+  do{const r=await requestJSON('/api/forecast?'+new URLSearchParams({model,group,offset}), 'provider-cycle-v4/'+key+'/'+offset,force,model.startsWith('dmi_')?3600000:1800000);
    if(!Array.isArray(r.data.records)||!r.data.records.length)throw Error('No model records');records.push(...r.data.records);timing=r.data.timing||timing;saved=Math.min(saved,r.data.saved||r.saved);stale=stale||r.stale||r.data.stale;checkedAt=Math.min(checkedAt,r.data.checkedAt||r.saved);const expiry=Date.parse(r.data.refreshAfter||r.data.timing?.nextUpdate);if(Number.isFinite(expiry))refreshAfter=Math.min(refreshAfter,expiry);if(r.data.delivery==='open-meteo'||!delivery)delivery=r.data.delivery||delivery;blend=blend||Boolean(r.data.blend);
    const next=r.data.nextOffset;if(next!==null&&(!Number.isInteger(next)||next<=offset))throw Error('Invalid model range');offset=next;if(onProgress)onProgress(records);
   }while(offset!==null);
