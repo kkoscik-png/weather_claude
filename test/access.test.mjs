@@ -105,3 +105,10 @@ test('installable app: manifest with PNG and maskable icons, service worker at t
   const html = fs.readFileSync('dist/index.html', 'utf8');
   assert(html.includes('rel="manifest" href="manifest.webmanifest"') && html.includes('id="installApp"'));
 });
+
+test('every versioned asset in index.html carries the same version tag', async () => {
+  const fs = await import('node:fs');
+  const tags = new Set([...fs.readFileSync('dist/index.html', 'utf8').matchAll(/\?v=([\w.-]+)/g)].map(m => m[1]));
+  // A stale tag on one file (e.g. style.css) keeps browsers on the old copy for a year.
+  assert.equal(tags.size, 1, 'version tags: ' + [...tags].join(', '));
+});
