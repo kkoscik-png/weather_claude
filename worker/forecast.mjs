@@ -5,14 +5,20 @@ import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
 const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs'];
-const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR}};
-const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
+const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR},metno_nordic:{interval:HOUR},icon_d2:{interval:3*HOUR},fmi_harmonie:{interval:3*HOUR}};
+const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],metno_nordic:['https://api.open-meteo.com','metno_nordic_pp'],icon_d2:['https://api.open-meteo.com','dwd_icon_d2'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
+// Open-Meteo model ids. DMI HARMONIE AROME is read from Open-Meteo instead of the overloaded DMI EDR API.
+const OM_MODEL={dmi_harmonie:'dmi_harmonie_arome_europe',metno_nordic:'metno_nordic',icon_d2:'icon_d2'};
+// Regional models: points outside the model domain get empty series instead of failing the whole batch.
+const REGIONAL=new Set(['dmi_harmonie','metno_nordic','icon_d2']),ICON_D2_DOMAIN={south:43.18,north:58.08,west:-3.94,east:20.34};
+const inDomain=(model,p)=>model!=='icon_d2'||p.lat>=ICON_D2_DOMAIN.south&&p.lat<=ICON_D2_DOMAIN.north&&p.lon>=ICON_D2_DOMAIN.west&&p.lon<=ICON_D2_DOMAIN.east;
+const OM_ATTRIBUTION={dmi_harmonie:'DMI HARMONIE AROME',metno_nordic:'MET Norway MET Nordic',icon_d2:'DWD ICON-D2'};
 const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),'wide-grid':FORECAST_GRIDS.wideGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon})),'route-gk':GK_ROUTE_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 // Bump a model's revision when its sampling changes, so stored cycles are not reused.
 // Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
-const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:3,dmi_wam:3},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
+const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:4,dmi_wam:3},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
@@ -22,16 +28,22 @@ function dmiTiming(referenceTime,model){
   // DMI documents +2h45m from cycle start to complete surface/WAM data.
   timing.nextUpdate=iso(Date.parse(referenceTime)+SOURCES[model].interval+165*60000);return timing;
 }
-export function normalizeFMI(xml,points) {
+const FMI_WAM={fields:{SigWaveHeight:'wave_height',WaveDirection:'wave_direction',WavePeriod:'wave_period'},model:'WAM',interval:6*HOUR};
+export const FMI_HARMONIE={fields:{WindSpeedMS:'wind_speed_10m',WindGust:'wind_gusts_10m',WindDirection:'wind_direction_10m',Temperature:'temperature_2m',TotalCloudCover:'cloud_cover',LowCloudCover:'cloud_cover_low',MediumCloudCover:'cloud_cover_mid',HighCloudCover:'cloud_cover_high',Precipitation1h:'precipitation'},model:'HARMONIE',interval:3*HOUR};
+// FMI WFS "timevaluepair" stored queries (WAM waves, HARMONIE weather). One member per parameter.
+export function normalizeFMI(xml,points,kind=FMI_WAM) {
   if (xml.includes('ExceptionReport')) throw Error('FMI rejected the request');
-  const records=points.map(p=>({id:p.id,latitude:p.lat,longitude:p.lon,provider:'FMI',model:'WAM',hourly:{time:[],wave_height:[],wave_direction:[],wave_period:[]}}));
-  const rows=points.map(()=>new Map()),fields={SigWaveHeight:'wave_height',WaveDirection:'wave_direction',WavePeriod:'wave_period'};
+  const fields=kind.fields,keys=[...new Set(Object.values(fields))];
+  const records=points.map(p=>({id:p.id,latitude:p.lat,longitude:p.lon,provider:'FMI',model:kind.model,hourly:{time:[],...Object.fromEntries(keys.map(k=>[k,[]]))}}));
+  const rows=points.map(()=>new Map());
+  const clean=(field,v)=>!Number.isFinite(v)?null:field==='temperature_2m'?Math.round(v*10)/10:numeric(v,field.endsWith('direction')||field==='wind_direction_10m'?360:field.startsWith('cloud_cover')?100:Infinity);
   let updatedAt=null,referenceTime=null;
   for(const match of xml.matchAll(/<wfs:member>([\s\S]*?)<\/wfs:member>/g)) {
     const member=match[1],pos=member.match(/<gml:pos[^>]*>([^<]+)<\/gml:pos>/)?.[1]?.trim().split(/\s+/).map(Number);
     const field=fields[member.match(/observableProperty=forecast[^"<>]*?param=([^&"<>]+)/)?.[1]];
     if(!pos||!field)continue;
-    const i=points.findIndex(p=>Math.abs(p.lat-pos[0])<0.0001&&Math.abs(p.lon-pos[1])<0.0001);if(i<0)continue;
+    // A single-point query is answered for that point even if FMI rounds the echoed position.
+    const i=points.length===1?0:points.findIndex(p=>Math.abs(p.lat-pos[0])<0.0001&&Math.abs(p.lon-pos[1])<0.0001);if(i<0)continue;
     const resultTime=member.match(/<om:resultTime>([\s\S]*?)<\/om:resultTime>/)?.[1]?.match(/<gml:timePosition[^>]*>([^<]+)/)?.[1];
     const analysis=member.match(/<om:parameter>([\s\S]*?)<\/om:parameter>/g)?.find(s=>s.includes('analysisTime'))?.match(/<gml:timePosition[^>]*>([^<]+)/)?.[1];
     if(resultTime&&(!updatedAt||Date.parse(resultTime)<Date.parse(updatedAt)))updatedAt=resultTime;
@@ -39,12 +51,12 @@ export function normalizeFMI(xml,points) {
     for(const pair of member.matchAll(/<wml2:MeasurementTVP>([\s\S]*?)<\/wml2:MeasurementTVP>/g)) {
       const time=Date.parse(pair[1].match(/<wml2:time>([^<]+)/)?.[1])/1000,raw=pair[1].match(/<wml2:value[^>]*>([^<]+)/)?.[1];
       if(!Number.isFinite(time))continue;if(!rows[i].has(time))rows[i].set(time,{});
-      rows[i].get(time)[field]=raw?.trim()?numeric(Number(raw),field==='wave_direction'?360:Infinity):null;
+      rows[i].get(time)[field]=raw?.trim()?clean(field,Number(raw)):null;
     }
   }
-  records.forEach((r,i)=>{for(const [t,values] of [...rows[i]].sort((a,b)=>a[0]-b[0])){r.hourly.time.push(t);for(const key of Object.values(fields))r.hourly[key].push(values[key]??null);}});
+  records.forEach((r,i)=>{for(const [t,values] of [...rows[i]].sort((a,b)=>a[0]-b[0])){r.hourly.time.push(t);for(const key of keys)r.hourly[key].push(values[key]??null);}});
   if(!records.some(r=>r.hourly.time.length))throw Error('No FMI data');
-  return {records,timing:modelTiming(updatedAt,6*HOUR,referenceTime),attribution:'Finnish Meteorological Institute, CC BY 4.0'};
+  return {records,timing:modelTiming(updatedAt,kind.interval,referenceTime),attribution:'Finnish Meteorological Institute, CC BY 4.0'};
 }
 export function normalizeDMI(data,points,model,referenceTime,fetchedAt=Date.now()) {
   const axes=data.domain?.axes,range=data.ranges;if(!axes?.t?.values||!range)throw Error('Invalid DMI forecast');
@@ -119,7 +131,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   async function getSchedule(model,delivery='auto'){
     return schedules(model+'/'+delivery,async()=>{
       let timing;
-      if(model.startsWith('dmi_')&&delivery!=='open-meteo'){
+      if(model==='dmi_wam'&&delivery!=='open-meteo'){
         const root='https://opendataapi.dmi.dk/v1/forecastedr/collections/'+SOURCES[model].collection,runs=await getJSON(root+'/instances',0);
         const ids=runs.instances.map(r=>r.id).sort().reverse(),id=ids.find(id=>Date.parse(id.replace(/T(\d{2})(\d{2})(\d{2})Z$/,'T$1:$2:$3Z'))+165*60000<=now())||ids[0];
         timing=dmiTiming(id.replace(/T(\d{2})(\d{2})(\d{2})Z$/,'T$1:$2:$3Z'),model);
@@ -134,16 +146,49 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       return {timing,saved:now()};
     });
   }
+  const omWindow=()=>{const hour=Math.floor(now()/HOUR)*HOUR;return {start:hour-HOUR,end:hour+95*HOUR};};
+  // An out-of-domain point of a regional model: same hourly axis, all values empty.
+  function emptyRecord(model,p,fields){const {start,end}=omWindow(),time=[];for(let t=start;t<=end;t+=HOUR)time.push(t/1000);return {id:p.id,latitude:p.lat,longitude:p.lon,provider:OM_ATTRIBUTION[model]||model,model,outsideDomain:true,hourly:{time,...Object.fromEntries(fields.split(',').map(f=>[f,time.map(()=>null)]))}};}
   async function fetchOpenWeather(model,points,group){
     const wave=['ecmwf_wam','dwd_ewam'].includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
     const fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,temperature_2m':'');
-    const query={latitude:points.map(p=>p.lat).join(','),longitude:points.map(p=>p.lon).join(','),hourly:fields,models:model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(Math.floor(now()/HOUR)*HOUR-HOUR).slice(0,16),end_hour:iso(Math.floor(now()/HOUR)*HOUR+95*HOUR).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
-    const data=await(await response(host+'?'+new URLSearchParams(query))).json(),saved=now();let timing;
-    try{timing=(await getSchedule(model)).timing;}catch{timing=modelTiming(iso(saved),HOUR,null,'fetch');}
-    return {records:normalizeOpenWeather(data,points,model,wave),saved,timing,delivery:'open-meteo',attribution:(wave?'Marine forecasts':'Weather forecasts')+' / Open-Meteo, CC BY 4.0'};
+    const {start,end}=omWindow();
+    const request=async list=>{
+      const query={latitude:list.map(p=>p.lat).join(','),longitude:list.map(p=>p.lon).join(','),hourly:fields,models:OM_MODEL[model]||model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(start).slice(0,16),end_hour:iso(end).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
+      return normalizeOpenWeather(await(await response(host+'?'+new URLSearchParams(query))).json(),list,model,wave);
+    };
+    let records;
+    if(!REGIONAL.has(model))records=await request(points);
+    else{
+      const inside=points.filter(p=>inDomain(model,p));
+      // Open-Meteo rejects a whole multi-point request ("No data is available for this location")
+      // when one point is outside a regional domain; then ask point by point.
+      let got=[];
+      if(inside.length){try{got=await request(inside);}catch(e){if(e.status!==400)throw e;got=[];for(const p of inside){try{got.push(...await request([p]));}catch(err){if(err.status!==400)throw err;}}}}
+      const byId=new Map(got.map(r=>[r.id,r]));records=points.map(p=>byId.get(p.id)||emptyRecord(model,p,fields));
+      if(!got.length&&group==='ports')throw Error('No '+model+' data for the ports');
+    }
+    const saved=now();let timing;
+    try{timing=(await getSchedule(model)).timing;}catch{timing=modelTiming(iso(saved),SOURCES[model]?.interval||HOUR,null,'fetch');}
+    return {records,saved,timing,delivery:'open-meteo',attribution:(OM_ATTRIBUTION[model]?OM_ATTRIBUTION[model]+' · ':'')+(wave?'Marine forecasts':'Weather forecasts')+' / Open-Meteo, CC BY 4.0'};
+  }
+  // FMI HARMONIE (MEPS) from FMI open data: one WFS point query per position.
+  async function fmiHarmoniePoint(p,full){
+    const hour=Math.floor(now()/HOUR)*HOUR,url=new URL('https://opendata.fmi.fi/wfs');
+    url.search=new URLSearchParams({service:'WFS',version:'2.0.0',request:'getFeature',storedquery_id:'fmi::forecast::harmonie::surface::point::timevaluepair',parameters:full?Object.keys(FMI_HARMONIE.fields).join(','):'WindSpeedMS,WindGust,WindDirection',starttime:iso(hour-HOUR),endtime:iso(hour+95*HOUR),timestep:'60',latlon:p.lat+','+p.lon});
+    const result=normalizeFMI(await(await response(url.href)).text(),[p],FMI_HARMONIE);result.records[0].model='HARMONIE';return result;
+  }
+  async function fetchFMIHarmonie(points,group){
+    const results=[];
+    for(let k=0;k<points.length;k+=3)results.push(...await Promise.all(points.slice(k,k+3).map(p=>fmiHarmoniePoint(p,group==='ports').catch(e=>{if(e.status===429||e.status>=500)throw e;return null;}))));
+    const ok=results.filter(Boolean);if(!ok.length)throw Error('No FMI HARMONIE data');
+    const axis=ok[0].records[0].hourly.time,records=points.map((p,i)=>results[i]?.records[0]||{id:p.id,latitude:p.lat,longitude:p.lon,provider:'FMI',model:'HARMONIE',outsideDomain:true,hourly:{time:axis,...Object.fromEntries(Object.values(FMI_HARMONIE.fields).map(f=>[f,axis.map(()=>null)]))}});
+    const timing=ok.map(r=>r.timing).filter(t=>t.updatedAt).sort((a,b)=>Date.parse(a.updatedAt)-Date.parse(b.updatedAt))[0]||modelTiming(iso(now()),3*HOUR,null,'fetch');
+    return {records,timing,saved:now(),delivery:'fmi',attribution:'Finnish Meteorological Institute (HARMONIE), CC BY 4.0'};
   }
   async function fetchModel(model,points,group) {
-    if(METADATA[model]&&!model.startsWith('dmi_'))return fetchOpenWeather(model,points,group);
+    if(METADATA[model])return fetchOpenWeather(model,points,group);
+    if(model==='fmi_harmonie')return fetchFMIHarmonie(points,group);
     if(model==='smhi_snow'){
       const records=[];for(const p of points){const url='https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/'+p.lon+'/lat/'+p.lat+'/data.json';records.push(normalizeSnow(await(await response(url)).json(),p));}
       const referenceTime=records.map(r=>r.referenceTime).filter(Boolean).sort()[0];return {records,saved:now(),timing:modelTiming(referenceTime,900000,referenceTime,'reference'),attribution:'SMHI Open Data, CC BY 4.0'};
@@ -162,7 +207,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
         results.push(...await Promise.all(points.slice(offset,offset+2).map(async p=>{
           const sample=group==='ports'?{...p,...sea[p.id]}:p;
           const url=new URL('https://opendata.fmi.fi/wfs');url.search=new URLSearchParams({service:'WFS',version:'2.0.0',request:'getFeature',storedquery_id:'fmi::forecast::wam::point::timevaluepair',parameters:'SigWaveHeight,WaveDirection,WavePeriod',starttime:start,endtime:end,timestep:'60',latlon:sample.lat+','+sample.lon});
-          const result=normalizeFMI(await(await response(url.href)).text(),[sample]);if(group==='ports')result.records[0].coordinateType='sea-query';return result;
+          const result=normalizeFMI(await(await response(url.href)).text(),[sample],FMI_WAM);if(group==='ports')result.records[0].coordinateType='sea-query';return result;
         })));
       }
       const timing=results.map(r=>r.timing).sort((a,b)=>Date.parse(a.updatedAt)-Date.parse(b.updatedAt))[0];
@@ -199,23 +244,24 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const payload=normalizeDMIOpenMeteo(await result.json(),points,now());try{payload.timing=(await getSchedule('dmi_harmonie','open-meteo')).timing;}catch{}dmiTimings.set('dmi_harmonie',payload.timing);return payload;
   }
   // Point forecast for a map click: the selected model at that exact position (nearest model cell).
-  const POINT_WIND={icon_eu:'icon_eu',icon_global:'icon_global',ecmwf_ifs:'ecmwf_ifs',dmi_harmonie:'dmi_seamless'},POINT_WAVE=['ecmwf_wam','dwd_ewam'];
+  const POINT_WIND={icon_eu:'icon_eu',icon_global:'icon_global',ecmwf_ifs:'ecmwf_ifs',dmi_harmonie:'dmi_harmonie_arome_europe',metno_nordic:'metno_nordic',icon_d2:'icon_d2'},POINT_WAVE=['ecmwf_wam','dwd_ewam'];
   async function pointForecast(model,lat,lon){
     const p={id:'0',lat,lon};
+    if(model==='fmi_harmonie')return {record:(await fmiHarmoniePoint(p,false)).records[0],source:'FMI HARMONIE · FMI open data'};
     if(model==='smhi_snow'){const url='https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/'+lon+'/lat/'+lat+'/data.json';return {record:normalizeSnow(await(await response(url)).json(),p),source:'SMHI SNOW1gv1'};}
     const wave=POINT_WAVE.includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
     const hour=Math.floor(now()/HOUR)*HOUR,query={latitude:lat,longitude:lon,hourly:wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m',models:wave?model:POINT_WIND[model],timeformat:'unixtime',timezone:'UTC',start_hour:iso(hour-HOUR).slice(0,16),end_hour:iso(hour+95*HOUR).slice(0,16),cell_selection:wave?'sea':'nearest',...(wave?{}:{wind_speed_unit:'ms'})};
     const data=await(await response(host+'?'+new URLSearchParams(query))).json();
-    return {record:normalizeOpenWeather(data,[p],model,wave)[0],source:model==='dmi_harmonie'?'DMI Seamless via Open-Meteo':(wave?'Marine':'Weather')+' forecast via Open-Meteo'};
+    return {record:normalizeOpenWeather(data,[p],model,wave)[0],source:OM_ATTRIBUTION[model]?OM_ATTRIBUTION[model]+' via Open-Meteo':(wave?'Marine':'Weather')+' forecast via Open-Meteo'};
   }
   return async function handleForecast(request,env,ctx={}) {
     const u=new URL(request.url);
     if(u.pathname==='/api/point'){
       if(request.method!=='GET')return json({error:'Method not allowed.'},405);
       const model=u.searchParams.get('model'),lat=Number(u.searchParams.get('lat')),lon=Number(u.searchParams.get('lon'));
-      if(!(POINT_WIND[model]||POINT_WAVE.includes(model)||model==='smhi_snow')||!(lat>=47&&lat<=71.5)||!(lon>=-26&&lon<=62))return json({error:'Invalid model or position.'},400);
+      if(!(POINT_WIND[model]||POINT_WAVE.includes(model)||model==='smhi_snow'||model==='fmi_harmonie')||!(lat>=47&&lat<=71.5)||!(lon>=-26&&lon<=62))return json({error:'Invalid model or position.'},400);
       const rl=Math.round(lat*50)/50,ro=Math.round(lon*50)/50;
-      try{const result=await cached('point/v1/'+model+'/'+rl+'/'+ro,1800,()=>pointForecast(model,rl,ro));return json({...result,model,lat:rl,lon:ro},200,{'Cache-Control':'private, max-age=600'});}
+      try{const result=await cached('point/v2/'+model+'/'+rl+'/'+ro,1800,()=>pointForecast(model,rl,ro));return json({...result,model,lat:rl,lon:ro},200,{'Cache-Control':'private, max-age=600'});}
       catch(e){return json({error:'Point forecast unavailable.',model},e.status===429?429:502);}
     }
     if(!['/api/forecast','/api/model-updates'].includes(u.pathname))return null;
@@ -225,12 +271,12 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       if(!SOURCES[model])return json({error:'Unknown model.'},400);
       const snapshot=await lastGood.peek(cycleKey(model,'ports',0));
       if(snapshot&&now()<Date.parse(snapshot.refreshAfter||snapshot.timing?.nextUpdate))return json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter||snapshot.timing?.nextUpdate,checkedAt:iso(snapshot.checkedAt)});
-      if(model==='smhi_snow')return snapshot?json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter}):json({error:'The update time appears after the forecast is loaded.'},503);
+      if(model==='smhi_snow'||model.startsWith('fmi_'))return snapshot?json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter}):json({error:'The update time appears after the forecast is loaded.'},503);
       try{const schedule=await getSchedule(model);return json({timing:schedule.timing,refreshAfter:schedule.refreshAfter,checkedAt:iso(schedule.saved)});}
       catch(e){return json({error:'Update time temporarily unavailable.',...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
     }
     const group=u.searchParams.get('group')||'ports',text=u.searchParams.get('offset')||'0',points=GROUPS[group];
-    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&group!=='ports')||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
+    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&group!=='ports')||(model==='fmi_harmonie'&&!['ports','wind-grid'].includes(group))||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
     // The wide zoomed-out wind grid is one Open-Meteo multi-point request, cached per model cycle.
     const batch=group==='wide-grid'?points.length:BATCH,offset=Number(text);if(offset%batch||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
     const selected=points.slice(offset,offset+batch);

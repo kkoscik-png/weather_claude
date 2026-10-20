@@ -99,13 +99,17 @@ test('documented DMI GeoJSON preserves coordinates, hourly gaps, cloud units, ze
  assert.throws(()=>normalizeDMIGeoJSON({type:'FeatureCollection',features:[]},[point],'dmi_harmonie'));
 });
 
-test('DMI uses complete-run collection position, GeoJSON, lon lat, filters and shared positive cache',async()=>{
- let clock=Date.parse(T),calls=0;const urls=[],api=createForecastAPI({now:()=>clock,pause:async ms=>{clock+=ms;},fetcher:async url=>{
-  calls++;urls.push(url);const u=new URL(url);assert.equal(u.hostname,'opendataapi.dmi.dk');if(u.pathname.endsWith('/instances'))return new Response(JSON.stringify({instances:[{id:'2026-10-18T120000Z'}]}));if(u.pathname==='/v1/forecastedr/collections/harmonie_dini_sf')return new Response(JSON.stringify({extent:{temporal:{interval:[['2026-10-18T12:00:00Z','2026-10-20T12:00:00Z']]}}}));assert.equal(u.pathname,'/v1/forecastedr/collections/harmonie_dini_sf/position');assert.match(url,/coords=POINT%28[\d.]+%20[\d.]+%29/);assert(!url.includes('+'));assert.equal(u.searchParams.get('f'),'GeoJSON');assert.equal(u.searchParams.get('crs'),'crs84');assert(u.searchParams.get('parameter-name').includes('low-cloud-cover'));assert(u.searchParams.get('parameter-name').includes('total-precipitation'));assert.equal(u.searchParams.get('datetime'),'2026-10-18T14:00:00.000Z/2026-10-20T12:00:00.000Z');
-  const [lon,lat]=u.searchParams.get('coords').slice(6,-1).split(' ').map(Number);assert(lon>15&&lon<22);assert(lat>54&&lat<60);assert(!u.searchParams.has('api-key'));
-  return new Response(JSON.stringify({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties:{step:T,'wind-speed-10m':3,'wind-dir-10m':90,'fraction-of-cloud-cover':.4}}]}));
+test('DMI HARMONIE comes from Open-Meteo (DMI HARMONIE AROME), never from the DMI EDR API, and is cached per cycle',async()=>{
+ let clock=Date.parse(T),calls=0;const api=createForecastAPI({now:()=>clock,fetcher:async url=>{
+  const u=new URL(url);assert.notEqual(u.hostname,'opendataapi.dmi.dk');assert.equal(u.hostname,'api.open-meteo.com');
+  if(u.pathname==='/data/dmi_harmonie_arome_europe/static/meta.json')return Response.json({last_run_availability_time:Date.parse(T)/1000,last_run_initialisation_time:Date.parse(T)/1000-9000,update_interval_seconds:10800});
+  calls++;assert.equal(u.searchParams.get('models'),'dmi_harmonie_arome_europe');assert.equal(u.searchParams.get('wind_speed_unit'),'ms');for(const f of ['cloud_cover_low','temperature_2m','precipitation'])assert(u.searchParams.get('hourly').includes(f));
+  const lats=u.searchParams.get('latitude').split(',').map(Number),lons=u.searchParams.get('longitude').split(',').map(Number);assert.equal(lats.length,5);return Response.json(openMeteoFixture(lats.map((lat,i)=>({lat,lon:lons[i]}))));
  }});
- const request=()=>new Request('https://weather.seasync.co/api/forecast?model=dmi_harmonie&group=ports');const [a,b]=await Promise.all([api(request(),{}),api(request(),{})]);assert.equal(a.status,200);assert.equal(b.status,200);const d=await a.json();assert.equal(d.records.length,5);assert.equal(d.records[0].hourly.cloud_cover[0],40);assert.equal(calls,7);assert.equal((await api(request(),{})).status,200);assert.equal(calls,7);assert(clock-Date.parse(T)>=3000);
+ const request=()=>new Request('https://weather.seasync.co/api/forecast?model=dmi_harmonie&group=ports');const [a,b]=await Promise.all([api(request(),{}),api(request(),{})]);assert.equal(a.status,200);assert.equal(b.status,200);
+ const d=await a.json();assert.equal(d.records.length,5);assert.equal(d.delivery,'open-meteo');assert(!d.blend);assert.match(d.attribution,/DMI HARMONIE AROME/);assert.equal(d.records[0].provider,'DMI via Open-Meteo');assert.equal(d.timing.nextUpdate,new Date(Date.parse(T)+10800000).toISOString());assert.equal(calls,1);
+ clock+=3600000;assert.equal((await api(request(),{})).status,200);assert.equal(calls,1);
+ const timing=await api(new Request('https://weather.seasync.co/api/model-updates?model=dmi_harmonie'),{});assert.equal(timing.status,200);
 });
 
 test('DMI serializes different requests and spaces starts by at least one second',async()=>{
@@ -178,10 +182,10 @@ test('DMI stores one forecast until its next model update, survives Worker repla
  clock+=7202000;const old=await b('point',async()=>{loads++;throw Error('timeout');},async()=>{fallbacks++;throw Error('fallback down too');});assert.equal(loads,2);assert.equal(fallbacks,1);assert.equal(old.saved,first.saved);assert.equal(old.delivery,'dmi');assert.equal(old.stale,true);assert.match(old.notice,/may be outdated/);assert.equal(old.records[0].hourly.wind_speed_10m[1],3);
  clock+=16*60000;const fresh=await b('point',async()=>{throw Error('DMI busy');},async()=>({...normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],clock),delivery:'open-meteo'}));assert.equal(fresh.delivery,'open-meteo');assert.equal(fresh.stale,false);assert.equal(fresh.saved,clock);
 });
-test('DMI uses one Open-Meteo query for all ports and parameters after a native failure, then caches it until the next cycle',async()=>{
+test('DMI falls back to one Open-Meteo DMI Seamless query for all ports when DMI HARMONIE AROME fails, then caches it until the next cycle',async()=>{
  let clock=Date.parse(T),dmi=0,meteo=0;const api=createForecastAPI({now:()=>clock,pause:async ms=>{clock+=ms;},fetcher:async (url,options)=>{
   assert(options.signal);const u=new URL(url);if(u.hostname==='opendataapi.dmi.dk'){dmi++;return new Response('busy',{status:429});}
-  assert.equal(u.hostname,'api.open-meteo.com');if(u.pathname.includes('/static/meta.json'))return Response.json({last_run_availability_time:Date.parse(T)/1000,last_run_initialisation_time:Date.parse(T)/1000,update_interval_seconds:10800});meteo++;assert.equal(u.searchParams.get('models'),'dmi_seamless');assert.equal(u.searchParams.get('wind_speed_unit'),'ms');assert.equal(u.searchParams.get('temperature_unit'),'celsius');const fields=u.searchParams.get('hourly').split(',');for(const field of ['wind_speed_10m','wind_gusts_10m','wind_direction_10m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation','temperature_2m'])assert(fields.includes(field));
+  assert.equal(u.hostname,'api.open-meteo.com');if(u.pathname.includes('/static/meta.json'))return Response.json({last_run_availability_time:Date.parse(T)/1000,last_run_initialisation_time:Date.parse(T)/1000,update_interval_seconds:10800});if(u.searchParams.get('models')==='dmi_harmonie_arome_europe'){dmi++;return new Response('busy',{status:503});}meteo++;assert.equal(u.searchParams.get('models'),'dmi_seamless');assert.equal(u.searchParams.get('wind_speed_unit'),'ms');assert.equal(u.searchParams.get('temperature_unit'),'celsius');const fields=u.searchParams.get('hourly').split(',');for(const field of ['wind_speed_10m','wind_gusts_10m','wind_direction_10m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation','temperature_2m'])assert(fields.includes(field));
   const lats=u.searchParams.get('latitude').split(',').map(Number),lons=u.searchParams.get('longitude').split(',').map(Number);assert.equal(lats.length,5);return new Response(JSON.stringify(openMeteoFixture(lats.map((lat,i)=>({lat,lon:lons[i]})))));
  }});
  const req=()=>new Request('https://weather.seasync.co/api/forecast?model=dmi_harmonie&group=ports');const r=await api(req(),{});assert.equal(r.status,200);const data=await r.json();assert.equal(data.records.length,5);assert.equal(data.delivery,'open-meteo');assert(data.blend);assert.equal(data.stale,false);assert.equal(dmi,1);assert.equal(meteo,1);clock+=3599000;assert.equal((await api(req(),{})).status,200);assert.equal(dmi,1);assert.equal(meteo,1);
@@ -213,6 +217,6 @@ test('browser manual refresh returns cached weather until the provider deadline'
 });
 
 test('an existing DMI snapshot also suppresses metadata requests before its deadline',async()=>{
- const cache=forecastStore(),saved=Date.parse(T),snapshot=normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],saved);await cache.put(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent('dmi_harmonie@3/ports@2/0')),Response.json(snapshot));let calls=0;
+ const cache=forecastStore(),saved=Date.parse(T),snapshot=normalizeDMIOpenMeteo(openMeteoFixture([point]),[point],saved);await cache.put(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent('dmi_harmonie@4/ports@2/0')),Response.json(snapshot));let calls=0;
  const api=createForecastAPI({cache,now:()=>saved+3600000,fetcher:async()=>{calls++;throw Error('must not check DMI');}}),res=await api(new Request('https://weather.seasync.co/api/model-updates?model=dmi_harmonie'),{});assert.equal(res.status,200);assert.equal((await res.json()).refreshAfter,snapshot.timing.nextUpdate);assert.equal(calls,0);
 });

@@ -52,7 +52,7 @@ test('map click point forecast: selected model at the clicked position, validate
   await api(new Request('https://weather.seasync.co/api/point?model=icon_eu&lat=58.481&lon=21.311'), {});
   assert.equal(urls.length, 1, 'nearby clicks share the cached point');
   const dmi = await api(new Request('https://weather.seasync.co/api/point?model=dmi_harmonie&lat=55&lon=15'), {});
-  assert.equal(dmi.status, 200); assert.equal(new URL(urls.at(-1)).searchParams.get('models'), 'dmi_seamless');
+  assert.equal(dmi.status, 200); assert.equal(new URL(urls.at(-1)).searchParams.get('models'), 'dmi_harmonie_arome_europe');
   for (const bad of ['model=nope&lat=58&lon=20', 'model=icon_eu&lat=10&lon=20', 'model=icon_eu&lat=58&lon=120'])
     assert.equal((await api(new Request('https://weather.seasync.co/api/point?' + bad), {})).status, 400);
 });
