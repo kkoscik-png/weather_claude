@@ -1,0 +1,106 @@
+==== metno_nordic
+57.40056 21.58432 {'wind_speed_10m': [3.3, 3.6], 'wind_gusts_10m': [6.2, 6.6], 'wind_direction_10m': [97, 102], 'cloud_cover': [99, 100], 'cloud_cover_low': [None, None], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.6, 9.4]}
+58.935753 17.983719 {'wind_speed_10m': [2.9, 4.5], 'wind_gusts_10m': [5.7, 7.9], 'wind_direction_10m': [29, 100], 'cloud_cover': [90, 99], 'cloud_cover_low': [None, None], 'precipitation': [0.0, 0.0], 'temperature_2m': [9.0, 10.2]}
+54.533478 18.539291 {'wind_speed_10m': [5.9, 5.9], 'wind_gusts_10m': [9.6, 10.0], 'wind_direction_10m': [124, 126], 'cloud_cover': [100, 100], 'cloud_cover_low': [None, None], 'precipitation': [0.0, 0.0], 'temperature_2m': [10.3, 10.3]}
+56.166985 15.634567 {'wind_speed_10m': [6.5, 6.6], 'wind_gusts_10m': [11.1, 10.6], 'wind_direction_10m': [69, 72], 'cloud_cover': [100, 100], 'cloud_cover_low': [None, None], 'precipitation': [0.1, 0.2], 'temperature_2m': [9.6, 9.8]}
+57.403286 21.534729 {'wind_speed_10m': [4.0, 4.1], 'wind_gusts_10m': [6.4, 6.4], 'wind_direction_10m': [95, 101], 'cloud_cover': [99, 100], 'cloud_cover_low': [None, None], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.4, 9.3]}
+==== metno_seamless
+57.40056 21.58432 {'wind_speed_10m': [3.3, 3.6], 'wind_gusts_10m': [6.2, 6.6], 'wind_direction_10m': [97, 102], 'cloud_cover': [99, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.6, 9.4]}
+58.935753 17.983719 {'wind_speed_10m': [2.9, 4.5], 'wind_gusts_10m': [5.7, 7.9], 'wind_direction_10m': [29, 100], 'cloud_cover': [90, 99], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [9.0, 10.2]}
+54.533478 18.539291 {'wind_speed_10m': [5.9, 5.9], 'wind_gusts_10m': [9.6, 10.0], 'wind_direction_10m': [124, 126], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [10.3, 10.3]}
+56.166985 15.634567 {'wind_speed_10m': [6.5, 6.6], 'wind_gusts_10m': [11.1, 10.6], 'wind_direction_10m': [69, 72], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.1, 0.2], 'temperature_2m': [9.6, 9.8]}
+57.403286 21.534729 {'wind_speed_10m': [4.0, 4.1], 'wind_gusts_10m': [6.4, 6.4], 'wind_direction_10m': [95, 101], 'cloud_cover': [99, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.4, 9.3]}
+==== icon_d2
+ERROR No data is available for this location
+==== dwd_icon_d2
+ERROR No data is available for this location
+==== dmi_harmonie_arome_europe
+57.402405 21.588226 {'wind_speed_10m': [2.6, 2.7], 'wind_gusts_10m': [6.2, 6.1], 'wind_direction_10m': [92, 97], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.6, 9.0]}
+58.947487 17.980118 {'wind_speed_10m': [2.4, 2.8], 'wind_gusts_10m': [6.2, 7.3], 'wind_direction_10m': [89, 99], 'cloud_cover': [91, 100], 'cloud_cover_low': [91, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [10.6, 10.4]}
+54.518463 18.515411 {'wind_speed_10m': [4.3, 4.1], 'wind_gusts_10m': [9.0, 7.9], 'wind_direction_10m': [125, 135], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [10.8, 10.6]}
+56.17637 15.625427 {'wind_speed_10m': [5.4, 5.1], 'wind_gusts_10m': [10.7, 10.2], 'wind_direction_10m': [72, 74], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [10.5, 10.9]}
+57.393444 21.544067 {'wind_speed_10m': [3.3, 3.2], 'wind_gusts_10m': [6.5, 6.3], 'wind_direction_10m': [94, 100], 'cloud_cover': [100, 100], 'cloud_cover_low': [100, 100], 'precipitation': [0.0, 0.0], 'temperature_2m': [8.9, 9.3]}
+==== meta metno_nordic_pp
+{"chunk_time_length":112,"crs_wkt":"PROJCRS[\"Lambert Conic Conformal\",\n    BASEGEOGCRS[\"GCS_Sphere\",\n        DATUM[\"D_Sphere\",\n            ELLIPSOID[\"Sphere\",6371229.0,0.0]]],\n    CONVERSION[\"Lambert Conic Conformal\",\n        METHOD[\"Lambert Conic Conformal (2SP)\"],\n        PARAMET
+==== meta dwd_icon_d2
+{"chunk_time_length":121,"crs_wkt":"GEOGCRS[\"WGS 84\",\n    DATUM[\"World Geodetic System 1984\",\n        ELLIPSOID[\"WGS 84\",6378137,298.257223563]],\n    CS[ellipsoidal,2],\n        AXIS[\"latitude\",north],\n        AXIS[\"longitude\",east],\n        ANGLEUNIT[\"degree\",0.0174532925199433]\n 
+==== meta dmi_harmonie_arome_europe
+{"chunk_time_length":90,"crs_wkt":"PROJCRS[\"Lambert Conic Conformal\",\n    BASEGEOGCRS[\"GCS_Sphere\",\n        DATUM[\"D_Sphere\",\n            ELLIPSOID[\"Sphere\",6371229.0,0.0]]],\n    CONVERSION[\"Lambert Conic Conformal\",\n        METHOD[\"Lambert Conic Conformal (2SP)\"],\n        PARAMETE
+==== FMI harmonie
+-- 57.3988,21.5766 size 179881
+<gml:pos>57.39880 21.57660 
+<gml:pos>57.39880 21.57660 
+param=HighCloudCover
+param=LowCloudCover
+param=MediumCloudCover
+param=Precipitation1h
+param=Temperature
+param=TotalCloudCover
+param=WindDirection
+param=WindGust
+param=WindSpeedMS
+<wml2:value>3.76
+<wml2:value>3.53
+<wml2:value>3.6
+grep: write error: Broken pipe
+<om:resultTime>
+-- 54.5332,18.5426 size 180244
+<gml:pos>54.53320 18.54260 
+<gml:pos>54.53320 18.54260 
+param=HighCloudCover
+param=LowCloudCover
+param=MediumCloudCover
+param=Precipitation1h
+param=Temperature
+param=TotalCloudCover
+param=WindDirection
+param=WindGust
+param=WindSpeedMS
+<wml2:value>5.6
+<wml2:value>5.37
+<wml2:value>5.53
+grep: write error: Broken pipe
+<om:resultTime>
+-- 56.1655,15.6289 size 180284
+<gml:pos>56.16550 15.62890 
+<gml:pos>56.16550 15.62890 
+param=HighCloudCover
+param=LowCloudCover
+param=MediumCloudCover
+param=Precipitation1h
+param=Temperature
+param=TotalCloudCover
+param=WindDirection
+param=WindGust
+param=WindSpeedMS
+<wml2:value>6.95
+<wml2:value>6.87
+<wml2:value>6.39
+grep: write error: Broken pipe
+<om:resultTime>
+<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection
+    timeStamp="2026-10-20T10:41:32Z"
+    numberMatched="9"
+    numberReturned="9"
+    xmlns:wfs="http://www.opengis.net/wfs/2.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:om="http://www.opengis.net/om/2.0"
+    xmlns:omso="http://inspire.ec.europa.eu/schemas/omso/3.0"
+    xmlns:ompr="http://inspire.ec.europa.eu/schemas/ompr/3.0"
+    xmlns:gml="http://www.opengis.net/gml/3.2"
+    xmlns:gmd="http://www.isotc211.org/2005/gmd"
+    xmlns:gco="http://www.isotc211.org/2005/gco"
+    xmlns:swe="http://www.opengis.net/swe/2.0"
+    xmlns:gmlcov="http://www.opengis.net/gmlcov/1.0"
+    xmlns:sam="http://www.opengis.net/sampling/2.0"
+    xmlns:sams="http://www.opengis.net/samplingSpatial/2.0"
+    xmlns:wml2="http://www.opengis.net/waterml/2.0"
+    xmlns:target="http://xml.fmi.fi/namespace/om/atmosphericfeatures/1.1"
+    xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd
+    http://www.opengis.net/gmlcov/1.0 http://schemas.opengis.net/gmlcov/1.0/gmlcovAll.xsd
+    http://www.opengis.net/sampling/2.0 http://schemas.opengis.net/sampling/2.0/samplingFeature.xsd
+    http://www.opengis.net/samplingSpatial/2.0 http://schemas.opengis.net/samplingSpatial/2.0/spatialSamplingFeature.xsd
+    http://www.opengis.net/swe/2.0 http://schemas.opengis.net/sweCommon/2.0/swe.xsd
+    http://inspire.ec.europa.eu/schemas/omso/3.0 https://in
