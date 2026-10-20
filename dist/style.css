@@ -679,3 +679,19 @@ main{row-gap:14px}
 .map-stamp .status-dot.old{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f40,0 0 8px #ff4d4f;animation:stale-dot 1.6s ease-in-out infinite}
 @keyframes stale-dot{50%{box-shadow:0 0 0 5px #ff4d4f22,0 0 12px #ff4d4f}}
 @media(prefers-reduced-motion:reduce){.map-stamp .status-dot.old{animation:none}}
+
+/* Brand bar: weather refresh, styled as a sibling of the day/night switch. */
+.refresh-btn{width:32px;height:32px;padding:0;border-radius:999px;border:1px solid #d9e4e7;background:#e6eef0;color:#2d5560;position:relative;flex:none;transition:background .2s,color .2s,box-shadow .2s}
+.refresh-btn svg{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.refresh-btn:hover{filter:none;background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,44,57,.18)}
+.refresh-btn.spinning svg{animation:refresh-spin .9s linear infinite}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+:root[data-theme="dark"] .refresh-btn{background:#132a34;border-color:#24404b;color:#9fdccc}
+:root[data-theme="dark"] .refresh-btn:hover{background:#24404d;color:#c9f3e7}
+@media(max-width:760px){.refresh-btn{width:30px;height:30px}}
+@media(prefers-reduced-motion:reduce){.refresh-btn.spinning svg{animation-duration:2.4s}}
+/* Port tile flag toggle: icon centred absolutely (iOS Safari ignores grid centring in buttons). */
+.port-flag{padding:0}
+.port-flag svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:block;margin:0}
+/* Full-screen map: the legend sits above the timeline bar. */
+.map-section.map-full .scale,.map-section:fullscreen .scale{bottom:calc(74px + env(safe-area-inset-bottom))}
