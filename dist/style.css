@@ -564,3 +564,6 @@ main{row-gap:14px}
 .ports-column>.ports .port-name-pick{gap:1px}
 .ports-column>.ports .port-name-pick>span{text-overflow:clip;overflow:visible}
 }
+
+/* Dotyk: jeden palec przewija stronę (pan-x pan-y), szczypanie dwoma palcami obsługuje mapa */
+@media(pointer:coarse),(any-pointer:coarse){.map-section:not(.map-full) .leaflet-container{touch-action:pan-x pan-y!important}}
