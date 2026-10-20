@@ -537,3 +537,10 @@ main{row-gap:14px}
 .port-main{cursor:pointer}
 .port-main:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:inherit}
 @media(max-width:760px){.ports-column>.ports .port-name-pick>span{white-space:normal;line-height:1.12}}
+
+/* Strzałka kierunku: środek zawsze w środku pola, własny jasnoniebieski kolor; nazwa kierunku nad strzałką */
+.dir-chip{position:relative;overflow:hidden}
+.dir-chip .dir-arrow{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);color:#6aaed6;z-index:1}
+.dir-chip .dir-name{z-index:2;color:#17496a;opacity:1;font-weight:800;text-shadow:0 0 3px #e4f2fb,0 0 3px #e4f2fb,0 0 2px #e4f2fb}
+:root[data-theme="dark"] .dir-chip .dir-arrow{color:#4f95c0}
+:root[data-theme="dark"] .dir-chip .dir-name{color:#d6ecf8;text-shadow:0 0 3px #173040,0 0 3px #173040,0 0 2px #173040}

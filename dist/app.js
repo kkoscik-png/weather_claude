@@ -97,17 +97,15 @@ function compassName(d){return COMPASS[Math.round((((d%360)+360)%360)/22.5)%16];
 // Direction chip (light blue): the arrow points the way the wind blows (from N: top to bottom).
 // The arrow lives in the area below the compass label (top 12 px) and is scaled to 80 %
 // of that area, so it never touches the label, whatever the direction.
-function directionArrowSVG(from,w=58,h=40,top=12){
- const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),cx=w/2,cy=(top+h)/2,halfW=w/2-4,halfH=(h-top)/2-1.5;
- const t=.8*Math.min(Math.abs(vx)>1e-6?halfW/Math.abs(vx):Infinity,Math.abs(vy)>1e-6?halfH/Math.abs(vy):Infinity);
- const f=n=>n.toFixed(1),sx=cx-vx*t,sy=cy-vy*t,ex=cx+vx*t,ey=cy+vy*t,bx=ex-vx*5.5,by=ey-vy*5.5,px=-vy*3.4,py=vx*3.4;
- // Faint shaft and open chevron head; two short streaks travel along the full length of the
-// arrow, tail to head, so the movement shows which way the wind blows.
+// Wind-direction arrow: fixed length, its middle always at the centre of the chip, true angle
+// (square viewBox kept square with 'meet'). The compass label is drawn above it.
+function directionArrowSVG(from){
+ const a=(from+180)*Math.PI/180,vx=Math.sin(a),vy=-Math.cos(a),c=20,t=11.5;
+ const f=n=>n.toFixed(1),sx=c-vx*t,sy=c-vy*t,ex=c+vx*t,ey=c+vy*t,bx=ex-vx*5,by=ey-vy*5,px=-vy*3.2,py=vx*3.2;
+ // Faint shaft and open chevron head; two short streaks run tail to head, showing where the wind blows.
  const L=2*t,len=L.toFixed(1),streak=`x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex-vx*1.5)}" y2="${f(ey-vy*1.5)}" stroke-dasharray="9 400"`;
- // A streak's front reaches the head at L/(L+9) of its cycle; streaks run half a cycle apart,
- // so the head pulses every half cycle, timed (keyframe peak at 10%) to each arrival.
  const arrive=L/(L+9),headDelay=(((arrive-.05)%.5)+.5)%.5-.5;
- return `<svg class="dir-arrow" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" style="--len:${len}px;--head-delay:${headDelay.toFixed(3)}"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" style="transform-origin:${f(ex)}px ${f(ey)}px" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
+ return `<svg class="dir-arrow" viewBox="0 0 40 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true" style="--len:${len}px;--head-delay:${headDelay.toFixed(3)}"><line class="dir-track" x1="${f(sx)}" y1="${f(sy)}" x2="${f(ex)}" y2="${f(ey)}"/><line class="dir-flow" ${streak}/><line class="dir-flow dir-flow-2" ${streak}/><path class="dir-head" style="transform-origin:${f(ex)}px ${f(ey)}px" d="M${f(bx+px)} ${f(by+py)}L${f(ex)} ${f(ey)}L${f(bx-px)} ${f(by-py)}"/></svg>`;
 }
 function directionChip(d,speed=null){
  if(!valid(d))return '<span class="wind-chip dir-chip no-data" title="No direction"><small>Dir.</small><b>—</b></span>';
