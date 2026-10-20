@@ -72,7 +72,7 @@ function renderWindSource(){
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
 // Dark theme: values on the grey calm-wind background are light green for contrast.
-function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';if(isDarkTheme()&&v<3.5)return '#adffcf';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
+function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<175?'#fff':'#15343e';}
 function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v)?'':' no-data'}" style="background:${windHeat(v)};color:${windInk(v)}"><small>${label}</small><b>${format(v)}</b></span>`;}
 // Flags on the map: by default only the selected point; the flag toggles on the cards
 // let you show them on one, two or all three points (remembered in this browser).
@@ -169,13 +169,12 @@ function renderTimeline(){renderMapTimeline();
 const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_d2'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'});
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
-// Windy windDetail color breakpoints, in m/s. Applied locally; no Windy API/runtime.
-const WIND_COLORS=[[0,[243,243,243]],[3,[243,243,243]],[4,[0,200,254]],[6,[0,230,0]],[10,[254,174,0]],[19,[254,0,150]],[100,[151,50,222]]];
-// Dark theme: calm winds (0–3 m/s) are mid grey instead of near-white, so the table does not glare.
+// Wind colour scale (m/s), shared by the map field, legend, table, tiles, flags and popups:
+// violet-blue calm → teal → green → olive → brown → magenta → violet → steel blue (30 m/s).
+const WIND_COLORS=[[0,[98,113,183]],[1,[57,97,159]],[3,[74,148,169]],[5,[77,141,123]],[7,[83,165,83]],[9,[53,159,53]],[11,[167,157,81]],[13,[159,127,58]],[15,[161,108,92]],[17,[129,58,78]],[19,[175,80,136]],[21,[117,74,147]],[24,[109,97,163]],[27,[68,105,141]],[29,[92,144,152]],[36,[125,68,165]],[46,[231,215,215]],[51,[219,212,135]],[77,[205,202,112]],[104,[128,128,128]]];
 let lightPalette=false;// map flags always use the daytime palette
 const isDarkTheme=()=>!lightPalette&&typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
-const WIND_COLORS_DARK=[[0,[86,99,108]],[3,[86,99,108]],...WIND_COLORS.slice(2)];
-function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=isDarkTheme()?WIND_COLORS_DARK:WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
+function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
 function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':(isDarkTheme()?'#22343e':'#f0f2f3');}
 function flowArrow(degrees){return valid(degrees)?`<i class="flow-arrow" style="transform:rotate(${(degrees+180)%360}deg)" aria-hidden="true">↑</i>`:'<i class="flow-arrow missing" aria-hidden="true">·</i>';}
 function buildWindyTable(ts){
@@ -186,7 +185,7 @@ function buildWindyTable(ts){
  for(const model of TABLE_MODELS){
   html+=`<div class="model-row ${model===state.model?'primary-model':''}" role="row" data-row-model="${model}">`;
   ts.forEach((t,i)=>{const v=windAt(state.port,'wind_speed_10m',t,model),g=windAt(state.port,'wind_gusts_10m',t,model),d=windAt(state.port,'wind_direction_10m',t,model),title=windModelInfo(model).short+' · '+fullFmt.format(new Date(t*1000))+' · Wind '+format(v)+' m/s · Gusts '+format(g)+' m/s · Z '+(valid(d)?Math.round(d)+'°':'—');
-   html+=`<button class="meteo-cell ${i===state.hour?'selected':''} ${valid(v)?'':'no-data'}" data-hour="${i}" role="cell" style="background:${windHeat(v)}" title="${title}" aria-label="${title}"><span class="meteo-wind">${flowArrow(d)}<b>${format(v)}</b></span><span class="meteo-gust" style="background:${windHeat(g)}">${format(g)}</span></button>`;
+   html+=`<button class="meteo-cell ${i===state.hour?'selected':''} ${valid(v)?'':'no-data'}" data-hour="${i}" role="cell" style="background:${windHeat(v)};color:${windInk(v)}" title="${title}" aria-label="${title}"><span class="meteo-wind">${flowArrow(d)}<b>${format(v)}</b></span><span class="meteo-gust" style="background:${windHeat(g)};color:${windInk(g)}">${format(g)}</span></button>`;
   });html+='</div>';
  }
  html+='</div>';
@@ -585,11 +584,17 @@ fctx.globalCompositeOperation='destination-in';fctx.beginPath();(wideActive()?WI
 function newParticle(w,h){for(let i=0;i<15;i++){const p={x:Math.random()*w,y:Math.random()*h,age:Math.random()*80};if(screenAt(p.x,p.y))return p;}return {x:-10,y:-10,age:100};}
 function screenAt(x,y){if(!screenField)return null;const {step,cols,rows,values}=screenField,c=Math.floor(x/step),r=Math.floor(y/step);return c>=0&&r>=0&&c<cols&&r<rows?values[r*cols+c]:null;}
 function animate(now){requestAnimationFrame(animate);if(!pctx||!screenField||mapPaused||!state.animate)return;if(state.layer==='wave'&&state.waveAnim){pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);return;}if(now-lastFrame<36)return;const dt=Math.min(2,(now-lastFrame)/36||1);lastFrame=now;pctx.globalCompositeOperation='destination-in';pctx.fillStyle='rgba(0,0,0,.90)';pctx.fillRect(0,0,particleCanvas.width,particleCanvas.height);pctx.globalCompositeOperation='source-over';pctx.strokeStyle=state.layer==='wave'?'rgba(36,88,139,.7)':'rgba(84,77,135,.7)';pctx.lineWidth=state.layer==='wave'?1.6:1.1;for(let i=0;i<particles.length;i++){let p=particles[i],s=screenAt(p.x,p.y);if(!s||p.age++>90){particles[i]=newParticle(particleCanvas.width,particleCanvas.height);continue;}const speed=(state.layer==='wave'?1.1:.45+s.value*.07)*dt,nx=p.x+s.u*speed,ny=p.y+s.v*speed;if(!screenAt(nx,ny)){p.age=100;continue;}pctx.beginPath();pctx.moveTo(p.x,p.y);pctx.lineTo(nx,ny);pctx.stroke();p.x=nx;p.y=ny;}}
+// Horizontal legend: labels evenly spaced, the colour ramp follows the value at each label.
 function updateScale(){
- const wave=state.layer==='wave',label=wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',unit=wave?'m':'m/s',values=wave?[5,4,3,2.5,2,1.5,1,.5,0]:[25,20,15,12,10,8,6,5,4,3,2,1,0];
+ const wave=state.layer==='wave',label=wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',unit=wave?'m':'m/s',values=wave?[0,.5,1,1.5,2,3,4,5]:[0,3,5,10,15,20,30];
  $('scaleTitle').textContent=label;$('scaleUnit').textContent=unit;$('mapScale').setAttribute('aria-label',label+' · colour legend · '+unit);
- $('scaleLabels').innerHTML=values.map((v,i)=>{const rgb=wave?color(v):windRGB(v),ink=rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722<130?'#fff':'#15343e';return `<span class="scale-step" style="background:rgb(${rgb.join(',')});color:${ink}">${v.toLocaleString('en-GB')}${i===0?'+':''}</span>`;}).join('');
+ const rgb=v=>'rgb('+(wave?color(v):windRGB(v)).join(',')+')',n=values.length,stops=[rgb(values[0])+' 0%'];
+ for(let i=0;i<n;i++){const a=values[i],b=i<n-1?values[i+1]:a+(a-values[i-1])/2,steps=i<n-1?6:3;for(let k=0;k<steps;k++){const f=k/6;stops.push(rgb(a+(b-a)*f)+' '+((i+.5+f)/n*100).toFixed(2)+'%');}}
+ const scale=$('scaleLabels');scale.style.background='linear-gradient(90deg,'+stops.join(',')+')';
+ scale.innerHTML=values.map(v=>`<span class="scale-step">${v.toLocaleString('en-GB')}</span>`).join('');
+ const unitNode=$('scaleUnit');if(unitNode?.style)unitNode.style.background=rgb(values[0]);
 }
+
 function selectModel(model){
  if(!MODELS[model])return;const changed=state.model!==model;state.model=model;if(changed)resetDMIRetryAttempts(model);document.querySelectorAll('[data-model]').forEach(x=>x.classList.toggle('active',x.dataset.model===model));
  if($('windSource'))$('windSource').value=model;if($('modelDescription'))$('modelDescription').textContent=windModelInfo(model).desc;renderAll();

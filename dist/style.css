@@ -657,3 +657,12 @@ main{row-gap:14px}
 .point-pop .pp-chip{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:6px;font:800 13px 'Manrope',system-ui,sans-serif}
 .point-pop small{opacity:.7;font-size:10.5px;margin-top:2px}
 .pp-loading{color:#7fd0bd}
+
+/* Map legend: one horizontal pill, unit on the left, colour ramp under evenly spaced labels. */
+.scale{left:auto;right:12px;bottom:22px;display:flex;align-items:center;gap:0;padding:0;filter:drop-shadow(0 1px 3px #0b202b4d)}
+.scale-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.scale-key{width:auto;display:flex;align-items:stretch;height:22px;border-radius:11px;overflow:hidden;border:1px solid #ffffff38}
+.scale #scaleUnit{height:auto;display:flex;align-items:center;padding:0 7px 0 10px;border-radius:0;color:#fff;font-size:10.5px;font-weight:650;letter-spacing:.2px;text-shadow:0 0 2px #0006}
+.scale-labels{flex-direction:row;gap:0;width:252px;display:flex}
+.scale-step,.scale-step:last-child{flex:1;width:auto;height:auto;border-radius:0;background:none!important;color:#fff;font-size:10.5px;font-weight:650;text-shadow:0 0 2px #0007,0 0 1px #0005}
+@media(max-width:760px){.scale{right:10px;bottom:22px}.scale-key{height:20px}.scale-labels{width:196px}.scale-step,.scale #scaleUnit{font-size:9.5px;width:auto;height:auto}.scale #scaleUnit{padding:0 5px 0 8px}}
