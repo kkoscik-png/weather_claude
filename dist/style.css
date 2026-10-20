@@ -695,3 +695,10 @@ main{row-gap:14px}
 .port-flag svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:block;margin:0}
 /* Full-screen map: the legend sits above the timeline bar. */
 .map-section.map-full .scale,.map-section:fullscreen .scale{bottom:calc(74px + env(safe-area-inset-bottom))}
+/* iOS Safari: centre button icons absolutely; grid/flex centring inside <button> drifts on iPad. */
+.map-controls .map-btn,.theme-switch button,.map-tl-play{position:relative;padding:0}
+.map-full-btn{padding:0}
+.map-full-btn svg,.map-controls .map-btn svg,.theme-switch button svg,.map-tl-play svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0}
+.map-full-btn svg{display:block}
+.map-section .map-full-btn .icon-collapse,.map-section.map-full .map-full-btn .icon-expand{display:none}
+.map-section.map-full .map-full-btn .icon-collapse{display:block}
