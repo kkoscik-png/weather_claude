@@ -22,7 +22,7 @@ const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value
 const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max?x:null;
 // Bump a model's revision when its sampling changes, so stored cycles are not reused.
 // Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
-const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:4,dmi_wam:3},GROUP_REVISION={ports:2,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
+const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:4,dmi_wam:3},GROUP_REVISION={ports:3,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
@@ -155,11 +155,17 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   function emptyRecord(model,p,fields){const {start,end}=omWindow(),time=[];for(let t=start;t<=end;t+=HOUR)time.push(t/1000);return {id:p.id,latitude:p.lat,longitude:p.lon,provider:OM_ATTRIBUTION[model]||model,model,outsideDomain:true,hourly:{time,...Object.fromEntries(fields.split(',').map(f=>[f,time.map(()=>null)]))}};}
   async function fetchOpenWeather(model,points,group,source=null){
     const wave=['ecmwf_wam','dwd_ewam'].includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
-    const fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,temperature_2m':'');
+    let fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,precipitation_probability,temperature_2m':'');
     const {start,end}=omWindow();
     const request=async list=>{
       const query={latitude:list.map(p=>p.lat).join(','),longitude:list.map(p=>p.lon).join(','),hourly:fields,models:source||OM_MODEL[model]||model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(start).slice(0,16),end_hour:iso(end).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
-      return normalizeOpenWeather(await(await response(host+'?'+new URLSearchParams(query))).json(),list,model,wave);
+      try{return normalizeOpenWeather(await(await response(host+'?'+new URLSearchParams(query))).json(),list,model,wave);}
+      catch(e){
+        // Not every model offers the chance of rain; ask again without it rather than lose the forecast.
+        if(e.status!==400||!fields.includes(',precipitation_probability'))throw e;
+        query.hourly=fields.replace(',precipitation_probability','');
+        return normalizeOpenWeather(await(await response(host+'?'+new URLSearchParams(query))).json(),list,model,wave);
+      }
     };
     let records;
     if(source||!REGIONAL.has(model))records=await request(points);
@@ -247,7 +253,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const saved=Math.min(...savedTimes);let timing;try{timing=(await getSchedule(model)).timing;}catch{timing=modelTiming(iso(saved),SOURCES[model].interval,null,'fetch');}dmiTimings.set(model,timing);return {records,timing,saved,delivery:'dmi',attribution:'Danish Meteorological Institute, CC BY 4.0'};
   }
   async function fetchDMIFallback(points,group){
-    const hour=Math.floor(now()/HOUR)*HOUR,fields=['wind_speed_10m','wind_gusts_10m','wind_direction_10m',...(group==='ports'?['temperature_2m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation']:[])];
+    const hour=Math.floor(now()/HOUR)*HOUR,fields=['wind_speed_10m','wind_gusts_10m','wind_direction_10m',...(group==='ports'?['temperature_2m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation','precipitation_probability']:[])];
     const query={latitude:points.map(p=>p.lat).join(','),longitude:points.map(p=>p.lon).join(','),hourly:fields.join(','),models:'dmi_seamless',wind_speed_unit:'ms',temperature_unit:'celsius',timeformat:'unixtime',timezone:'UTC',start_hour:iso(hour-HOUR).slice(0,16),end_hour:iso(hour+95*HOUR).slice(0,16),cell_selection:'nearest'};
     const result=await fetcher('https://api.open-meteo.com/v1/forecast?'+new URLSearchParams(query),{signal:AbortSignal.timeout(60000)});
     if(!result.ok)throw Object.assign(Error('Open-Meteo: HTTP '+result.status),{status:result.status});

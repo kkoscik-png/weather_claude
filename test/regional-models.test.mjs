@@ -72,7 +72,7 @@ test('regional model: an unexpected 400 for the batch falls back to single point
     return Response.json(openMeteo([{ lat: lats[0], lon: lons[0] }])[0]);
   } });
   const data = await (await api(new Request('https://weather.seasync.co/api/forecast?model=metno_nordic&group=ports'), {})).json();
-  assert.equal(multi, 1);
+  assert.equal(multi, 2, 'batch tried with and without the chance of rain');
   assert.deepEqual(data.records.map(r => Boolean(r.outsideDomain)), [false, false, true, false, false]);
 });
 

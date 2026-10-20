@@ -702,3 +702,24 @@ main{row-gap:14px}
 .map-full-btn svg{display:block}
 .map-section .map-full-btn .icon-collapse,.map-section.map-full .map-full-btn .icon-expand{display:none}
 .map-section.map-full .map-full-btn .icon-collapse{display:block}
+
+/* Meteogram v2: cloud bands, hanging rain, wind columns; layer toggles in the label column. */
+.meteogram-plot,.meteogram-svg{height:240px}
+.chart-labels .axis-unit.mg-axis{height:240px;padding:0;position:relative;background:#fbfcfc;border-top:1px solid #eef2f3}
+.mg-toggles{position:absolute;left:6px;right:6px;top:4px;display:flex;justify-content:space-between;align-items:center}
+.mg-toggle{width:17px;height:17px;padding:0;border:0;border-radius:50%;position:relative;background:#e6eef0;color:#9aabb1;flex:none;transition:background .15s,color .15s}
+.mg-toggle svg{position:absolute;left:50%;top:50%;width:10.5px;height:10.5px;transform:translate(-50%,-50%)}
+.mg-toggle.on{background:var(--accent);color:#fff}
+.mg-toggle:hover{filter:none;box-shadow:0 0 0 2px #7cc3b655}
+.mg-labels{position:absolute;inset:0;pointer-events:none}
+.mg-lab{position:absolute;left:9px;font-size:8.5px;line-height:10px;color:#7b8f97;font-weight:600;white-space:nowrap}
+.mg-lab b{color:#14323c;font-weight:700}
+.mg-lab.mg-sub{left:auto;right:30px;font-weight:500;font-size:8px}
+.mg-axis .chart-wind-scale span{right:8px;color:#7b8f97}
+:root[data-theme="dark"] .chart-labels .axis-unit.mg-axis{background:#11232c;border-top-color:#1b323c}
+:root[data-theme="dark"] .mg-toggle{background:#1b323c;color:#5f7a84}
+:root[data-theme="dark"] .mg-toggle.on{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .mg-lab{color:#8aa3ab}
+:root[data-theme="dark"] .mg-lab b{color:#e3eef1}
+:root[data-theme="dark"] .mg-axis .chart-wind-scale span{color:#8aa3ab}
+@media(max-width:760px){.mg-toggles{left:4px;right:4px}.mg-toggle{width:15px;height:15px}.mg-toggle svg{width:9.5px;height:9.5px}.mg-lab{left:6px;font-size:8px}.mg-lab.mg-sub{right:24px;font-size:7.5px}}

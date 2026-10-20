@@ -34,14 +34,14 @@ export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=
 
 export function normalizeDMIOpenMeteo(data,points,fetchedAt=Date.now()){
  const rows=Array.isArray(data)?data:[data];if(rows.length!==points.length)throw Error('Incomplete Open-Meteo fallback forecast.');
- const fields=['temperature_2m','wind_speed_10m','wind_gusts_10m','wind_direction_10m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation'];
+ const fields=['temperature_2m','wind_speed_10m','wind_gusts_10m','wind_direction_10m','cloud_cover','cloud_cover_low','cloud_cover_mid','cloud_cover_high','precipitation','precipitation_probability'];
  const records=rows.map((row,i)=>{
   const source=row.hourly;if(!Array.isArray(source?.time)||row.hourly_units?.wind_speed_10m!=='m/s')throw Error('Invalid Open-Meteo fallback forecast.');
   const hourly={time:source.time.map(t=>Number.isFinite(t)?t:null)};
   for(const field of fields)hourly[field]=source.time.map((_,i)=>{
    const v=source[field]?.[i];if(typeof v!=='number'||!Number.isFinite(v))return null;
    if(field==='temperature_2m')return v;
-   return v>=0&&v<=(field.startsWith('cloud_cover')?100:field==='wind_direction_10m'?360:Infinity)?v:null;
+   return v>=0&&v<=(field.startsWith('cloud_cover')||field==='precipitation_probability'?100:field==='wind_direction_10m'?360:Infinity)?v:null;
   });
   if(!hourly.wind_speed_10m.some(v=>v!==null))throw Error('No wind in the Open-Meteo fallback forecast.');
   return {id:points[i].id,latitude:row.latitude,longitude:row.longitude,provider:'DMI / ECMWF via Open-Meteo',model:'DMI Seamless (DMI + ECMWF)',hourly};
