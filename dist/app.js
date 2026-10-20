@@ -72,7 +72,7 @@ function renderWindSource(){
 }
 // Wind and gust chips use the same Windy colour scale as the hourly table.
 // Dark theme: values on the grey calm-wind background are light green for contrast.
-function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<175?'#fff':'#15343e';}
+function windInk(v){if(!valid(v))return isDarkTheme()?'#7f97a0':'#6f8790';if(isDarkTheme()&&v<3.5)return '#adffcf';const c=windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<130?'#fff':'#15343e';}
 function windChip(v,label,cls=''){return `<span class="wind-chip ${cls}${valid(v)?'':' no-data'}" style="background:${windHeat(v)};color:${windInk(v)}"><small>${label}</small><b>${format(v)}</b></span>`;}
 // Flags on the map: by default only the selected point; the flag toggles on the cards
 // let you show them on one, two or all three points (remembered in this browser).
@@ -169,12 +169,14 @@ function renderTimeline(){renderMapTimeline();
 const TABLE_MODELS=['icon_eu','icon_global','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_d2'];const FLAG_MODELS=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie'];
 const DAY_KEY=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Stockholm',year:'numeric',month:'2-digit',day:'2-digit'});
 const DAY_TITLE=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'long',day:'numeric',month:'short'});
-// Wind colour scale (m/s), shared by the map field, legend, table, tiles, flags and popups:
-// violet-blue calm → teal → green → olive → brown → magenta → violet → steel blue (30 m/s).
-const WIND_COLORS=[[0,[98,113,183]],[1,[57,97,159]],[3,[74,148,169]],[5,[77,141,123]],[7,[83,165,83]],[9,[53,159,53]],[11,[167,157,81]],[13,[159,127,58]],[15,[161,108,92]],[17,[129,58,78]],[19,[175,80,136]],[21,[117,74,147]],[24,[109,97,163]],[27,[68,105,141]],[29,[92,144,152]],[36,[125,68,165]],[46,[231,215,215]],[51,[219,212,135]],[77,[205,202,112]],[104,[128,128,128]]];
+// Windy windDetail colour breakpoints, in m/s. Applied locally; no Windy API/runtime.
+// 0–4 m/s: a gradual ramp from white (calm) to the 4 m/s blue.
+const WIND_COLORS=[[0,[255,255,255]],[1,[224,244,252]],[2,[176,230,252]],[3,[106,215,253]],[4,[0,200,254]],[6,[0,230,0]],[10,[254,174,0]],[19,[254,0,150]],[100,[151,50,222]]];
+// Dark theme: the calm ramp starts at mid grey instead of white, so the table does not glare.
 let lightPalette=false;// map flags always use the daytime palette
 const isDarkTheme=()=>!lightPalette&&typeof document!=='undefined'&&document.documentElement?.getAttribute?.('data-theme')==='dark';
-function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
+const WIND_COLORS_DARK=[[0,[86,99,108]],[1,[78,114,130]],[2,[64,134,160]],[3,[42,162,204]],...WIND_COLORS.slice(4)];
+function windRGB(v){if(!valid(v))return isDarkTheme()?[34,52,62]:[240,242,243];const scale=isDarkTheme()?WIND_COLORS_DARK:WIND_COLORS;for(let i=1;i<scale.length;i++)if(v<scale[i][0]){const [a,ac]=scale[i-1],[b,bc]=scale[i],f=Math.max(0,(v-a)/(b-a));return ac.map((x,j)=>Math.round(x+(bc[j]-x)*f));}return scale.at(-1)[1];}
 function windHeat(v){return valid(v)?'rgb('+windRGB(v).join(',')+')':(isDarkTheme()?'#22343e':'#f0f2f3');}
 function flowArrow(degrees){return valid(degrees)?`<i class="flow-arrow" style="transform:rotate(${(degrees+180)%360}deg)" aria-hidden="true">↑</i>`:'<i class="flow-arrow missing" aria-hidden="true">·</i>';}
 function buildWindyTable(ts){
@@ -185,7 +187,7 @@ function buildWindyTable(ts){
  for(const model of TABLE_MODELS){
   html+=`<div class="model-row ${model===state.model?'primary-model':''}" role="row" data-row-model="${model}">`;
   ts.forEach((t,i)=>{const v=windAt(state.port,'wind_speed_10m',t,model),g=windAt(state.port,'wind_gusts_10m',t,model),d=windAt(state.port,'wind_direction_10m',t,model),title=windModelInfo(model).short+' · '+fullFmt.format(new Date(t*1000))+' · Wind '+format(v)+' m/s · Gusts '+format(g)+' m/s · Z '+(valid(d)?Math.round(d)+'°':'—');
-   html+=`<button class="meteo-cell ${i===state.hour?'selected':''} ${valid(v)?'':'no-data'}" data-hour="${i}" role="cell" style="background:${windHeat(v)};color:${windInk(v)}" title="${title}" aria-label="${title}"><span class="meteo-wind">${flowArrow(d)}<b>${format(v)}</b></span><span class="meteo-gust" style="background:${windHeat(g)};color:${windInk(g)}">${format(g)}</span></button>`;
+   html+=`<button class="meteo-cell ${i===state.hour?'selected':''} ${valid(v)?'':'no-data'}" data-hour="${i}" role="cell" style="background:${windHeat(v)}" title="${title}" aria-label="${title}"><span class="meteo-wind">${flowArrow(d)}<b>${format(v)}</b></span><span class="meteo-gust" style="background:${windHeat(g)}">${format(g)}</span></button>`;
   });html+='</div>';
  }
  html+='</div>';
@@ -591,8 +593,9 @@ function updateScale(){
  const rgb=v=>'rgb('+(wave?color(v):windRGB(v)).join(',')+')',n=values.length,stops=[rgb(values[0])+' 0%'];
  for(let i=0;i<n;i++){const a=values[i],b=i<n-1?values[i+1]:a+(a-values[i-1])/2,steps=i<n-1?6:3;for(let k=0;k<steps;k++){const f=k/6;stops.push(rgb(a+(b-a)*f)+' '+((i+.5+f)/n*100).toFixed(2)+'%');}}
  const scale=$('scaleLabels');scale.style.background='linear-gradient(90deg,'+stops.join(',')+')';
- scale.innerHTML=values.map(v=>`<span class="scale-step">${v.toLocaleString('en-GB')}</span>`).join('');
- const unitNode=$('scaleUnit');if(unitNode?.style)unitNode.style.background=rgb(values[0]);
+ const ink=v=>{const c=wave?color(v):windRGB(v);return c[0]*.2126+c[1]*.7152+c[2]*.0722<150?'':' dark';};
+ scale.innerHTML=values.map(v=>`<span class="scale-step${ink(v)}">${v.toLocaleString('en-GB')}</span>`).join('');
+ const unitNode=$('scaleUnit');if(unitNode?.style){unitNode.style.background=rgb(values[0]);unitNode.classList?.toggle?.('dark',Boolean(ink(values[0])));}
 }
 
 function selectModel(model){
