@@ -645,3 +645,7 @@ main{row-gap:14px}
 @media(max-width:760px){.table-corner .play,.table-corner .now-btn{width:34px!important;height:17px!important}.corner-buttons{gap:5px;padding:0 4px!important}.table-corner .now-btn::after{font-size:7.5px!important}}
 :root[data-theme="dark"] .table-corner .play{background:#24505c!important;color:#e6f6f2!important}
 :root[data-theme="dark"] .table-corner .now-btn{background:#13262f!important;border-color:#7a3a36!important;color:#ff7a70!important}
+
+/* iPhone (aplikacja z ekranu początkowego): treść poza wycięciem, paskiem stanu i paskiem gestów */
+.pwa-standalone body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.map-section.map-full{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
