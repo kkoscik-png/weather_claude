@@ -404,6 +404,12 @@ function fitFlags(){
  if(!map)return false;const size=map.getSize();if(!size.x||!size.y)return false;
  const flagged=slotPorts().filter(i=>state.flags&&flagPorts().has(i)),ids=flagged.length?flagged:slotPorts();if(!ids.length)return false;
  const points=ids.map(i=>({ll:L.latLng(PORTS[i].lat,PORTS[i].lon),off:flagPixelOffsets(i)}));if(points.some(p=>!p.off))return false;
+ return fitPointsView(points,false);
+}
+// Highest zoom (¼ steps) at which every point plus its pixel extents (flags) fits inside the
+// map, clear of the frame margins, the left controls, the legend and the top-left tabs.
+function fitPointsView(points,animate){
+ if(!map)return false;const size=map.getSize();if(!size.x||!size.y)return false;
  const narrow=size.x<560,m={left:narrow?52:58,right:narrow?58:62,top:narrow?112:18,bottom:18},tabs=narrow?{x:0,y:0}:{x:330,y:118};
  for(let z=12;z>=4;z-=.25){
   const px=points.flatMap(p=>{const c=map.project(p.ll,z);return p.off.map(o=>({x:c.x+o.x,y:c.y+o.y}));});
@@ -411,7 +417,7 @@ function fitFlags(){
   if(maxX-minX>size.x-m.left-m.right||maxY-minY>size.y-m.top-m.bottom)continue;
   const origin={x:(minX+maxX)/2-(m.left+(size.x-m.right))/2,y:(minY+maxY)/2-(m.top+(size.y-m.bottom))/2};
   if(px.some(q=>q.x-origin.x<tabs.x&&q.y-origin.y<tabs.y))continue;
-  map.setView(map.unproject(L.point(origin.x+size.x/2,origin.y+size.y/2),z),z,{animate:false});state.flagFitDone=true;return true;
+  const center=map.unproject(L.point(origin.x+size.x/2,origin.y+size.y/2),z);if(animate)map.flyTo(center,z,{duration:.6});else map.setView(center,z,{animate:false});state.flagFitDone=true;return true;
  }
  return false;
 }
@@ -681,9 +687,10 @@ function bindTwoFingerHint(){
 // Gdynia / Karlskrona → Gdynia–Karlskrona.
 const ROUTE_OF_PORT={0:'vn',1:'vn',2:'vn',3:'gk',4:'gk'};
 function fitRoute(kind){
- if(!map)return;const pts=kind==='gk'?[...GK_ROUTE_POINTS,PORTS[3],PORTS[4]]:[...routeGeometry().polygon,PORTS[0],PORTS[1],PORTS[2]];
- const narrow=map.getSize().x<560;
- map.fitBounds(pts.map(p=>[p.lat,p.lon]),{paddingTopLeft:narrow?[46,118]:[64,120],paddingBottomRight:narrow?[60,24]:[70,28],animate:true,duration:.6});
+ if(!map)return;const ports=kind==='gk'?[3,4]:[0,1,2],route=kind==='gk'?GK_ROUTE_POINTS:routeGeometry().polygon;
+ // The route corridor plus both ends; ports on the tiles with flags reserve room for their full flags.
+ const points=[...route.map(p=>({ll:L.latLng(p.lat,p.lon),off:[{x:0,y:0}]})),...ports.map(i=>({ll:L.latLng(PORTS[i].lat,PORTS[i].lon),off:(inSlots(i)&&state.flags&&flagPorts().has(i)&&flagPixelOffsets(i))||[{x:0,y:0}]}))];
+ if(!fitPointsView(points,true))map.fitBounds(points.map(p=>p.ll),{padding:[40,40]});
  state.viewTouched=true;
 }
 function bindMapFullscreen(){
