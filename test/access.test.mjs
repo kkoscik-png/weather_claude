@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHandler } from '../worker/index.mjs';
+import { createHandler, assetCacheControl } from '../worker/index.mjs';
 
 const handler = createHandler();
 const request = (path = '/', host = 'weather.seasync.co', assertion) => new Request('https://' + host + path, { headers: assertion ? { 'Cf-Access-Jwt-Assertion': assertion } : {} });
@@ -90,4 +90,18 @@ test('the colour theme script loads from the site itself before the page paints'
   assert.match(head, /<script src="theme\.js\?v=[^"]+"><\/script>/);
   assert(html.includes('data-theme-set="light"') && html.includes('data-theme-set="dark"'));
   assert(fs.readFileSync('dist/style.css', 'utf8').includes(':root[data-theme="dark"]'));
+});
+test('installable app: manifest with PNG and maskable icons, service worker at the root', async () => {
+  const fs = await import('node:fs');
+  const m = JSON.parse(fs.readFileSync('dist/manifest.webmanifest', 'utf8'));
+  assert.equal(m.display, 'standalone'); assert.equal(m.start_url.startsWith('/'), true); assert.equal(m.id, '/');
+  for (const size of ['192x192', '512x512']) {
+    assert(m.icons.some(i => i.sizes === size && i.purpose === 'any' && i.type === 'image/png'));
+    assert(m.icons.some(i => i.sizes === size && i.purpose === 'maskable'));
+  }
+  for (const i of m.icons) assert(fs.existsSync('dist/' + i.src), i.src);
+  assert(fs.existsSync('dist/sw.js'));
+  assert.equal(assetCacheControl(new URL('https://weather.seasync.co/sw.js')), 'no-cache');
+  const html = fs.readFileSync('dist/index.html', 'utf8');
+  assert(html.includes('rel="manifest" href="manifest.webmanifest"') && html.includes('id="installApp"'));
 });

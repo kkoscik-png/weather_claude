@@ -492,3 +492,13 @@ main{row-gap:14px}
 :root[data-theme="dark"] .port:hover .port-chev{background:#24434f}
 :root[data-theme="dark"] .port-empty{background:#0f2028!important;border-color:#2c4a56!important}
 :root[data-theme="dark"] .port-empty h2{color:#9cc6dd}
+
+/* Przycisk instalacji aplikacji (PWA) w pasku marki */
+.install-app{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 10px;border-radius:999px;border:1px solid #bfe3da;background:#e9f7f3;color:#0a7a67;font:650 12px 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.install-app[hidden]{display:none}
+.install-app svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.install-app:hover{background:#dcf2ec}
+:root[data-theme="dark"] .install-app{background:#16352f;border-color:#2f6b5e;color:#7fe6cb}
+@media(max-width:760px){.install-app span{display:none}.install-app{width:30px;padding:0;justify-content:center}}
+/* W zainstalowanej aplikacji: miejsce na pasek stanu telefonu */
+.pwa-standalone body{padding-top:env(safe-area-inset-top)}
