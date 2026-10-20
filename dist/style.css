@@ -544,3 +544,23 @@ main{row-gap:14px}
 .dir-chip .dir-name{z-index:2;color:#17496a;opacity:1;font-weight:800;text-shadow:0 0 3px #e4f2fb,0 0 3px #e4f2fb,0 0 2px #e4f2fb}
 :root[data-theme="dark"] .dir-chip .dir-arrow{color:#4f95c0}
 :root[data-theme="dark"] .dir-chip .dir-name{color:#d6ecf8;text-shadow:0 0 3px #173040,0 0 3px #173040,0 0 2px #173040}
+
+/* Wybór modelu: oba pola listy tej samej szerokości i wysokości */
+#windSource,#waveSource{margin-top:0;width:100%}
+.model-pickers{align-items:stretch}
+.model-pickers>.picker-card{min-width:0;display:flex;flex-direction:column}
+.picker-card .picker-select{width:100%}
+@media(max-width:760px){.model-pickers{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+/* Podpowiedź przy próbie przesuwania mapy jednym palcem */
+.map-gesture-hint{position:absolute;inset:0;z-index:900;display:grid;place-items:center;pointer-events:none;background:rgba(11,24,32,.45);color:#fff;font:650 15px 'DM Sans',system-ui,sans-serif;opacity:0;transition:opacity .25s}
+.map-gesture-hint.show{opacity:1}
+@media(max-width:760px){.ports-column>.ports .port-id h2{font-size:13px;letter-spacing:-.2px}.ports-column>.ports .port-chev{width:14px;height:14px}}
+@media(max-width:380px){.ports-column>.ports .port-id h2{font-size:12px}}
+@media(max-width:760px){
+.ports-column>.ports .port-wx svg{width:20px;height:20px}
+.ports-column>.ports .port-wx-now b{font-size:13px}
+.ports-column>.ports .port-range{font-size:10px;gap:3px}
+.ports-column>.ports .port-top{gap:3px;padding-right:28px}
+.ports-column>.ports .port-name-pick{gap:1px}
+.ports-column>.ports .port-name-pick>span{text-overflow:clip;overflow:visible}
+}

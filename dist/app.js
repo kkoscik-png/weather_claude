@@ -84,8 +84,7 @@ function choosePort(slot,port){
  const slots=[...(state.slots||DEFAULT_SLOTS)];if(port!==null){const other=slots.indexOf(port);if(other>=0&&other!==slot)slots[other]=slots[slot];}slots[slot]=port;state.slots=slots;
  if(port!==null){const set=new Set(flagPorts());set.add(port);state.flagPorts=set;state.port=port;}
  if(!inSlots(state.port))state.port=slotPorts()[0]??0;
- // Re-frame the map on the flagged ports that are now on the tiles.
- state.viewTouched=false;state.flagFitDone=false;renderAll();if(map&&!fitFlags())fitPorts();
+ renderAll();if(port!==null)fitRoute(ROUTE_OF_PORT[port]);
 }
 const CHEVRON='<svg class="port-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>';
 function portSelect(slot,current){return portPicker(slot,current).replace(/^<label class="port-pick">|<\/label>$/g,'');}
@@ -416,7 +415,7 @@ function fitFlags(){
  }
  return false;
 }
-function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');PORTS.forEach((p,i)=>markers.push(L.marker([p.lat,p.lon],{icon:markerIcon(i)}).addTo(map).on('click',()=>selectPort(i))));map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>{if(!fieldCovers(e.latlng.lng,e.latlng.lat))return;const v=sample(e.latlng.lat,e.latlng.lng);const label=state.layer==='wave'?'Wave Hs':state.layer==='gust'?'Gusts':'Wind';L.popup().setLatLng(e.latlng).setContent(`<b>${label} · ${format(v?.value)} ${state.layer==='wave'?'m':'m/s'}</b><br>${fullFmt.format(new Date(selectedEpoch()*1000))}<br>${e.latlng.lat.toFixed(2)}°N ${e.latlng.lng.toFixed(2)}°E<br><small>Interpolated overview grid · ${state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label}</small>`).openOn(map);});new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
+function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');PORTS.forEach((p,i)=>markers.push(L.marker([p.lat,p.lon],{icon:markerIcon(i)}).addTo(map).on('click',()=>selectPort(i))));map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});applyMapGestures();bindTwoFingerHint();map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>{if(!fieldCovers(e.latlng.lng,e.latlng.lat))return;const v=sample(e.latlng.lat,e.latlng.lng);const label=state.layer==='wave'?'Wave Hs':state.layer==='gust'?'Gusts':'Wind';L.popup().setLatLng(e.latlng).setContent(`<b>${label} · ${format(v?.value)} ${state.layer==='wave'?'m':'m/s'}</b><br>${fullFmt.format(new Date(selectedEpoch()*1000))}<br>${e.latlng.lat.toFixed(2)}°N ${e.latlng.lng.toFixed(2)}°E<br><small>Interpolated overview grid · ${state.layer==='wave'?waveSourceLabel():windModelInfo(state.model).label}</small>`).openOn(map);});new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
 
 // Four query rows, extended toward Gotland, with independent marine samples at cell centres.
 const NAUTICAL_MILE_KM=1.852,ROUTE_ROW_OFFSETS_NM=[-30,-15,0,15],EARTH_KM=6371.0088;
@@ -665,7 +664,28 @@ function renderUpdateClocks(){renderMapStamp();
 
 // Map on the whole screen: native fullscreen where the browser allows it for an element,
 // otherwise (e.g. iPhone) a fixed full-window overlay. Esc or the same button returns.
-function setMapFull(on){const section=document.querySelector('.map-section'),btn=$('mapFull');if(!section||!btn)return;section.classList.toggle('map-full',on);document.body.classList.toggle('map-full-open',on);btn.setAttribute('aria-pressed',on);btn.title=btn.ariaLabel=on?'Exit full screen':'Full-screen map';btn.setAttribute('aria-label',btn.title);if(map)setTimeout(()=>{map.invalidateSize();drawField();updateRouteWaves();renderMapTimeline();},60);}
+function setMapFull(on){const section=document.querySelector('.map-section'),btn=$('mapFull');if(!section||!btn)return;section.classList.toggle('map-full',on);setTimeout(applyMapGestures,0);document.body.classList.toggle('map-full-open',on);btn.setAttribute('aria-pressed',on);btn.title=btn.ariaLabel=on?'Exit full screen':'Full-screen map';btn.setAttribute('aria-label',btn.title);if(map)setTimeout(()=>{map.invalidateSize();drawField();updateRouteWaves();renderMapTimeline();},60);}
+// Phones/tablets: one finger scrolls the page; two fingers move and zoom the map (Leaflet's
+// pinch handler pans with the pinch centre). In full-screen map mode one finger moves the map too.
+const touchOnly=()=>typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&!matchMedia('(any-pointer: fine)').matches;
+function applyMapGestures(){
+ if(!map?.dragging)return;const full=document.querySelector('.map-section')?.classList.contains('map-full');
+ if(touchOnly()&&!full)map.dragging.disable();else map.dragging.enable();
+}
+function bindTwoFingerHint(){
+ const box=map?.getContainer?.();if(!box)return;let hint=null,timer=0;
+ const show=()=>{if(!hint){hint=document.createElement('div');hint.className='map-gesture-hint';hint.textContent='Use two fingers to move the map';box.parentNode.appendChild(hint);}hint.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>hint.classList.remove('show'),1300);};
+ box.addEventListener('touchmove',e=>{if(e.touches.length===1&&!map.dragging.enabled())show();else if(hint)hint.classList.remove('show');},{passive:true});
+}
+// Choosing a port on a tile frames its route: Ventspils / Norvik → Ventspils–Nynäshamn,
+// Gdynia / Karlskrona → Gdynia–Karlskrona.
+const ROUTE_OF_PORT={0:'vn',1:'vn',2:'vn',3:'gk',4:'gk'};
+function fitRoute(kind){
+ if(!map)return;const pts=kind==='gk'?[...GK_ROUTE_POINTS,PORTS[3],PORTS[4]]:[...routeGeometry().polygon,PORTS[0],PORTS[1],PORTS[2]];
+ const narrow=map.getSize().x<560;
+ map.fitBounds(pts.map(p=>[p.lat,p.lon]),{paddingTopLeft:narrow?[46,118]:[64,120],paddingBottomRight:narrow?[60,24]:[70,28],animate:true,duration:.6});
+ state.viewTouched=true;
+}
 function bindMapFullscreen(){
  const btn=$('mapFull'),section=document.querySelector('.map-section');if(!btn||!section)return;
  btn.onclick=async()=>{const on=!section.classList.contains('map-full');
