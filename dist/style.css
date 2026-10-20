@@ -584,3 +584,5 @@ main{row-gap:14px}
 @media(max-width:760px){.chart-place{font-size:9px;line-height:11px}.axis-unit>small{top:42px}}
 .axis-unit>small{max-width:62px}
 @media(max-width:760px){.axis-unit>small{max-width:54px}}
+/* Play i Now równo rozłożone w rogu tabeli (cała szerokość kolumny nazw, środek wysokości dwóch wierszy nagłówka) */
+.table-corner{left:0;width:var(--weather-label-width);height:50px;padding:0!important;gap:0!important;justify-content:space-evenly;align-items:center}
