@@ -94,15 +94,15 @@ test('the route-gk group is served in batches of six for marine models', async (
   assert.deepEqual(records.map(r => r.id), GK_ROUTE_POINTS.map(p => p.id));
 });
 
-test('wide zoomed-out wind grid: one Open-Meteo request for all points, wind models only', async () => {
+test('wide zoomed-out wind grid: one Open-Meteo request for all points, every wind model', async () => {
   const { FORECAST_GRIDS } = await import('../worker/forecast-points.mjs');
-  let requests = 0;
+  let requests = 0, lastModels = null;
   const api = createForecastAPI({
     now: () => Date.parse('2026-10-19T08:00:00Z'),
     fetcher: async url => {
       const u = new URL(url);
       if (u.pathname.includes('/static/meta.json')) return Response.json({ last_run_availability_time: 1760853600, last_run_initialisation_time: 1760853600, update_interval_seconds: 10800 });
-      requests++;
+      requests++; lastModels = u.searchParams.get('models');
       const lats = u.searchParams.get('latitude').split(','), lons = u.searchParams.get('longitude').split(',');
       return Response.json(lats.map((lat, i) => ({ latitude: Number(lat), longitude: Number(lons[i]), hourly: { time: [1760860800], wind_speed_10m: [7], wind_gusts_10m: [11], wind_direction_10m: [250] } })));
     },
@@ -113,7 +113,15 @@ test('wide zoomed-out wind grid: one Open-Meteo request for all points, wind mod
   assert.equal(data.records.length, FORECAST_GRIDS.wideGrid.length);
   assert.equal(data.nextOffset, null);
   assert.equal(requests, 1);
-  assert.equal((await api(new Request('https://weather.seasync.co/api/forecast?model=dmi_harmonie&group=wide-grid'), {})).status, 400);
+  // Regional models and SMHI get a whole-map field from a seamless blend / ECMWF.
+  for (const [model, source] of [['dmi_harmonie', 'dmi_seamless'], ['metno_nordic', 'metno_seamless'], ['icon_d2', 'icon_seamless'], ['fmi_harmonie', 'ecmwf_ifs'], ['smhi_snow', 'ecmwf_ifs']]) {
+    const before = requests, r = await api(new Request('https://weather.seasync.co/api/forecast?model=' + model + '&group=wide-grid'), {});
+    assert.equal(r.status, 200, model);
+    assert.equal(requests, before + 1, model);
+    assert.equal(lastModels, source);
+    assert.equal((await r.json()).records.length, FORECAST_GRIDS.wideGrid.length);
+  }
+  assert.equal((await api(new Request('https://weather.seasync.co/api/forecast?model=ecmwf_wam&group=wide-grid'), {})).status, 400);
   const fs = await import('node:fs');
   assert.deepEqual(JSON.parse(fs.readFileSync('dist/app.js', 'utf8').match(/const WIDE_GRID=(\[.*?\]);/)[1]), FORECAST_GRIDS.wideGrid);
 });

@@ -668,3 +668,14 @@ main{row-gap:14px}
 @media(max-width:760px){.scale{right:10px;bottom:22px}.scale-key{height:20px}.scale-labels{width:196px}.scale-step,.scale #scaleUnit{font-size:9.5px;width:auto;height:auto}.scale #scaleUnit{padding:0 5px 0 8px}}
 
 .scale-step.dark,.scale #scaleUnit.dark{color:#15343e;text-shadow:none}
+
+/* Map: layer switch lives in the left control column; the data-source stamp sits at the top. */
+.map-top{top:14px;left:14px}
+.layer-btns{display:flex;flex-direction:column;gap:2px;margin-bottom:6px;padding:2px;border-radius:8px;background:#0f2535d9;border:1px solid #3f58675c}
+.layer-btns .layer-btn{width:31px;height:24px;border:0;border-radius:5px;background:none;color:#9fb6bf;font:750 7.5px 'DM Sans',system-ui,sans-serif;letter-spacing:.3px;display:grid;place-items:center}
+.layer-btns .layer-btn.active{background:#f5fafb;color:#163541}
+@media(max-width:760px){.map-top{top:10px;left:10px}.layer-btns .layer-btn{width:30px;height:22px}}
+/* Forecast older than 6 h: the source dot glows red. */
+.map-stamp .status-dot.old{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f40,0 0 8px #ff4d4f;animation:stale-dot 1.6s ease-in-out infinite}
+@keyframes stale-dot{50%{box-shadow:0 0 0 5px #ff4d4f22,0 0 12px #ff4d4f}}
+@media(prefers-reduced-motion:reduce){.map-stamp .status-dot.old{animation:none}}

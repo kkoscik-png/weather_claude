@@ -4,7 +4,7 @@ import { STORMGLASS_POINTS } from './stormglass-points.mjs';
 import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
-const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs'];
+const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs','dmi_harmonie','metno_nordic','icon_d2','fmi_harmonie','smhi_snow'];
 const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR},metno_nordic:{interval:HOUR},icon_d2:{interval:3*HOUR},fmi_harmonie:{interval:3*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],metno_nordic:['https://api.open-meteo.com','metno_nordic_pp'],icon_d2:['https://api.open-meteo.com','dwd_icon_d2'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
 // Open-Meteo model ids. DMI HARMONIE AROME is read from Open-Meteo instead of the overloaded DMI EDR API.
@@ -12,6 +12,10 @@ const OM_MODEL={dmi_harmonie:'dmi_harmonie_arome_europe',metno_nordic:'metno_nor
 // Regional models: points outside the model domain get empty series instead of failing the whole batch.
 const REGIONAL=new Set(['dmi_harmonie','metno_nordic','icon_d2']),ICON_D2_DOMAIN={south:43.18,north:58.08,west:-3.94,east:20.34};
 const inDomain=(model,p)=>model!=='icon_d2'||p.lat>=ICON_D2_DOMAIN.south&&p.lat<=ICON_D2_DOMAIN.north&&p.lon>=ICON_D2_DOMAIN.west&&p.lon<=ICON_D2_DOMAIN.east;
+// Map fields only: where a regional model has no data (outside its domain) the field is filled
+// from the provider's seamless blend; models without an Open-Meteo field use ECMWF IFS there.
+const FIELD_FILL={dmi_harmonie:'dmi_seamless',metno_nordic:'metno_seamless',icon_d2:'icon_seamless'};
+const WIDE_SOURCE={...FIELD_FILL,fmi_harmonie:'ecmwf_ifs',smhi_snow:'ecmwf_ifs'};
 const OM_ATTRIBUTION={dmi_harmonie:'DMI HARMONIE AROME',metno_nordic:'MET Norway MET Nordic',icon_d2:'DWD ICON-D2'};
 const GROUPS={ports:STORMGLASS_POINTS.ports,route:STORMGLASS_POINTS.route,'wind-grid':FORECAST_GRIDS.windGrid.map((p,i)=>({...p,id:String(i)})),'wave-grid':FORECAST_GRIDS.waveGrid.map((p,i)=>({...p,id:String(i)})),'wide-grid':FORECAST_GRIDS.wideGrid.map((p,i)=>({...p,id:String(i)})),coast:COAST_POINTS.map(({id,lat,lon})=>({id,lat,lon})),'route-gk':GK_ROUTE_POINTS.map(({id,lat,lon})=>({id,lat,lon}))};
 const json=(value,status=200,extraHeaders={})=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...extraHeaders}});
@@ -149,23 +153,27 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   const omWindow=()=>{const hour=Math.floor(now()/HOUR)*HOUR;return {start:hour-HOUR,end:hour+95*HOUR};};
   // An out-of-domain point of a regional model: same hourly axis, all values empty.
   function emptyRecord(model,p,fields){const {start,end}=omWindow(),time=[];for(let t=start;t<=end;t+=HOUR)time.push(t/1000);return {id:p.id,latitude:p.lat,longitude:p.lon,provider:OM_ATTRIBUTION[model]||model,model,outsideDomain:true,hourly:{time,...Object.fromEntries(fields.split(',').map(f=>[f,time.map(()=>null)]))}};}
-  async function fetchOpenWeather(model,points,group){
+  async function fetchOpenWeather(model,points,group,source=null){
     const wave=['ecmwf_wam','dwd_ewam'].includes(model),host=wave?'https://marine-api.open-meteo.com/v1/marine':'https://api.open-meteo.com/v1/forecast';
     const fields=wave?'wave_height,wave_direction,wave_period':'wind_speed_10m,wind_gusts_10m,wind_direction_10m'+(group==='ports'?',cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,precipitation,temperature_2m':'');
     const {start,end}=omWindow();
     const request=async list=>{
-      const query={latitude:list.map(p=>p.lat).join(','),longitude:list.map(p=>p.lon).join(','),hourly:fields,models:OM_MODEL[model]||model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(start).slice(0,16),end_hour:iso(end).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
+      const query={latitude:list.map(p=>p.lat).join(','),longitude:list.map(p=>p.lon).join(','),hourly:fields,models:source||OM_MODEL[model]||model,timeformat:'unixtime',timezone:'UTC',start_hour:iso(start).slice(0,16),end_hour:iso(end).slice(0,16),cell_selection:wave?'sea':'nearest',...(!wave?{wind_speed_unit:'ms',temperature_unit:'celsius'}:{})};
       return normalizeOpenWeather(await(await response(host+'?'+new URLSearchParams(query))).json(),list,model,wave);
     };
     let records;
-    if(!REGIONAL.has(model))records=await request(points);
+    if(source||!REGIONAL.has(model))records=await request(points);
     else{
       const inside=points.filter(p=>inDomain(model,p));
       // Open-Meteo rejects a whole multi-point request ("No data is available for this location")
       // when one point is outside a regional domain; then ask point by point.
       let got=[];
       if(inside.length){try{got=await request(inside);}catch(e){if(e.status!==400)throw e;got=[];for(const p of inside){try{got.push(...await request([p]));}catch(err){if(err.status!==400)throw err;}}}}
-      const byId=new Map(got.map(r=>[r.id,r]));records=points.map(p=>byId.get(p.id)||emptyRecord(model,p,fields));
+      const byId=new Map(got.map(r=>[r.id,r]));
+      // Map fields: fill out-of-domain points from the seamless blend so the field has no holes.
+      const missing=points.filter(p=>!byId.has(p.id));
+      if(missing.length&&group!=='ports'&&FIELD_FILL[model]){try{const fill=await fetchOpenWeather(model,missing,group,FIELD_FILL[model]);for(const r of fill.records)byId.set(r.id,{...r,filledFrom:FIELD_FILL[model]});}catch{}}
+      records=points.map(p=>byId.get(p.id)||emptyRecord(model,p,fields));
       if(!got.length&&group==='ports')throw Error('No '+model+' data for the ports');
     }
     const saved=now();let timing;
@@ -187,6 +195,8 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     return {records,timing,saved:now(),delivery:'fmi',attribution:'Finnish Meteorological Institute (HARMONIE), CC BY 4.0'};
   }
   async function fetchModel(model,points,group) {
+    if(group==='wide-grid'&&WIDE_SOURCE[model])return fetchOpenWeather(model,points,group,WIDE_SOURCE[model]);
+    if(model==='smhi_snow'&&group==='wind-grid')return fetchOpenWeather(model,points,group,'ecmwf_ifs');
     if(METADATA[model])return fetchOpenWeather(model,points,group);
     if(model==='fmi_harmonie')return fetchFMIHarmonie(points,group);
     if(model==='smhi_snow'){
@@ -276,7 +286,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       catch(e){return json({error:'Update time temporarily unavailable.',...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
     }
     const group=u.searchParams.get('group')||'ports',text=u.searchParams.get('offset')||'0',points=GROUPS[group];
-    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&group!=='ports')||(model==='fmi_harmonie'&&!['ports','wind-grid'].includes(group))||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
+    if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&!['ports','wind-grid','wide-grid'].includes(group))||(model==='fmi_harmonie'&&!['ports','wind-grid','wide-grid'].includes(group))||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
     // The wide zoomed-out wind grid is one Open-Meteo multi-point request, cached per model cycle.
     const batch=group==='wide-grid'?points.length:BATCH,offset=Number(text);if(offset%batch||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
     const selected=points.slice(offset,offset+batch);
