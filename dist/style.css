@@ -586,3 +586,16 @@ main{row-gap:14px}
 @media(max-width:760px){.axis-unit>small{max-width:54px}}
 /* Play i Now równo rozłożone w rogu tabeli (cała szerokość kolumny nazw, środek wysokości dwóch wierszy nagłówka) */
 .table-corner{left:0;width:var(--weather-label-width);height:50px;padding:0!important;gap:0!important;justify-content:space-evenly;align-items:center}
+
+/* Róg tabeli: nazwa portu (dla którego jest tabela) nad przyciskami Play i Now */
+.table-corner{flex-direction:column;justify-content:center!important;align-items:stretch!important;gap:3px!important}
+.table-corner .chart-place{display:flex;align-items:center;justify-content:center;gap:4px;max-width:none;width:100%;padding:0 4px;box-sizing:border-box;font:700 10px 'Manrope',sans-serif;line-height:12px;color:#0a7a67;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.table-corner .chart-place::before{width:6px;height:6px;margin:0}
+.corner-buttons{display:flex;justify-content:space-evenly;align-items:center}
+.table-corner .play,.table-corner .now-btn{width:27px;height:27px;flex:0 0 27px}
+.table-corner .play svg{width:14px;height:14px}
+.table-corner .now-btn{font-size:8.5px}
+.chart-labels .axis-unit{padding-top:6px}
+.axis-unit>small{top:22px}
+@media(max-width:760px){.table-corner .chart-place{font-size:9px}.table-corner .play,.table-corner .now-btn{width:25px;height:25px;flex-basis:25px}.table-corner .now-btn{font-size:7.5px}.axis-unit>small{top:22px}}
+:root[data-theme="dark"] .table-corner .chart-place{color:#6fe0c2}
