@@ -599,3 +599,33 @@ main{row-gap:14px}
 .axis-unit>small{top:22px}
 @media(max-width:760px){.table-corner .chart-place{font-size:9px}.table-corner .play,.table-corner .now-btn{width:25px;height:25px;flex-basis:25px}.table-corner .now-btn{font-size:7.5px}.axis-unit>small{top:22px}}
 :root[data-theme="dark"] .table-corner .chart-place{color:#6fe0c2}
+/* ---------- Róg tabeli: zielony pas z nazwą portu (opcja 4) + tekstowe klawisze PLAY / NOW jeden pod drugim (opcja 10) ---------- */
+.table-corner{display:flex;flex-direction:column;justify-content:flex-start!important;align-items:stretch!important;gap:0!important;height:50px;padding:0!important}
+.table-corner .chart-place{flex:0 0 26px;height:26px;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px;margin:0;width:100%;max-width:none;background:linear-gradient(90deg,#0a7a67,#14a58c);color:#fff;font:800 10px 'Manrope',system-ui,sans-serif;letter-spacing:.2px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:inset 0 -1px rgba(0,0,0,.08)}
+.table-corner .chart-place::before{content:'';flex:none;width:6px;height:6px;margin:0;border-radius:50%;background:#bfffee;box-shadow:0 0 0 0 rgba(191,255,238,.7);animation:place-pulse 2.4s ease-out infinite}
+@keyframes place-pulse{0%{box-shadow:0 0 0 0 rgba(191,255,238,.75)}70%{box-shadow:0 0 0 6px rgba(191,255,238,0)}100%{box-shadow:0 0 0 0 rgba(191,255,238,0)}}
+.table-corner .chart-place.changed{animation:place-in .45s ease-out}
+@keyframes place-in{from{filter:brightness(1.35)}to{filter:none}}
+.corner-buttons{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;padding:1px 0;background:#f8f8fa}
+.table-corner .play,.table-corner .now-btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:11px;width:auto;flex:none;cursor:pointer;font:800 8px 'DM Sans',system-ui,sans-serif;letter-spacing:.6px;text-transform:uppercase;line-height:1;border-radius:3px;padding:0 3px}
+.table-corner .play{color:#14323c}
+.table-corner .play svg{width:8px;height:8px;margin:0;fill:currentColor}
+.table-corner .play::after{content:'Play'}
+.table-corner .play[aria-pressed="true"]{color:#0a7a67;background:none}
+.table-corner .play[aria-pressed="true"]::after{content:'Pause'}
+.table-corner .now-btn{color:#d63a32;font-size:0}
+.table-corner .now-btn::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.table-corner .now-btn::after{content:'Now';font-size:8px}
+.table-corner .play:hover,.table-corner .now-btn:hover{background:#e9eef0}
+.table-corner .play:focus-visible,.table-corner .now-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media(max-width:760px){.table-corner .chart-place{font-size:9px;padding:0 4px;gap:4px}.table-corner .play,.table-corner .now-btn{font-size:7.5px}.table-corner .now-btn{font-size:0}.table-corner .now-btn::after{font-size:7.5px}}
+:root[data-theme="dark"] .table-corner .chart-place{background:linear-gradient(90deg,#0d5f52,#127a68);color:#e8fff8}
+:root[data-theme="dark"] .corner-buttons{background:#0f2028}
+:root[data-theme="dark"] .table-corner .play{color:#d5e6ea;background:none;box-shadow:none}
+:root[data-theme="dark"] .table-corner .now-btn{color:#ff7a70;background:none;border:0;box-shadow:none}
+:root[data-theme="dark"] .table-corner .play:hover,:root[data-theme="dark"] .table-corner .now-btn:hover{background:#1b3640}
+/* PLAY i NOW w jednej kolumnie: ikony i napisy wyrównane do siebie, cała grupa na środku */
+.table-corner .play,.table-corner .now-btn{width:46px;justify-content:flex-start;gap:5px}
+.table-corner .play svg{flex:0 0 8px}
+.table-corner .now-btn::before{flex:none;margin:0 1px}
+@media(max-width:760px){.table-corner .play,.table-corner .now-btn{width:42px;gap:4px}}
