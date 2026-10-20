@@ -702,3 +702,25 @@ main{row-gap:14px}
 .map-full-btn svg{display:block}
 .map-section .map-full-btn .icon-collapse,.map-section.map-full .map-full-btn .icon-expand{display:none}
 .map-section.map-full .map-full-btn .icon-collapse{display:block}
+
+/* Forecast source card between the port tiles and the model pickers (same style as the pickers). */
+.source-card{display:flex;flex-direction:column;gap:4px;cursor:default;margin:0 0 8px}
+.source-card .picker-title svg{fill:none}
+.source-name{display:flex;align-items:center;gap:8px;font:700 15px/1.25 'Manrope','DM Sans',system-ui,sans-serif;color:var(--ink);padding:2px 2px 0}
+.source-name .status-dot{width:8px;height:8px;background:#16a58b;box-shadow:0 0 0 3px #16a58b26}
+.source-times{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:10.5px;color:#6d8189;padding:0 2px}
+.source-times b{color:var(--ink);font-weight:650;font-variant-numeric:tabular-nums}
+.source-card .status-dot.old{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f40,0 0 8px #ff4d4f;animation:stale-dot 1.6s ease-in-out infinite}
+:root[data-theme="dark"] .source-name,:root[data-theme="dark"] .source-times b{color:#e3eef1}
+:root[data-theme="dark"] .source-times{color:#8aa3ab}
+@media(prefers-reduced-motion:reduce){.source-card .status-dot.old{animation:none}}
+/* Full-screen button: icons painted as a centred background — no SVG layout inside the button. */
+.map-full-btn{padding:0;background-repeat:no-repeat;background-position:center;background-size:17px 17px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8e8ee' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4H4v5M15 4h5v5M20 15v5h-5M4 15v5h5'/%3E%3C/svg%3E")!important}
+.map-section.map-full .map-full-btn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d8e8ee' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h5V4M20 9h-5V4M15 20v-5h5M9 20v-5H4'/%3E%3C/svg%3E")!important}
+.map-full-btn svg,.map-section .map-full-btn .icon-collapse,.map-section.map-full .map-full-btn .icon-expand,.map-section.map-full .map-full-btn .icon-collapse{display:none!important}
+.map-full-btn,.map-full-btn:hover{background-repeat:no-repeat!important;background-position:center!important;background-size:17px 17px!important}
+/* Port tiles keep their natural height now that the source card shares the column. */
+@media(min-width:761px){.ports-column>.ports .port{flex:1 0 auto;min-height:max-content}}
+.ports-column>.source-card{flex:none;margin:0;padding:8px 12px 9px}
+.source-card .source-name{font-size:14px}
+@media(max-width:760px){.ports-column>.source-card{padding:7px 10px 8px}.source-card .source-name{font-size:13px}.source-times{font-size:10px}}
