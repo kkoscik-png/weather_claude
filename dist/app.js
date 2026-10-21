@@ -237,9 +237,9 @@ function windFlagsSVGInner(point){
    `<path class="flag-tail" d="${tail(notch,0)}" fill="#1d3a45"><animate attributeName="d" dur="${(1.6+cycleIndex*.3).toFixed(1)}s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" values="${tail(notch,0)};${tail(notch-4,2)};${tail(notch,0)}"/></path>`+
    `<g clip-path="url(#${id})"><rect class="flag-label" x="${L}" y="${split}" width="${WIND_FLAG.width}" height="${mid-split}" fill="${windHeat(gust)}"/><rect x="${L}" y="${mid}" width="${WIND_FLAG.width}" height="${bottom-mid}" fill="${windHeat(v)}"/>`+
    '</g>'+
-   // An arrow shaped like the flag's swallowtail flies straight from the end of the flag to the
-   // centre of the port dot, i.e. the way the wind blows. Its speed follows the mean wind.
-   `<g class="flag-arrow" opacity="0"><path d="M-3.2,-3.8 L1.3,0 L-3.2,3.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><animateMotion dur="${dur}" repeatCount="indefinite" rotate="auto" calcMode="linear" path="M${lane},${top+4} L0,0"/><animate attributeName="opacity" dur="${dur}" repeatCount="indefinite" keyTimes="0;.06;.9;1" values="0;.9;.9;0"/></g>`+
+   // An arrow shaped like the flag's swallowtail flies along the flag's axis from its end, then
+   // straight on to the centre of the port dot (the way the wind blows). Speed follows the mean wind.
+   `<g class="flag-arrow" opacity="0"><path d="M-3.2,-3.8 L1.3,0 L-3.2,3.8" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><animateMotion dur="${dur}" repeatCount="indefinite" rotate="auto" calcMode="linear" path="M${lane},${top+4} L${lane},${bottom} L0,0"/><animate attributeName="opacity" dur="${dur}" repeatCount="indefinite" keyTimes="0;.06;.9;1" values="0;.9;.9;0"/></g>`+
    `<line x1="${L}" x2="${R}" y1="${split}" y2="${split}" stroke="#fff" stroke-opacity=".7" stroke-width=".5"/>`+
    `<text x="${lane}" y="${top+15}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle} ${lane} ${top+15})" fill="#fff" font-size="6" font-weight="500">${windModelInfo(model).short}</text>`+
    `<text x="${lane}" y="${(split+mid)/2}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle} ${lane} ${(split+mid)/2})" fill="${windInk(gust)}" font-size="8" font-weight="600">${format(gust)}</text>`+
