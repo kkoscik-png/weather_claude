@@ -4,6 +4,7 @@ import { STORMGLASS_POINTS } from './stormglass-points.mjs';
 import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points.mjs';
 import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
+import { remoteStore } from './store.mjs';
 const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs','dmi_harmonie','metno_nordic','icon_d2','fmi_harmonie','smhi_snow'];
 const SOURCES={ecmwf_ifs:{interval:6*HOUR},icon_eu:{interval:3*HOUR},icon_global:{interval:6*HOUR},ecmwf_wam:{interval:6*HOUR},dwd_ewam:{interval:6*HOUR},smhi_snow:{interval:900000},fmi_wam:{interval:6*HOUR},dmi_wam:{interval:6*HOUR,collection:'wam_nsb'},dmi_harmonie:{interval:3*HOUR,collection:'harmonie_dini_sf'},copernicus_baltic:{interval:12*HOUR},fcoo_ww3:{interval:6*HOUR},metno_nordic:{interval:HOUR},icon_d2:{interval:3*HOUR},fmi_harmonie:{interval:3*HOUR}};
 const METADATA={dmi_harmonie:['https://api.open-meteo.com','dmi_harmonie_arome_europe'],metno_nordic:['https://api.open-meteo.com','metno_nordic_pp'],icon_d2:['https://api.open-meteo.com','dwd_icon_d2'],ecmwf_ifs:['https://api.open-meteo.com','ecmwf_ifs'],icon_eu:['https://api.open-meteo.com','dwd_icon_eu'],icon_global:['https://api.open-meteo.com','dwd_icon'],ecmwf_wam:['https://marine-api.open-meteo.com','ecmwf_wam'],dwd_ewam:['https://marine-api.open-meteo.com','dwd_ewam']};
@@ -24,6 +25,13 @@ const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x
 // Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
 const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:4,dmi_wam:3},GROUP_REVISION={ports:3,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
+// What the app loads, per source: wind sources → ports, map field and zoomed-out grid;
+// wave sources → ports, map field, both routes and the coast points.
+const PREWARM_WIND=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_global','icon_d2'],PREWARM_WAVE=['ecmwf_wam','fmi_wam','dwd_ewam','copernicus_baltic','fcoo_ww3'];
+export function prewarmTasks(){
+  const batches=(model,group)=>{const n=GROUPS[group].length,b=group==='wide-grid'?n:BATCH,out=[];for(let o=0;o<(group==='ports'?1:n);o+=b)out.push({model,group,offset:o});return out;};
+  return [...[...PREWARM_WIND,...PREWARM_WAVE].flatMap(m=>batches(m,'ports')),...PREWARM_WIND.flatMap(m=>batches(m,'wind-grid')),...PREWARM_WAVE.flatMap(m=>[...batches(m,'wave-grid'),...batches(m,'route'),...batches(m,'coast'),...batches(m,'route-gk')]),...PREWARM_WIND.flatMap(m=>batches(m,'wide-grid'))];
+}
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
 }
@@ -126,7 +134,7 @@ export function createTTLCache({now=()=>Date.now(),cache=null,memory=new Map(),p
   }
 }
 export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Date.now(),cache=null,pause}={}) {
-  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),lastGood=createLastGoodCache({now,cache}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt))});
+  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),shared={store:null},remote=()=>shared.store,lastGood=createLastGoodCache({now,cache,remote,prefix:'c/'}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt)),remote,prefix:'s/'});
   const cached=createTTLCache({now,cache,memory,pending});
   async function response(url) {if(url.startsWith('https://opendataapi.dmi.dk/'))return dmiResponse(url);const r=await fetcher(url,{signal:AbortSignal.timeout(35000),headers:{Accept:'application/json, application/xml, */*'}});if(!r.ok){const e=Error('Source temporarily unavailable ('+r.status+')');e.status=r.status;throw e;}return r;}
   const getJSON=(url,ttl=300)=>cached(url,ttl,async()=>await(await response(url)).json());
@@ -270,7 +278,19 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const data=await(await response(host+'?'+new URLSearchParams(query))).json();
     return {record:normalizeOpenWeather(data,[p],model,wave)[0],source:OM_ATTRIBUTION[model]?OM_ATTRIBUTION[model]+' via Open-Meteo':(wave?'Marine':'Weather')+' forecast via Open-Meteo'};
   }
-  return async function handleForecast(request,env,ctx={}) {
+  // Scheduled pre-fetch: every source and point group the app shows, in the order a visitor
+  // needs them (ports first). Only entries whose cycle is due are fetched; each one runs as its
+  // own request (call), so a slow provider does not hold up the others.
+  async function prewarm(env,call,{limit=16,concurrency=4}={}){
+    shared.store=shared.store||remoteStore(env);if(!shared.store)return {skipped:'no store'};
+    const tasks=prewarmTasks(),keys=tasks.map(t=>'c/'+cycleKey(t.model,t.group,t.offset));
+    const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
+    let ran=0,failed=0;const queue=[...due];
+    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
+    return {total:tasks.length,due:dueKeys.size,ran,failed};
+  }
+  const api=async function handleForecast(request,env,ctx={}) {
+    if(!shared.store)shared.store=remoteStore(env);
     const u=new URL(request.url);
     if(u.pathname==='/api/point'){
       if(request.method!=='GET')return json({error:'Method not allowed.'},405);
@@ -301,5 +321,6 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       return json({...payload,model,group,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
     }catch(e){return json({error:e.status===429?(model.startsWith('dmi_')?'DMI is overloaded. Wait '+e.retryAfter+' s before trying again.':'The provider is busy. Try again shortly.'):'Could not load model '+model+'.',model,...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
   };
+  api.prewarm=prewarm;return api;
 }
 export const handleForecast=createForecastAPI();

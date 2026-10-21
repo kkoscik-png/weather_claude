@@ -5,11 +5,17 @@ export function forecastRefreshAfter(value){
  return Number.isFinite(next)&&next>saved?next:saved+15*60000;
 }
 // Forecasts and their update schedules stay on the server until the next cycle.
-export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=>Array.isArray(value?.records)&&value.records.some(r=>r.hourly?.time?.length)}={}){
+// remote(): optional global store (Durable Object) shared by every Cloudflare location; prefix keeps
+// different caches apart inside it.
+export function createLastGoodCache({now=()=>Date.now(),cache=null,usable=value=>Array.isArray(value?.records)&&value.records.some(r=>r.hourly?.time?.length),remote=()=>null,prefix='c/'}={}){
  const memory=new Map(),pending=new Map(),storage=()=>cache||(typeof caches!=='undefined'?caches.default:null);
  const requestFor=key=>new Request('https://weather.seasync.co/__forecast_cycles/v2/'+encodeURIComponent(key));
- async function read(key){let value=memory.get(key);const store=storage();if(!value&&store){try{let hit=await store.match(requestFor(key));if(!hit&&key.startsWith('dmi_'))hit=await store.match(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent(key)));if(hit)value=await hit.json();}catch{}}return value;}
- async function save(key,value){if(memory.size>=180)memory.delete(memory.keys().next().value);memory.set(key,value);const store=storage();if(store){try{await store.put(requestFor(key),new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+RETAIN/1000}}));}catch{}}return value;}
+ async function read(key){let value=memory.get(key);const store=storage();if(!value&&store){try{let hit=await store.match(requestFor(key));if(!hit&&key.startsWith('dmi_'))hit=await store.match(new Request('https://weather.seasync.co/__dmi_last_good/v1/'+encodeURIComponent(key)));if(hit)value=await hit.json();}catch{}}
+  // Not in this location yet: the global store may have it (downloaded elsewhere or pre-fetched).
+  if(!value){const shared=remote();if(shared){try{value=await shared.get(prefix+key);if(value){memory.set(key,value);if(store)await store.put(requestFor(key),new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+RETAIN/1000}})).catch(()=>{});}}catch{value=undefined;}}}
+  return value||undefined;}
+ async function save(key,value){if(memory.size>=180)memory.delete(memory.keys().next().value);memory.set(key,value);const store=storage();if(store){try{await store.put(requestFor(key),new Response(JSON.stringify(value),{headers:{'Content-Type':'application/json','Cache-Control':'public, max-age='+RETAIN/1000}}));}catch{}}
+  const shared=remote();if(shared){try{await shared.put(prefix+key,value,forecastRefreshAfter(value));}catch{}}return value;}
  async function lastGood(key,load,fallback=null){
   if(pending.has(key))return pending.get(key);
   const job=(async()=>{
