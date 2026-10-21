@@ -48,7 +48,7 @@ test('cards no longer show port codes and mark the chosen flags', () => {
   assert.equal((html.match(/class="port-flag on"/g) || []).length, 2);
 });
 
-test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and flags at both berths', () => {
+test('the page opens with ICON-EU, ECMWF WAM, animation, sea state, flags and the remembered ports', () => {
   const src = fs.readFileSync('dist/app.js', 'utf8');
   const opening = src.match(/async function start\(\)\{(?:loadSlots\(\);)?Object\.assign\(state,\{([^}]*)\}\)/)[1];
   assert.match(opening, /model:'icon_eu'/);
@@ -57,7 +57,9 @@ test('the page always opens with ICON-EU, ECMWF WAM, animation, sea state and fl
   assert.match(opening, /routeWaves:true/);
   assert.match(opening, /flagPorts:new Set\(slotPorts\(\)\.filter\(i=>i!==0\)\)/);
   assert.match(src, /const DEFAULT_SLOTS=\[1,2\];/);
-  assert(!/localStorage\.setItem\('baltic-port-slots'/.test(src));
+  // The chosen ports and the active tile are remembered per device (first visit: berths 1 and 2).
+  assert(/localStorage\.setItem\(PORTS_KEY/.test(src));
+  assert.match(opening, /port:openingPort\(\)/);
   assert(!/localStorage\.setItem\('baltic-flag-ports'/.test(src));
   const html = fs.readFileSync('dist/index.html', 'utf8');
   assert.match(html, /<html lang="en">/);

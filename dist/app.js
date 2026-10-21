@@ -83,12 +83,22 @@ function toggleFlagPort(i){const set=new Set(flagPorts());if(set.has(i))set.dele
 const DEFAULT_SLOTS=[1,2];
 function slotPorts(){return (state.slots||DEFAULT_SLOTS).filter(i=>i!==null&&i!==undefined);}
 function inSlots(i){return (state.slots||DEFAULT_SLOTS).includes(i);}
-function loadSlots(){state.slots=[...DEFAULT_SLOTS];try{localStorage.removeItem('baltic-port-slots');}catch{}}
+// The two tiles' ports and the active tile are remembered on this device; a first visit
+// opens Ventspils Berth and Norvik Berth.
+const PORTS_KEY='baltic-ports-v2';
+function loadSlots(){
+ state.slots=[...DEFAULT_SLOTS];state.savedPort=null;
+ try{localStorage.removeItem('baltic-port-slots');const saved=JSON.parse(localStorage.getItem(PORTS_KEY)||'null');const ok=i=>Number.isInteger(i)&&i>=0&&i<PORTS.length;
+  if(saved&&Array.isArray(saved.slots)&&saved.slots.length===DEFAULT_SLOTS.length){const slots=saved.slots.map(i=>ok(i)?i:null);if(slots.some(i=>i!==null)&&new Set(slots.filter(i=>i!==null)).size===slots.filter(i=>i!==null).length)state.slots=slots;}
+  if(ok(saved?.port)&&state.slots.includes(saved.port))state.savedPort=saved.port;}catch{}
+}
+function saveSlots(){try{localStorage.setItem(PORTS_KEY,JSON.stringify({slots:state.slots||DEFAULT_SLOTS,port:state.port}));}catch{}}
+function openingPort(){return state.savedPort??(inSlots(1)?1:(slotPorts()[0]??0));}
 function choosePort(slot,port){
  const slots=[...(state.slots||DEFAULT_SLOTS)];if(port!==null){const other=slots.indexOf(port);if(other>=0&&other!==slot)slots[other]=slots[slot];}slots[slot]=port;state.slots=slots;
  if(port!==null){const set=new Set(flagPorts());set.add(port);state.flagPorts=set;state.port=port;}
  if(!inSlots(state.port))state.port=slotPorts()[0]??0;
- renderAll();if(port!==null)fitRoute(ROUTE_OF_PORT[port]);
+ saveSlots();renderAll();if(port!==null)fitRoute(ROUTE_OF_PORT[port]);
 }
 const CHEVRON='<svg class="port-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>';
 function portSelect(slot,current){return portPicker(slot,current).replace(/^<label class="port-pick">|<\/label>$/g,'');}
@@ -427,7 +437,7 @@ let map,fieldCanvas,particleCanvas,fctx,pctx,markers=[],particles=[],screenField
 // Default view: Stockholm and Nynäshamn in the north-west to Saaremaa and Ventspils in the
 // east, Gotland in the middle (both ports and the whole route).
 const DEFAULT_VIEW=[[56.91,13.81],[59.40,25.04]];
-function fitPorts(){if(!map)return;if(!fitFlags())map.fitBounds(DEFAULT_VIEW,{animate:false});}
+function fitPorts(){if(!map)return;if(ROUTE_OF_PORT[state.port]==='gk'){map.fitBounds(DEFAULT_VIEW,{animate:false});fitRoute('gk');return;}if(!fitFlags())map.fitBounds(DEFAULT_VIEW,{animate:false});}
 // Closest zoom (quarter steps) at which both ports AND their whole wind flags are visible,
 // clear of the map buttons (left), legend (right) and the layer switch (top left).
 // Flags have a fixed pixel size, so the fit is computed in screen pixels at each zoom.
@@ -557,7 +567,7 @@ function stormglassMapStatus(){
 }
 function markerIcon(i){if(!inSlots(i))return L.divIcon({className:'port-pin port-pin-hidden',iconSize:[1,1],html:''});return L.divIcon({className:'port-pin '+(state.port===i?'active':''),iconSize:[1,1],html:`${windFlagsSVG(i)}<span class="pin-dot" title="${PORTS[i].name}" aria-label="${PORTS[i].name}"></span>`});}
 function updateMarkers(){renderFlagCycleStatus();if(!map)return;markers.forEach((m,i)=>{m.setIcon(markerIcon(i));m.setZIndexOffset(i===state.port?1000:0);});}
-function selectPort(i){state.port=i;state.viewTouched=true;renderAll();if(map)map.flyTo([PORTS[i].lat,PORTS[i].lon],Math.max(map.getZoom(),12),{duration:state.animate ? 0.7 : 0});}
+function selectPort(i){state.port=i;state.viewTouched=true;saveSlots();renderAll();if(map)map.flyTo([PORTS[i].lat,PORTS[i].lon],Math.max(map.getZoom(),12),{duration:state.animate ? 0.7 : 0});}
 async function loadField(force=false){
  if(state.waveSource==='stormglass'&&state.layer==='wave'){await loadStormglassRoute(force);drawField();updateFieldStatus();return;}
  if(!state.gridPoints.length)return;
@@ -931,5 +941,5 @@ function setupPWA(){
  if(button)button.onclick=async()=>{if(!installPrompt)return;installPrompt.prompt();try{await installPrompt.userChoice;}catch{}installPrompt=null;button.hidden=true;};
  // App shortcuts: /?layer=wind|wave opens that map layer.
 }
-async function start(){loadSlots();Object.assign(state,{port:inSlots(1)?1:(slotPorts()[0]??0),model:'icon_eu',waveSource:'ecmwf_wam',animate:true,waveAnim:false,routeWaves:true,flags:true,flagPorts:new Set(slotPorts().filter(i=>i!==0))});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();bindThemeSwitch();setupPWA();updateScale();initMap();requestAnimationFrame(animateWaves);setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;checkAppVersion();loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();setTimeout(()=>{prefetchSources().catch(()=>{});},6000);try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();fetch('assets/coast.json').then(c=>c.ok?c.json():null).then(c=>{if(c?.features){state.coast=c;drawField();}}).catch(()=>{});await Promise.allSettled([loadField(),loadRouteWaves(),loadWaveAnimField()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
+async function start(){loadSlots();Object.assign(state,{port:openingPort(),model:'icon_eu',waveSource:'ecmwf_wam',animate:true,waveAnim:false,routeWaves:true,flags:true,flagPorts:new Set(slotPorts().filter(i=>i!==0))});if($('windSource'))$('windSource').value='icon_eu';if($('waveSource'))$('waveSource').value='ecmwf_wam';resetForecastWindow();renderPorts();renderTimeline();renderTableLabels();bindEvents();bindThemeSwitch();setupPWA();updateScale();initMap();requestAnimationFrame(animateWaves);setInterval(advanceFlagCycle,3000);const clock=()=>$('clock').textContent=timeFmt.format(new Date());clock();setInterval(()=>{clock();renderUpdateClocks();tickNowCursor();},30000);loadModelTiming(state.model);loadModelTiming(state.waveSource);setInterval(()=>{if(document.hidden)return;checkAppVersion();loadModelTiming(state.model,true);loadModelTiming(state.waveSource,true);refreshDMIIfDue();},300000);loadPorts();loadStormglassStatus();setTimeout(()=>{prefetchSources().catch(()=>{});},6000);try{const r=await fetch('assets/land.json');if(!r.ok)throw Error('land');state.land=await r.json();state.gridPoints=grid();initRouteWaves();fetch('assets/coast.json').then(c=>c.ok?c.json():null).then(c=>{if(c?.features){state.coast=c;drawField();}}).catch(()=>{});await Promise.allSettled([loadField(),loadRouteWaves(),loadWaveAnimField()]);}catch(e){$('fieldStatus').textContent='The map field could not be loaded. Reload the app.';}}
 start();
