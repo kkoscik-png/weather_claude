@@ -745,3 +745,14 @@ main>.page-footer,.page-footer{flex-direction:column;align-items:flex-end;justif
 main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .page-footer .author-link{line-height:1.05;padding:0}
 @media(max-width:760px){main>.page-footer,.page-footer{margin-top:3px;padding-top:0}}
+
+/* Wind table: user order with small up/down arrows on each source label. */
+.model-label-row{position:relative}
+.model-order{position:absolute;right:3px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:1px;z-index:1}
+.order-btn{width:14px;height:13px;padding:0;border:0;border-radius:4px;background:transparent;color:#9fb0b6;position:relative;opacity:.75;transition:opacity .15s,background .15s,color .15s}
+.order-btn svg{position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.order-btn:hover{filter:none;opacity:1;color:var(--accent);background:#e6f2ef}
+.order-btn:disabled{opacity:.18;cursor:default;background:transparent;color:#9fb0b6}
+:root[data-theme="dark"] .order-btn{color:#6f8790}
+:root[data-theme="dark"] .order-btn:hover{color:#7ee0c5;background:#16352f}
+@media(max-width:760px){.model-order{right:1px}.order-btn{width:12px;height:12px}.order-btn svg{width:8px;height:8px}}
