@@ -723,3 +723,15 @@ main{row-gap:14px}
 :root[data-theme="dark"] .mg-lab b{color:#e3eef1}
 :root[data-theme="dark"] .mg-axis .chart-wind-scale span{color:#8aa3ab}
 @media(max-width:760px){.mg-toggles{left:4px;right:4px}.mg-toggle{width:15px;height:15px}.mg-toggle svg{width:9.5px;height:9.5px}.mg-lab{left:6px;font-size:8px}.mg-lab.mg-sub{right:24px;font-size:7.5px}}
+
+/* Footer: author credit opens the "My project" dialog (visible on phones too). */
+.page-footer>span.footer-author,.page-footer>span:first-child.footer-author{display:inline-flex;align-items:center;letter-spacing:.2px}
+.page-footer .author-link{margin:0;font-size:9px;font-weight:650;color:var(--accent);letter-spacing:.2px}
+.author-dialog{width:460px}
+.author-dialog h2{margin:14px 0 8px}
+.author-mail{margin:2px 0 6px}
+.author-mail a{font-size:15px;font-weight:700;text-decoration:none}
+.author-actions{margin-top:18px;display:flex}
+.author-btn{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;background:var(--accent);color:#fff!important;font-size:12px;font-weight:700;text-decoration:none}
+.author-btn:hover{background:#0b7a6a}
+@media(max-width:760px){.page-footer .author-link{font-size:8px}}
