@@ -812,7 +812,13 @@ function bindMapFullscreen(){
 }
 function bindChartDrag(){
  for(const scroller of [$('chartScroll')]){let drag=null,blockClick=false;
- scroller.addEventListener('scroll',()=>{scheduleMeteogram();},{passive:true});
+ // Scrolling the table by hand moves the selected hour to the 2nd column from the left, so the
+ // map (wind field, flags, route) follows the day being looked at. Programmatic scrolls (Now,
+ // play, picking an hour) do not count: only wheel, touch, drag or scrollbar input does.
+ let userScrollAt=0,syncFrame=false;const intent=()=>{userScrollAt=Date.now();};
+ for(const type of ['wheel','touchstart','touchmove','pointerdown','keydown'])scroller.addEventListener(type,intent,{passive:true});
+ const syncHour=()=>{syncFrame=false;if(state.playing||$('chartContent')?.classList?.contains?.('cursor-dragging')||!state.times.length)return;const h=Math.max(0,Math.min(state.times.length-1,Math.round(scroller.scrollLeft/48)+1));if(h!==state.hour)setHour(h);};
+ scroller.addEventListener('scroll',()=>{scheduleMeteogram();const now=Date.now();if(now-userScrollAt<1200){userScrollAt=now;if(!syncFrame&&typeof requestAnimationFrame==='function'){syncFrame=true;requestAnimationFrame(syncHour);}}},{passive:true});
  scroller.addEventListener('pointerdown',event=>{if(event.button!==0||event.isPrimary===false||event.pointerType==='touch'||event.target?.closest('input'))return;drag={id:event.pointerId,x:event.clientX,y:event.clientY,left:scroller.scrollLeft,active:false};});
  scroller.addEventListener('pointermove',event=>{
   if(!drag||drag.id!==event.pointerId)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
