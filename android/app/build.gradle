@@ -1,0 +1,42 @@
+plugins { id 'com.android.application' }
+
+def keyFile = System.getenv('BALTIC_KEYSTORE')
+android {
+    namespace 'co.seasync.baltic'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'co.seasync.baltic'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+    signingConfigs {
+        if (keyFile) {
+            personal {
+                storeFile file(keyFile)
+                storePassword System.getenv('BALTIC_KEY_PASSWORD')
+                keyAlias 'baltic'
+                keyPassword System.getenv('BALTIC_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keyFile) signingConfig signingConfigs.personal
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+
+// Preserve the website; generate an APK-only snapshot from dist before packaging.
+tasks.register('prepareWeb', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'python3', 'android/scripts/prepare_web.py'
+    inputs.dir rootProject.file('../dist')
+    inputs.file rootProject.file('scripts/prepare_web.py')
+    outputs.dir file('src/main/assets/www')
+}
+tasks.named('preBuild').configure { dependsOn 'prepareWeb' }
