@@ -60,7 +60,7 @@ function renderWaveAvailability(){
 }
 function direction(v){return valid(v)?'<i class="direction" style="transform:rotate('+(v%360)+'deg)">↑</i>'+Math.round(v)+'°':'—';}
 function url(base,points,params){const times=state.times.length?state.times:forecastTimes();return base+'?'+new URLSearchParams({latitude:points.map(p=>p.lat).join(','),longitude:points.map(p=>p.lon).join(','),start_hour:new Date(times[0]*1000).toISOString().slice(0,16),end_hour:new Date(times.at(-1)*1000).toISOString().slice(0,16),timeformat:'unixtime',timezone:'UTC',...params});}
-async function requestJSON(url,key,force=false,ttl=1800000){const dmi=url.startsWith('/api/forecast?')&&(new URLSearchParams(url.split('?')[1]).get('model')||'').startsWith('dmi_');if(url.includes('open-meteo.com/v1/'))key+=':'+new URLSearchParams(url.split('?')[1]).get('start_hour');let cached;try{cached=JSON.parse(localStorage.getItem('baltic-v5-'+key));}catch{}const until=Date.parse(cached?.data?.refreshAfter||cached?.data?.timing?.nextUpdate);if(cached&&(Number.isFinite(until)?Date.now()<until:!force&&Date.now()-cached.saved<ttl))return {data:cached.data,saved:cached.saved,stale:Boolean(cached.stale||cached.data?.stale)};try{const res=await fetch(url,{signal:AbortSignal.timeout(url.startsWith('/api/forecast?')?300000:60000)});if(!res.ok){let body;try{body=await res.json();}catch{}const e=Error(res.status===429?(body?.error||'The provider is busy (429). Try again shortly.'):body?.error||body?.reason||'HTTP '+res.status);e.status=res.status;e.retryAt=body?.retryAt;e.retryAfter=body?.retryAfter;throw e;}const data=await res.json();if(data.error)throw Error(data.reason||'Data error');const result={data,saved:Date.now(),stale:Boolean(data.stale)};try{localStorage.setItem('baltic-v5-'+key,JSON.stringify(result));}catch{}return result;}catch(e){if(cached&&Date.now()-cached.saved<(dmi?172800000:21600000))return {...cached,stale:true};throw e;}}
+async function requestJSON(url,key,force=false,ttl=1800000){const dmi=url.startsWith('/api/forecast?')&&(new URLSearchParams(url.split('?')[1]).get('model')||'').startsWith('dmi_');if(url.includes('open-meteo.com/v1/'))key+=':'+new URLSearchParams(url.split('?')[1]).get('start_hour');let cached;try{cached=JSON.parse(localStorage.getItem('baltic-v5-'+key));}catch{}const until=Date.parse(cached?.data?.refreshAfter||cached?.data?.timing?.nextUpdate);if(!force&&cached&&(Number.isFinite(until)?Date.now()<until:Date.now()-cached.saved<ttl))return {data:cached.data,saved:cached.saved,stale:Boolean(cached.stale||cached.data?.stale)};try{const res=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(url.startsWith('/api/forecast?')?300000:60000)});if(!res.ok){let body;try{body=await res.json();}catch{}const e=Error(res.status===429?(body?.error||'The provider is busy (429). Try again shortly.'):body?.error||body?.reason||'HTTP '+res.status);e.status=res.status;e.retryAt=body?.retryAt;e.retryAfter=body?.retryAfter;throw e;}const data=await res.json();if(data.error)throw Error(data.reason||'Data error');const result={data,saved:Date.now(),stale:Boolean(data.stale)};try{localStorage.setItem('baltic-v5-'+key,JSON.stringify(result));}catch{}return result;}catch(e){if(cached&&Date.now()-cached.saved<(dmi?172800000:21600000))return {...cached,stale:true};throw e;}}
 function list(data){return Array.isArray(data)?data:[data];}
 function cacheLabel(meta){return meta?'Downloaded '+timeFmt.format(new Date(meta.saved))+(meta.stale?' · may be outdated':''):'';}
 function windModelInfo(model,meta=state.metas[model]){
@@ -742,8 +742,17 @@ async function refreshDMIIfDue(){
 }
 async function loadModelTiming(model,force=false){
  if(!['ecmwf_ifs','icon_eu','icon_global','ecmwf_wam','dwd_ewam','dmi_harmonie','dmi_wam','copernicus_baltic','metno_nordic','icon_d2'].includes(model)){renderUpdateClocks();return;}
- const meta=model===state.waveSource?waveMeta():state.metas[model],known=meta?.refreshAfter||state.timings[model]?.nextUpdate;if(Date.now()<Date.parse(known)){renderUpdateClocks();return;}
- try{const r=await requestJSON('/api/model-updates?model='+model,'model-timing-cycle-v1-'+model,force,300000);state.timings[model]=r.data.timing;}catch{}renderUpdateClocks();
+ const meta=model===state.waveSource?waveMeta():state.metas[model],known=meta?.refreshAfter||state.timings[model]?.nextUpdate;if(!force&&Date.now()<Date.parse(known)){renderUpdateClocks();return;}
+ try{
+  const r=await requestJSON('/api/model-updates?model='+model,'model-timing-cycle-v1-'+model,force,300000);state.timings[model]=r.data.timing;
+  // A cached forecast keeps its own publication stamp until its records are replaced.
+  // When the server reports a newer cycle, fetch its records instead of just changing the clock.
+  if(meta&&Date.parse(r.data.timing?.updatedAt)>Date.parse(meta.timing?.updatedAt)){
+   if(MODELS[model]){await loadExtraWindPorts(model,true);if(state.model===model&&state.layer!=='wave')await loadField(true);}
+   else if(model===state.waveSource){if(model===WAVE_MODEL)await loadPorts(true);else await loadExtraWavePorts(model,true);await Promise.allSettled([loadField(true),loadRouteWaves(true),loadWaveAnimField(true)]);}
+  }
+  state.timings[model]=r.data.timing; // Keep the newer availability notice if record refresh returned an old fallback.
+ }catch{}renderUpdateClocks();
 }
 function sourceTiming(model,meta){
  let timing=meta?.delivery==='open-meteo'?meta.timing:state.timings[model]||meta?.timing;
@@ -767,7 +776,8 @@ function renderUpdateClocks(){renderMapStamp();
   const node=$(id);if(!node)continue;let timing=meta?.delivery==='open-meteo'?meta.timing:state.timings[model]||meta?.timing;
   if(model==='stormglass'&&meta)timing={updatedAt:new Date(meta.saved).toISOString(),nextUpdate:new Date(meta.saved+21600000).toISOString(),basis:'fetch',estimated:true};
   const updated=Date.parse(timing?.updatedAt),next=Date.parse(timing?.nextUpdate)||(Number.isFinite(updated)&&timing?.interval?updated+timing.interval:NaN),late=Number.isFinite(next)&&next<Date.now();
-  const newerThanData=Number.isFinite(updated)&&meta?.saved&&updated>meta.saved;
+  const available=Date.parse(state.timings[model]?.updatedAt);
+  const newerThanData=Number.isFinite(available)&&Number.isFinite(updated)&&available>updated;
   const label=timing?.basis==='reference'?'Last model cycle':timing?.basis==='fetch'?'Last download':'Last update';
   node.innerHTML='<span>'+label+': <b>'+ (Number.isFinite(updated)?fullFmt.format(new Date(updated)):state.providerLoading[model]?'loading…':'no information from the provider')+'</b></span><span>'+(timing?.basis==='fetch'?'Next download':'Next update (expected)')+': <b>'+(Number.isFinite(next)?fullFmt.format(new Date(next)):'—')+'</b></span>'+(late?'<small class="update-delayed">Waiting for a newer cycle — the time may shift.</small>':'')+(newerThanData?'<small class="update-delayed">A newer cycle is available — refresh the forecast.</small>':'')+(meta?.refreshAfter?'<small>Forecast on the server until: '+fullFmt.format(new Date(meta.refreshAfter))+'</small>':'')+(meta?.stale?'<small class="update-delayed">May be outdated — last good forecast.</small>':'');
  }
