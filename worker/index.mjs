@@ -1,5 +1,6 @@
 import { handleStormglass } from './stormglass.mjs';
 import { handleForecast } from './forecast.mjs';
+export { ForecastStore } from './store.mjs';
 
 // A visible HTML page, so a refusal from this app is never mistaken for a browser or proxy error.
 const deny = (message, status, host = '') => new Response(`<!doctype html><meta charset="utf-8"><title>Baltic · ${status}</title><body style="font:15px system-ui;padding:40px;color:#14323c"><h1 style="font-size:18px">Baltic Wind &amp; Waves · ${status}</h1><p>${message}</p>${host ? `<p style="color:#7b8b92">Host: ${host.replace(/[^a-z0-9.-]/gi, '')}</p>` : ''}<p><a href="https://pogoda.seasync.co/">pogoda.seasync.co</a></p></body>`, {
@@ -70,4 +71,17 @@ export function createHandler() {
   };
 }
 
-export default { fetch: createHandler() };
+// Every 5 minutes: fetch whatever forecast cycle has become due into the shared store, so
+// visitors get every source and point group straight from the server. Each entry runs as a
+// separate invocation of this Worker when the runtime offers it (ctx.exports), otherwise in-process.
+export function createScheduled(fetchHandler) {
+  return async function scheduled(event, env, ctx) {
+    const self = ctx?.exports?.default;
+    const call = self?.fetch ? request => self.fetch(request) : request => fetchHandler(request, env, ctx);
+    const result = await handleForecast.prewarm(env, call, self?.fetch ? {} : { limit: 4, concurrency: 2 });
+    console.log('prewarm', JSON.stringify(result));
+  };
+}
+
+const fetchHandler = createHandler();
+export default { fetch: fetchHandler, scheduled: createScheduled(fetchHandler) };

@@ -657,3 +657,188 @@ main{row-gap:14px}
 .point-pop .pp-chip{display:inline-block;min-width:34px;text-align:center;padding:1px 6px;border-radius:6px;font:800 13px 'Manrope',system-ui,sans-serif}
 .point-pop small{opacity:.7;font-size:10.5px;margin-top:2px}
 .pp-loading{color:#7fd0bd}
+
+/* Map legend: one horizontal pill, unit on the left, colour ramp under evenly spaced labels. */
+.scale{left:auto;right:12px;bottom:22px;display:flex;align-items:center;gap:0;padding:0;filter:drop-shadow(0 1px 3px #0b202b4d)}
+.scale-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.scale-key{width:auto;display:flex;align-items:stretch;height:22px;border-radius:11px;overflow:hidden;border:1px solid #ffffff38}
+.scale #scaleUnit{height:auto;display:flex;align-items:center;padding:0 7px 0 10px;border-radius:0;color:#fff;font-size:10.5px;font-weight:650;letter-spacing:.2px;text-shadow:0 0 2px #0006}
+.scale-labels{flex-direction:row;gap:0;width:252px;display:flex}
+.scale-step,.scale-step:last-child{flex:1;width:auto;height:auto;border-radius:0;background:none!important;color:#fff;font-size:10.5px;font-weight:650;text-shadow:0 0 2px #0007,0 0 1px #0005}
+@media(max-width:760px){.scale{right:10px;bottom:22px}.scale-key{height:20px}.scale-labels{width:196px}.scale-step,.scale #scaleUnit{font-size:9.5px;width:auto;height:auto}.scale #scaleUnit{padding:0 5px 0 8px}}
+
+.scale-step.dark,.scale #scaleUnit.dark{color:#15343e;text-shadow:none}
+
+/* Map: layer switch lives in the left control column; the data-source stamp sits at the top. */
+.map-top{top:14px;left:14px}
+.layer-btns{display:flex;flex-direction:column;gap:2px;margin-bottom:6px;padding:2px;border-radius:8px;background:#0f2535d9;border:1px solid #3f58675c}
+.layer-btns .layer-btn{width:31px;height:24px;border:0;border-radius:5px;background:none;color:#9fb6bf;font:750 7.5px 'DM Sans',system-ui,sans-serif;letter-spacing:.3px;display:grid;place-items:center}
+.layer-btns .layer-btn.active{background:#f5fafb;color:#163541}
+@media(max-width:760px){.map-top{top:10px;left:10px}.layer-btns .layer-btn{width:30px;height:22px}}
+/* Forecast older than 6 h: the source dot glows red. */
+.map-stamp .status-dot.old{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f40,0 0 8px #ff4d4f;animation:stale-dot 1.6s ease-in-out infinite}
+@keyframes stale-dot{50%{box-shadow:0 0 0 5px #ff4d4f22,0 0 12px #ff4d4f}}
+@media(prefers-reduced-motion:reduce){.map-stamp .status-dot.old{animation:none}}
+
+/* Brand bar: weather refresh, styled as a sibling of the day/night switch. */
+.refresh-btn{width:32px;height:32px;padding:0;border-radius:999px;border:1px solid #d9e4e7;background:#e6eef0;color:#2d5560;position:relative;flex:none;transition:background .2s,color .2s,box-shadow .2s}
+.refresh-btn svg{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.refresh-btn:hover{filter:none;background:#fff;color:var(--accent);box-shadow:0 1px 4px rgba(16,44,57,.18)}
+.refresh-btn.spinning svg{animation:refresh-spin .9s linear infinite}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+:root[data-theme="dark"] .refresh-btn{background:#132a34;border-color:#24404b;color:#9fdccc}
+:root[data-theme="dark"] .refresh-btn:hover{background:#24404d;color:#c9f3e7}
+@media(max-width:760px){.refresh-btn{width:30px;height:30px}}
+@media(prefers-reduced-motion:reduce){.refresh-btn.spinning svg{animation-duration:2.4s}}
+/* Port tile flag toggle: icon centred absolutely (iOS Safari ignores grid centring in buttons). */
+.port-flag{padding:0}
+.port-flag svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:block;margin:0}
+/* Full-screen map: the legend sits above the timeline bar. */
+.map-section.map-full .scale,.map-section:fullscreen .scale{bottom:calc(74px + env(safe-area-inset-bottom))}
+/* iOS Safari: centre button icons absolutely; grid/flex centring inside <button> drifts on iPad. */
+.map-controls .map-btn,.theme-switch button,.map-tl-play{position:relative;padding:0}
+.map-full-btn{padding:0}
+.map-full-btn svg,.map-controls .map-btn svg,.theme-switch button svg,.map-tl-play svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0}
+.map-full-btn svg{display:block}
+.map-section .map-full-btn .icon-collapse,.map-section.map-full .map-full-btn .icon-expand{display:none}
+.map-section.map-full .map-full-btn .icon-collapse{display:block}
+
+/* Meteogram v2: cloud bands, hanging rain, wind columns; layer toggles in the label column. */
+.meteogram-plot,.meteogram-svg{height:240px}
+.chart-labels .axis-unit.mg-axis{height:240px;padding:0;position:relative;background:#fbfcfc;border-top:1px solid #eef2f3}
+.mg-toggles{position:absolute;left:6px;right:6px;top:4px;display:flex;justify-content:space-between;align-items:center}
+.mg-toggle{width:17px;height:17px;padding:0;border:0;border-radius:50%;position:relative;background:#e6eef0;color:#9aabb1;flex:none;transition:background .15s,color .15s}
+.mg-toggle svg{position:absolute;left:50%;top:50%;width:10.5px;height:10.5px;transform:translate(-50%,-50%)}
+.mg-toggle.on{background:var(--accent);color:#fff}
+.mg-toggle:hover{filter:none;box-shadow:0 0 0 2px #7cc3b655}
+.mg-labels{position:absolute;inset:0;pointer-events:none}
+.mg-lab{position:absolute;left:9px;font-size:8.5px;line-height:10px;color:#7b8f97;font-weight:600;white-space:nowrap}
+.mg-lab b{color:#14323c;font-weight:700}
+.mg-lab.mg-sub{left:auto;right:30px;font-weight:500;font-size:8px}
+.mg-axis .chart-wind-scale span{right:8px;color:#7b8f97}
+:root[data-theme="dark"] .chart-labels .axis-unit.mg-axis{background:#11232c;border-top-color:#1b323c}
+:root[data-theme="dark"] .mg-toggle{background:#1b323c;color:#5f7a84}
+:root[data-theme="dark"] .mg-toggle.on{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .mg-lab{color:#8aa3ab}
+:root[data-theme="dark"] .mg-lab b{color:#e3eef1}
+:root[data-theme="dark"] .mg-axis .chart-wind-scale span{color:#8aa3ab}
+@media(max-width:760px){.mg-toggles{left:4px;right:4px}.mg-toggle{width:15px;height:15px}.mg-toggle svg{width:9.5px;height:9.5px}.mg-lab{left:6px;font-size:8px}.mg-lab.mg-sub{right:24px;font-size:7.5px}}
+
+/* Footer: author credit opens the "My project" dialog (visible on phones too). */
+.page-footer>span.footer-author,.page-footer>span:first-child.footer-author{display:inline-flex;align-items:center;letter-spacing:.2px}
+.page-footer .author-link{margin:0;font-size:18px;font-weight:650;color:var(--accent);letter-spacing:.1px}
+.author-dialog{width:460px}
+.author-dialog h2{margin:14px 0 8px}
+.author-mail{margin:2px 0 6px}
+.author-mail a{font-size:15px;font-weight:700;text-decoration:none}
+.author-actions{margin-top:18px;display:flex}
+.author-btn{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;background:var(--accent);color:#fff!important;font-size:12px;font-weight:700;text-decoration:none}
+.author-btn:hover{background:#0b7a6a}
+
+.page-footer{align-items:center}
+@media(max-width:760px){.page-footer{flex-direction:column;align-items:flex-start;gap:6px}.page-footer .author-link{font-size:16px;text-align:left}}
+/* Footer: author credit in the right corner, data sources right under it, both tucked under the chart. */
+main>.page-footer,.page-footer{flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:2px;padding:6px 4px 12px;text-align:right}
+.page-footer>span.footer-author{justify-content:flex-end}
+@media(max-width:760px){main>.page-footer,.page-footer{align-items:flex-end;gap:3px;padding:6px 2px 12px}.page-footer>span:last-child{text-align:right}}
+/* Footer sits right under the chart: cancel the grid gap and tighten the line boxes. */
+main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
+.page-footer .author-link{line-height:1.05;padding:0}
+@media(max-width:760px){main>.page-footer,.page-footer{margin-top:3px;padding-top:0}}
+
+/* Wind table: user order with small up/down arrows on each source label. */
+.model-label-row{position:relative}
+.model-order{position:absolute;right:3px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:1px;z-index:1}
+.order-btn{width:14px;height:13px;padding:0;border:0;border-radius:4px;background:transparent;color:#9fb0b6;position:relative;opacity:.75;transition:opacity .15s,background .15s,color .15s}
+.order-btn svg{position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.order-btn:hover{filter:none;opacity:1;color:var(--accent);background:#e6f2ef}
+.order-btn:disabled{opacity:.18;cursor:default;background:transparent;color:#9fb0b6}
+:root[data-theme="dark"] .order-btn{color:#6f8790}
+:root[data-theme="dark"] .order-btn:hover{color:#7ee0c5;background:#16352f}
+@media(max-width:760px){.model-order{right:1px}.order-btn{width:12px;height:12px}.order-btn svg{width:8px;height:8px}}
+
+/* Model cards: update status on the right of the title — dot + last update time. */
+.picker-title .picker-status{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0;text-transform:none;color:#5c737b;font-variant-numeric:tabular-nums;white-space:nowrap}
+.picker-status b{font-weight:650;color:#14323c}
+.picker-status .status-dot{width:7px;height:7px;border-radius:50%;background:#16a58b;box-shadow:0 0 0 3px #16a58b24;flex:none}
+.picker-status.old .status-dot,.picker-status.error .status-dot{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f33,0 0 6px #ff4d4f}
+.picker-status.stale .status-dot{background:#e0902f;box-shadow:0 0 0 3px #e0902f33}
+.picker-status.loading .status-dot,.picker-status.unknown .status-dot{background:#a7b6bb;box-shadow:none}
+.picker-status.loading .status-dot{animation:stale-dot 1.2s ease-in-out infinite}
+:root[data-theme="dark"] .picker-status{color:#8aa3ab}
+:root[data-theme="dark"] .picker-status b{color:#e3eef1}
+@media(max-width:760px){.picker-title .picker-status{font-size:9px;gap:4px}.picker-status .status-dot{width:6px;height:6px}}
+.picker-status .picker-updated{font-weight:500}
+.picker-status.loading .picker-updated,.picker-status.error .picker-updated{display:none}
+@media(max-width:760px){.picker-title{letter-spacing:.5px;white-space:nowrap;gap:4px}.picker-title .picker-status{font-size:8.5px;gap:3px}}
+
+/* 7-day outlook popup beside the port tile */
+.port-wx[data-daily-port]{cursor:pointer;border-radius:8px;padding:2px 3px;margin:-2px -3px;transition:background .15s}
+.port-wx[data-daily-port]:hover{background:#0d8c7a14}
+.daily-popup{position:absolute;z-index:3500;display:flex;flex-direction:column;background:#fff;border:1px solid #cfe2dd;border-radius:14px;box-shadow:0 18px 50px -18px rgba(16,44,57,.45);padding:8px 10px 9px;overflow:hidden;animation:daily-in .16s ease-out}
+@keyframes daily-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.daily-head{display:flex;align-items:baseline;gap:8px;padding:0 2px 6px;border-bottom:1px solid #eef2f3}
+.daily-head b{font:700 13px 'Manrope',sans-serif;color:#14323c}
+.daily-head span{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7b8f97}
+.daily-close{margin-left:auto;width:22px;height:22px;border-radius:50%;border:0;background:#eef3f4;color:#4f666e;font-size:15px;line-height:1;padding:0;position:relative}
+.daily-close:hover{filter:none;background:#e1ecee}
+.daily-grid{flex:1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding-top:6px;min-height:0}
+.daily-day{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:1px;border-radius:9px;padding:3px 2px;background:#f7fafa;min-width:0}
+.daily-day.today{background:#edf6f4;box-shadow:inset 0 0 0 1px #9fd2c4}
+.dd-name{font-size:9.5px;font-weight:700;color:#4f666e;white-space:nowrap}
+.daily-day.today .dd-name{color:#0d8c7a}
+.dd-icon svg{width:24px;height:24px;display:block}
+.dd-temp{display:flex;gap:4px;font:700 11.5px 'Manrope',sans-serif;font-variant-numeric:tabular-nums}
+.dd-temp .t-max{color:#d63a32}.dd-temp .t-min{color:#1e8a4c}
+.dd-now{font-size:8.5px;color:#14323c;font-weight:600;white-space:nowrap}
+.dd-prob{display:flex;align-items:center;gap:2px;font-size:9.5px;font-weight:700;color:#1789bf;font-variant-numeric:tabular-nums}
+.dd-prob svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.dd-rain{font-size:9px;color:#126a95;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dd-wind{display:flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#4f666e}
+.dd-wind i{font-style:normal;display:inline-block;font-size:11px;color:#14323c}
+.daily-empty{flex:1;display:grid;place-items:center;font-size:11px;color:#7b8f97}
+:root[data-theme="dark"] .daily-popup{background:#11232c;border-color:#22404b;box-shadow:0 18px 50px -18px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .daily-head{border-bottom-color:#1d3742}
+:root[data-theme="dark"] .daily-head b,:root[data-theme="dark"] .dd-now,:root[data-theme="dark"] .dd-wind i{color:#e3eef1}
+:root[data-theme="dark"] .daily-day{background:#0f1f27}
+:root[data-theme="dark"] .daily-day.today{background:#16352f;box-shadow:inset 0 0 0 1px #3f8f7f}
+:root[data-theme="dark"] .dd-name,:root[data-theme="dark"] .dd-wind{color:#9fb3ba}
+:root[data-theme="dark"] .dd-rain{color:#7cc7f2}:root[data-theme="dark"] .dd-prob{color:#5fb8ec}
+:root[data-theme="dark"] .daily-close{background:#1b323c;color:#c8d6da}
+:root[data-theme="dark"] .daily-popup svg [fill="#fff"],:root[data-theme="dark"] .daily-popup svg [fill="white"]{fill:#d5e1e6}
+@media(max-width:760px){.daily-popup{padding:7px 7px 8px}.daily-grid{gap:3px}.dd-name{font-size:8.5px}.dd-icon svg{width:20px;height:20px}.dd-temp{font-size:10.5px;gap:2px}.dd-now,.dd-rain,.dd-wind{font-size:8px}.dd-prob{font-size:8.5px}}
+/* Desktop: keep the 7 days inside the tile height */
+.daily-popup{padding:6px 9px 7px}
+.daily-head{padding-bottom:4px}
+.daily-head b{font-size:12.5px}
+.daily-close{width:20px;height:20px;font-size:14px}
+.daily-grid{padding-top:5px;gap:5px}
+.daily-day{gap:0;padding:2px 2px 3px;justify-content:space-evenly}
+.dd-icon svg{width:21px;height:21px}
+
+/* Hourly panel under the 7-day panel */
+.daily-day[data-daily-day]{cursor:pointer;transition:background .15s,box-shadow .15s}
+.daily-day[data-daily-day]:hover{background:#eaf4f1}
+.daily-day.selected{background:#0d8c7a!important;box-shadow:none!important}
+.daily-day.selected .dd-name,.daily-day.selected .dd-now,.daily-day.selected .dd-temp b,.daily-day.selected .dd-prob,.daily-day.selected .dd-rain,.daily-day.selected .dd-wind,.daily-day.selected .dd-wind i{color:#fff}
+.hh-wrap{flex:1;display:flex;flex-direction:column;min-height:0;padding-top:3px}
+.hh-legend{display:flex;gap:12px;justify-content:flex-end;font-size:8.5px;color:#7b8f97;margin:-17px 30px 2px 0;pointer-events:none}
+.hh-legend span{display:flex;align-items:center;gap:4px}
+.hh-legend i{width:9px;height:6px;border-radius:2px;display:inline-block}
+.hh-grid{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));align-items:center}
+.hh{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;border-radius:6px;padding:1px 0}
+.hh.past{opacity:.45}
+.hh.now{background:#edf6f4;box-shadow:inset 0 0 0 1px #9fd2c4}
+.hh-hour{font-size:8.5px;color:#7b8f97;font-variant-numeric:tabular-nums}
+.hh-icon svg{width:17px;height:17px;display:block}
+.hh-temp{font:700 10px 'Manrope',sans-serif;color:#14323c;font-variant-numeric:tabular-nums}
+.hh-bars{width:100%;flex:1;min-height:26px;display:block}
+.hh-vals{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));font-size:7.5px;text-align:center;font-variant-numeric:tabular-nums;line-height:9px;height:9px}
+.hh-prob{color:#3a8fc4}.hh-rain{color:#126a95;font-weight:700}
+:root[data-theme="dark"] .daily-day[data-daily-day]:hover{background:#163038}
+:root[data-theme="dark"] .hh.now{background:#16352f;box-shadow:inset 0 0 0 1px #3f8f7f}
+:root[data-theme="dark"] .hh-temp{color:#e3eef1}
+:root[data-theme="dark"] .hh-hour,:root[data-theme="dark"] .hh-legend{color:#8aa3ab}
+:root[data-theme="dark"] .hh-prob{color:#5fb8ec}:root[data-theme="dark"] .hh-rain{color:#7cc7f2}
+@media(max-width:760px){.hh-icon svg{width:13px;height:13px}.hh-temp{font-size:8.5px}.hh-hour{font-size:7px}.hh-vals{font-size:6px}.hh-legend{margin-right:26px;font-size:7.5px}}
+@media(max-width:760px){.hh-legend{margin:1px 0 2px;justify-content:flex-start}}

@@ -56,3 +56,26 @@ test('map click point forecast: selected model at the clicked position, validate
   for (const bad of ['model=nope&lat=58&lon=20', 'model=icon_eu&lat=10&lon=20', 'model=icon_eu&lat=58&lon=120'])
     assert.equal((await api(new Request('https://weather.seasync.co/api/point?' + bad), {})).status, 400);
 });
+
+test('7-day outlook for the port tiles: one request for all ports, validated and cached', async () => {
+  const { createForecastAPI } = await import('../worker/forecast.mjs');
+  let calls = 0, seen;
+  const api = createForecastAPI({ now: () => Date.parse('2026-10-24T06:00:00Z'), fetcher: async url => {
+    calls++; seen = new URL(url);
+    const n = seen.searchParams.get('latitude').split(',').length;
+    return Response.json(Array.from({ length: n }, () => ({ current: { time: '2026-10-24T08:00', temperature_2m: 9.4, weather_code: 3 }, daily: { time: ['2026-10-24', '2026-10-25'], weather_code: [3, 61], temperature_2m_max: [11.2, 10], temperature_2m_min: [6.1, 7], precipitation_sum: [0, 4.2], precipitation_probability_max: [10, 85], wind_direction_10m_dominant: [250, 300], wind_speed_10m_max: [8, 12], wind_gusts_10m_max: [14, 19] }, hourly: { time: ['2026-10-24T00:00', '2026-10-24T01:00'], temperature_2m: [7, 6.5], weather_code: [3, 61], precipitation: [0, 0.4], precipitation_probability: [5, 70], is_day: [0, 0] } })));
+  } });
+  const res = await api(new Request('https://weather.seasync.co/api/daily'), {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.ports.length, 5);
+  assert.equal(data.ports[3].daily.precipitation_probability_max[1], 85);
+  assert.equal(data.ports[0].current.temperature_2m, 9.4);
+  assert.equal(seen.searchParams.get('forecast_days'), '7');
+  assert.deepEqual(data.ports[2].hourly.precipitation_probability, [5, 70]);
+  assert(seen.searchParams.get('hourly').includes('precipitation_probability'));
+  assert.equal(seen.searchParams.get('timezone'), 'Europe/Stockholm');
+  assert(seen.searchParams.get('daily').includes('wind_direction_10m_dominant'));
+  await api(new Request('https://weather.seasync.co/api/daily'), {});
+  assert.equal(calls, 1, 'cached');
+});

@@ -72,7 +72,7 @@ test('regional model: an unexpected 400 for the batch falls back to single point
     return Response.json(openMeteo([{ lat: lats[0], lon: lons[0] }])[0]);
   } });
   const data = await (await api(new Request('https://weather.seasync.co/api/forecast?model=metno_nordic&group=ports'), {})).json();
-  assert.equal(multi, 1);
+  assert.equal(multi, 2, 'batch tried with and without the chance of rain');
   assert.deepEqual(data.records.map(r => Boolean(r.outsideDomain)), [false, false, true, false, false]);
 });
 
@@ -124,4 +124,25 @@ test('FMI HARMONIE: one WFS point query per port, weather fields for ports, wind
   assert.equal((await api(new Request('https://weather.seasync.co/api/forecast?model=fmi_harmonie&group=route'), {})).status, 400);
   const updates = await api(new Request('https://weather.seasync.co/api/model-updates?model=fmi_harmonie'), {});
   assert.equal(updates.status, 200);
+});
+
+test('ICON-D2 map field: out-of-domain grid points are filled from icon_seamless, ports are not', async () => {
+  const models = [];
+  const api = createForecastAPI({ now: () => NOW, fetcher: async url => {
+    const u = new URL(url);
+    if (u.pathname.endsWith('/static/meta.json')) return meta();
+    models.push(u.searchParams.get('models'));
+    const lats = u.searchParams.get('latitude').split(',').map(Number), lons = u.searchParams.get('longitude').split(',').map(Number);
+    return Response.json(openMeteo(lats.map((lat, i) => ({ lat, lon: lons[i] }))));
+  } });
+  const { FORECAST_GRIDS } = await import('../worker/forecast-points.mjs');
+  const outside = FORECAST_GRIDS.windGrid.slice(0, 6).filter(p => p.lat > 58.08 || p.lon > 20.34).length;
+  const data = await (await api(new Request('https://weather.seasync.co/api/forecast?model=icon_d2&group=wind-grid'), {})).json();
+  assert.equal(data.records.length, 6);
+  assert.equal(data.records.filter(r => r.filledFrom === 'icon_seamless').length, outside);
+  assert(data.records.every(r => r.hourly.wind_speed_10m[0] === 5));
+  if (outside) assert(models.includes('icon_seamless'));
+  models.length = 0;
+  await api(new Request('https://weather.seasync.co/api/forecast?model=icon_d2&group=ports'), {});
+  assert(!models.includes('icon_seamless'));
 });

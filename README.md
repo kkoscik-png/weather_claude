@@ -79,3 +79,9 @@ Liczby Hs na mapie są przerzedzane do jednego, równego odstępu na ekranie (58
 ## English interface and opening state (19.10.2026)
 
 The interface is in English (en-GB number and date formats, Swedish time zone). Every time the page opens: wind model ICON-EU, wave model ECMWF WAM, flags at Ventspils Berth and Norvik Berth, wind animation and sea-state numbers on, and a default map view from Stockholm / Nynäshamn to Saaremaa / Ventspils (`DEFAULT_VIEW` in `dist/app.js`). The info and refresh buttons were removed from the brand column; "About the data" is in the page footer.
+
+## ICON-EU freshness fix (23 October 2026)
+
+Manual refresh now bypasses browser localStorage and checks the server; server-side cycle caching continues to prevent premature upstream downloads. Background metadata checks also replace forecast records when a newer model publication is discovered. Availability metadata remains separate from the publication stamp of the displayed records, so an old fallback is never relabeled as current. The app asset version is advanced for installed PWAs and browser sessions.
+
+Live checks on 23 October found ICON-EU publication `2026-10-23T05:53:12Z` and reference cycle `2026-10-23T03:00:00Z` at both `weather.seasync.co` and `pogoda.seasync.co`, matching the Open-Meteo metadata. Client-specific stale state could not be inspected on the user's Windows device.

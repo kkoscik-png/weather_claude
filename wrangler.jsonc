@@ -11,6 +11,13 @@
     { "pattern": "www.weather.seasync.co", "custom_domain": true },
     { "pattern": "www.pogoda.seasync.co", "custom_domain": true }
   ],
+  // Shared forecast store (one SQLite Durable Object) and the 5-minute pre-fetch.
+  "durable_objects": {
+    "bindings": [{ "name": "FORECAST_STORE", "class_name": "ForecastStore" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ForecastStore"] }],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "enabled": true },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
