@@ -768,3 +768,6 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 :root[data-theme="dark"] .picker-status{color:#8aa3ab}
 :root[data-theme="dark"] .picker-status b{color:#e3eef1}
 @media(max-width:760px){.picker-title .picker-status{font-size:9px;gap:4px}.picker-status .status-dot{width:6px;height:6px}}
+.picker-status .picker-updated{font-weight:500}
+.picker-status.loading .picker-updated,.picker-status.error .picker-updated{display:none}
+@media(max-width:760px){.picker-title{letter-spacing:.5px;white-space:nowrap;gap:4px}.picker-title .picker-status{font-size:8.5px;gap:3px}}
