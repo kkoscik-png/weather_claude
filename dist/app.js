@@ -823,7 +823,8 @@ function closeDaily(){state.dailyPort=null;state.dailyDay=null;const pop=$('dail
 function closeHourly(){state.dailyDay=null;const pop=$('hourlyPopup');if(pop){pop.hidden=true;pop.innerHTML='';}document.querySelectorAll?.('#dailyPopup .daily-day.selected').forEach(x=>{x.classList.remove('selected');x.setAttribute('aria-pressed','false');});}
 function placeDaily(){
  const pop=$('dailyPopup'),i=state.dailyPort;if(!pop||i==null)return;const tile=document.querySelector(`#ports [data-port="${i}"]`)?.closest?.('.port');if(!tile){closeDaily();return;}
- const r=tile.getBoundingClientRect(),sx=window.scrollX||0,sy=window.scrollY||0,wide=window.innerWidth>760;
+ // Same place for both tiles: next to the first tile (the hourly panel then opens below it).
+ const wide=window.innerWidth>760,r=(wide?document.querySelector('#ports .port')||tile:tile).getBoundingClientRect(),sx=window.scrollX||0,sy=window.scrollY||0;
  const width=wide?Math.min(620,window.innerWidth-r.right-26):window.innerWidth-24;
  Object.assign(pop.style,wide?{left:(r.right+10+sx)+'px',top:(r.top+sy)+'px',width:width+'px',height:'auto',minHeight:r.height+'px'}:{left:(12+sx)+'px',top:(r.bottom+8+sy)+'px',width:width+'px',height:'auto',minHeight:Math.max(r.height,150)+'px'});
 }
@@ -855,9 +856,8 @@ function toggleDay(day){if(state.dailyDay===day){closeHourly();return;}state.dai
 function placeHourly(){
  const pop=$('hourlyPopup'),daily=$('dailyPopup');if(!pop||pop.hidden||!daily||daily.hidden)return;
  const d=daily.getBoundingClientRect(),tiles=[...document.querySelectorAll('#ports .port')].map(t=>t.getBoundingClientRect()),sy=window.scrollY||0,sx=window.scrollX||0,wide=window.innerWidth>760;
- const gap=tiles.length>1?Math.max(8,tiles[1].top-tiles[0].bottom):10,slot=[...document.querySelectorAll('#ports .port')].findIndex(t=>t.querySelector?.(`[data-port="${state.dailyPort}"]`));
- // Opened from the lower tile: the hourly panel goes above, aligned with the upper tile.
- if(wide&&slot>0&&tiles[0]){Object.assign(pop.style,{left:(d.left+sx)+'px',top:(tiles[0].top+sy)+'px',width:d.width+'px',height:Math.max(tiles[0].height,d.top-tiles[0].top-gap)+'px'});return;}
+ const gap=tiles.length>1?Math.max(8,tiles[1].top-tiles[0].bottom):10;
+ // Always below the 7-day panel, whichever tile it was opened from.
  const h=wide?(tiles[1]||tiles[0]).height:Math.max(d.height,170);
  Object.assign(pop.style,{left:(d.left+sx)+'px',top:(d.bottom+gap+sy)+'px',width:d.width+'px',height:h+'px'});
 }
