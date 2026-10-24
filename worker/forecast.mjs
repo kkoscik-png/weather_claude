@@ -25,6 +25,15 @@ const numeric=(x,max=Infinity)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x
 // Groups whose point list changed (ports: +Gdynia, +Karlskrona; coast: +16 points) get a new revision too.
 const CYCLE_REVISION={fcoo_ww3:2,dmi_harmonie:4,dmi_wam:3},GROUP_REVISION={ports:3,coast:2},cycleKey=(model,group,offset)=>[model+(CYCLE_REVISION[model]?'@'+CYCLE_REVISION[model]:''),group+(GROUP_REVISION[group]?'@'+GROUP_REVISION[group]:''),offset].join('/');
 const iso=x=>Number.isFinite(x)?new Date(x).toISOString():null;
+// Ports chosen by the user (any Baltic position): "lat,lon;lat,lon" with up to BATCH points,
+// rounded to 0.001° so the same port always shares one cache entry.
+export function parsePoints(text){
+  if(typeof text!=='string'||!text||text.length>200)return null;
+  const pts=text.split(';').map(t=>t.split(',').map(Number));
+  if(!pts.length||pts.length>BATCH||!pts.every(p=>p.length===2&&p[0]>=53&&p[0]<=66.5&&p[1]>=9&&p[1]<=31))return null;
+  const norm=pts.map(([a,b])=>[Math.round(a*1000)/1000,Math.round(b*1000)/1000]);
+  return {key:norm.map(p=>p.join(',')).join(';'),points:norm.map(([lat,lon],i)=>({id:'c'+i,lat,lon}))};
+}
 // What the app loads, per source: wind sources → ports, map field and zoomed-out grid;
 // wave sources → ports, map field, both routes and the coast points.
 const PREWARM_WIND=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_global','icon_d2'],PREWARM_WAVE=['ecmwf_wam','fmi_wam','dwd_ewam','copernicus_baltic','fcoo_ww3'];
@@ -295,11 +304,20 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   // own request (call), so a slow provider does not hold up the others.
   async function prewarm(env,call,{limit=16,concurrency=4}={}){
     shared.store=shared.store||remoteStore(env);if(!shared.store)return {skipped:'no store'};
-    const tasks=prewarmTasks(),keys=tasks.map(t=>'c/'+cycleKey(t.model,t.group,t.offset));
+    // Ports picked by users in the last 3 days are kept warm too (right after the built-in ports).
+    let recent=[];try{recent=((await shared.store.get('m/recent-points'))||[]).filter(r=>now()-r.seen<3*86400000).slice(0,15);}catch{}
+    const base=prewarmTasks(),nPorts=base.filter(t=>t.group==='ports').length;
+    const custom=recent.flatMap(r=>[...PREWARM_WIND,...PREWARM_WAVE].map(model=>({model,group:'points',offset:0,pts:r.pts})));
+    const tasks=[...base.slice(0,nPorts),...custom,...base.slice(nPorts)],keys=tasks.map(t=>'c/'+cycleKey(t.model,t.pts?'pts:'+t.pts:t.group,t.offset));
     const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
     let ran=0,failed=0;const queue=[...due];
-    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
+    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset),...(t.pts?{pts:t.pts}:{})})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
     return {total:tasks.length,due:dueKeys.size,ran,failed};
+  }
+  const seenPoints=new Map();
+  async function rememberPoints(pts){
+    if(!shared.store||now()-(seenPoints.get(pts)||0)<3600000)return;seenPoints.set(pts,now());
+    try{const list=((await shared.store.get('m/recent-points'))||[]).filter(r=>r.pts!==pts&&now()-r.seen<3*86400000);list.unshift({pts,seen:now()});await shared.store.put('m/recent-points',list.slice(0,30),now()+3*86400000);}catch{}
   }
   const api=async function handleForecast(request,env,ctx={}) {
     if(!shared.store)shared.store=remoteStore(env);
@@ -309,8 +327,10 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     if(u.pathname==='/api/daily'){
       if(request.method!=='GET')return json({error:'Method not allowed.'},405);
       try{
-        const result=await cached('daily/v2',1800,async()=>{
-          const ports=STORMGLASS_POINTS.ports,query={latitude:ports.map(p=>p.lat).join(','),longitude:ports.map(p=>p.lon).join(','),daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_direction_10m_dominant,wind_speed_10m_max,wind_gusts_10m_max',current:'temperature_2m,weather_code',hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,is_day',timezone:'Europe/Stockholm',forecast_days:'7',wind_speed_unit:'ms',temperature_unit:'celsius'};
+        const one=parsePoints(u.searchParams.has('lat')?u.searchParams.get('lat')+','+u.searchParams.get('lon'):'');
+        if(u.searchParams.has('lat')&&(!one||one.points.length!==1))return json({error:'Invalid position.'},400);
+        const result=await cached(one?'daily/v2/pt/'+one.key:'daily/v2',1800,async()=>{
+          const ports=one?one.points:STORMGLASS_POINTS.ports,query={latitude:ports.map(p=>p.lat).join(','),longitude:ports.map(p=>p.lon).join(','),daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_direction_10m_dominant,wind_speed_10m_max,wind_gusts_10m_max',current:'temperature_2m,weather_code',hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,is_day',timezone:'Europe/Stockholm',forecast_days:'7',wind_speed_unit:'ms',temperature_unit:'celsius'};
           const data=await(await response('https://api.open-meteo.com/v1/forecast?'+new URLSearchParams(query))).json(),rows=Array.isArray(data)?data:[data];
           if(rows.length!==ports.length||!rows.every(r=>Array.isArray(r.daily?.time)))throw Error('Invalid daily forecast');
           const num=(v,lo=-Infinity,hi=Infinity)=>typeof v==='number'&&Number.isFinite(v)&&v>=lo&&v<=hi?v:null;
@@ -338,15 +358,19 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       try{const schedule=await getSchedule(model);return json({timing:schedule.timing,refreshAfter:schedule.refreshAfter,checkedAt:iso(schedule.saved)});}
       catch(e){return json({error:'Update time temporarily unavailable.',...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
     }
-    const group=u.searchParams.get('group')||'ports',text=u.searchParams.get('offset')||'0',points=GROUPS[group];
+    const requested=u.searchParams.get('group')||'ports',custom=requested==='points'?parsePoints(u.searchParams.get('pts')):null;
+    if(requested==='points'&&!custom)return json({error:'Invalid points.'},400);
+    // Custom points behave like ports (weather fields, nearest sea cell for waves).
+    const group=custom?'ports':requested,text=u.searchParams.get('offset')||'0',points=custom?custom.points:GROUPS[group];
     if(!SOURCES[model]||!points||!/^\d+$/.test(text)||(model==='smhi_snow'&&!['ports','wind-grid','wide-grid'].includes(group))||(model==='fmi_harmonie'&&!['ports','wind-grid','wide-grid'].includes(group))||(group==='wide-grid'&&!WIDE_MODELS.includes(model)))return json({error:'Invalid model or group.'},400);
     // The wide zoomed-out wind grid is one Open-Meteo multi-point request, cached per model cycle.
     const batch=group==='wide-grid'?points.length:BATCH,offset=Number(text);if(offset%batch||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
     const selected=points.slice(offset,offset+batch);
     try {
-      const key=cycleKey(model,group,offset),load=model==='smhi_snow'?async()=>backfillSMHI(await fetchModel(model,selected,group),await lastGood.peek(key)):()=>fetchModel(model,selected,group);
+      if(custom)rememberPoints(custom.key);
+      const key=cycleKey(model,custom?'pts:'+custom.key:group,offset),load=model==='smhi_snow'?async()=>backfillSMHI(await fetchModel(model,selected,group),await lastGood.peek(key)):()=>fetchModel(model,selected,group);
       const payload=await lastGood(key,load,model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
-      return json({...payload,model,group,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
+      return json({...payload,model,group:requested,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
     }catch(e){return json({error:e.status===429?(model.startsWith('dmi_')?'DMI is overloaded. Wait '+e.retryAfter+' s before trying again.':'The provider is busy. Try again shortly.'):'Could not load model '+model+'.',model,...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
   };
   api.prewarm=prewarm;return api;

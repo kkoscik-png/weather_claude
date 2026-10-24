@@ -876,3 +876,34 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 :root[data-theme="dark"] .ism-row.dark{background:#0b1820}
 @media(max-width:760px){.icon-style-menu{right:-90px;width:272px}.ism-row svg{width:22px;height:22px}}
 .icon-style-menu{max-height:calc(100vh - 90px);overflow:auto}
+/* Find your port: type-ahead search tile above the model pickers */
+.find-card{position:relative;cursor:default}
+.find-hint{margin-left:auto;font-size:9.5px;font-weight:600;letter-spacing:0;text-transform:none;color:#9aabb1}
+.find-box{display:block}
+.find-icon{position:absolute;left:9px;top:50%;width:14px;height:14px;margin-top:-7px;pointer-events:none;fill:none;stroke:#5f7680;stroke-width:1.6;stroke-linecap:round}
+.picker.find-input{cursor:text;padding-left:29px;padding-right:9px;font-weight:600}
+.find-input::placeholder{color:#93a5ab;font-weight:500}
+.find-input::-webkit-search-cancel-button{cursor:pointer}
+.find-results{position:absolute;z-index:1300;left:0;top:calc(100% + 6px);width:max(100%,300px);max-height:340px;overflow:auto;padding:5px;background:#fff;border:1px solid #d6e3e6;border-radius:12px;box-shadow:0 16px 34px -14px rgba(16,44,57,.45)}
+.find-row{display:flex;align-items:center;gap:9px;padding:7px 6px 7px 8px;border-radius:8px;cursor:pointer;font-size:12.5px}
+.find-row.active,.find-row:hover{background:#edf6f4}
+.find-row .cc{flex:none;width:26px;text-align:center;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:#0d8c7a;background:#e6f4f0;border-radius:5px;padding:3px 0}
+.find-row .nm{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.find-row .nm b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.find-row .nm em{font-style:normal;font-size:10px;color:#7b8f97}
+.find-row mark{background:#fff0b8;color:inherit;border-radius:2px}
+.find-row .star{flex:none;width:30px;height:30px;border-radius:8px;font-size:18px;line-height:1;color:#a9b8bd;display:grid;place-items:center}
+.find-row .star:hover{background:#fff6dc;filter:none}
+.find-row .star.on{color:#e3a921}
+.find-empty{padding:10px;font-size:11.5px;color:#7b8f97}
+:root[data-theme="dark"] .find-results{background:#11232c;border-color:#2a4652;box-shadow:0 16px 34px -14px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .find-row.active,:root[data-theme="dark"] .find-row:hover{background:#16352f}
+:root[data-theme="dark"] .find-row .cc{background:#16352f;color:#7fe6cb}
+:root[data-theme="dark"] .find-row .nm em,:root[data-theme="dark"] .find-empty,:root[data-theme="dark"] .find-hint{color:var(--muted)}
+:root[data-theme="dark"] .find-row mark{background:#5a4a12}
+:root[data-theme="dark"] .find-row .star:hover{background:#2c2a16}
+:root[data-theme="dark"] .find-icon{stroke:#8fa7b0}
+@media(max-width:760px){.find-card{grid-column:1/-1}.find-results{width:100%}}
+/* Five tiles (2 ports, search, 2 models) keep their natural height; the map grows to match */
+@media(min-width:761px){.ports-column>.ports{flex:1 0 auto}.ports-column>.ports .port{flex:1 0 auto;min-height:auto}}
+@media(max-width:760px){.picker.find-input{font-size:16px}}

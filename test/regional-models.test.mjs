@@ -146,3 +146,26 @@ test('ICON-D2 map field: out-of-domain grid points are filled from icon_seamless
   await api(new Request('https://weather.seasync.co/api/forecast?model=icon_d2&group=ports'), {});
   assert(!models.includes('icon_seamless'));
 });
+
+test('custom port positions: group=points serves any Baltic point and is remembered for the pre-fetch', async () => {
+  const { parsePoints } = await import('../worker/forecast.mjs');
+  assert.equal(parsePoints('54.39512,18.69;55.7,21.12').key, '54.395,18.69;55.7,21.12');
+  assert.equal(parsePoints('40,10'), null, 'outside the Baltic');
+  assert.equal(parsePoints(Array(7).fill('55,15').join(';')), null, 'at most 6 points');
+  const seen = [];
+  const api = createForecastAPI({ now: () => NOW, fetcher: async url => {
+    const u = new URL(url);
+    if (u.pathname.endsWith('/static/meta.json')) return meta();
+    seen.push(u);
+    const lats = u.searchParams.get('latitude').split(',').map(Number), lons = u.searchParams.get('longitude').split(',').map(Number);
+    return Response.json(openMeteo(lats.map((lat, i) => ({ lat, lon: lons[i] }))));
+  } });
+  const res = await api(new Request('https://marine.weather.seasync.co/api/forecast?model=icon_eu&group=points&pts=54.395,18.69;55.7,21.12'), {});
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.records.length, 2);
+  assert.equal(data.group, 'points');
+  assert(seen[0].searchParams.get('hourly').includes('cloud_cover_low'), 'port fields (clouds, rain, temperature)');
+  assert.equal(seen[0].searchParams.get('latitude'), '54.395,55.7');
+  assert.equal((await api(new Request('https://marine.weather.seasync.co/api/forecast?model=icon_eu&group=points&pts=1,1'), {})).status, 400);
+});
