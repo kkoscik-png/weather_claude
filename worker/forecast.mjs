@@ -267,6 +267,18 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     if(!result.ok)throw Object.assign(Error('Open-Meteo: HTTP '+result.status),{status:result.status});
     const payload=normalizeDMIOpenMeteo(await result.json(),points,now());try{payload.timing=(await getSchedule('dmi_harmonie','open-meteo')).timing;}catch{}dmiTimings.set('dmi_harmonie',payload.timing);return payload;
   }
+  // SMHI SNOW starts at the next full hour, so the current and previous hour would stay empty.
+  // Keep those hours from the previous SMHI run (its shortest-lead forecast for them).
+  function backfillSMHI(fresh,old){
+    const from=Math.floor(now()/HOUR)*HOUR/1000-3600;
+    for(const r of fresh.records||[]){
+      const prev=old?.records?.find(x=>x.id===r.id),h=r.hourly,first=h?.time?.[0];if(!prev?.hourly?.time||!Number.isFinite(first))continue;
+      const take=prev.hourly.time.map((t,k)=>t>=from&&t<first?k:-1).filter(k=>k>=0);if(!take.length)continue;
+      for(const field of Object.keys(h))h[field]=[...take.map(k=>Array.isArray(prev.hourly[field])?prev.hourly[field][k]??null:null),...h[field]];
+      r.backfilledUntil=first;
+    }
+    return fresh;
+  }
   // Point forecast for a map click: the selected model at that exact position (nearest model cell).
   const POINT_WIND={icon_eu:'icon_eu',icon_global:'icon_global',ecmwf_ifs:'ecmwf_ifs',dmi_harmonie:'dmi_harmonie_arome_europe',metno_nordic:'metno_nordic',icon_d2:'icon_d2'},POINT_WAVE=['ecmwf_wam','dwd_ewam'];
   async function pointForecast(model,lat,lon){
@@ -286,7 +298,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const tasks=prewarmTasks(),keys=tasks.map(t=>'c/'+cycleKey(t.model,t.group,t.offset));
     const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
     let ran=0,failed=0;const queue=[...due];
-    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
+    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
     return {total:tasks.length,due:dueKeys.size,ran,failed};
   }
   const api=async function handleForecast(request,env,ctx={}) {
@@ -332,7 +344,8 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const batch=group==='wide-grid'?points.length:BATCH,offset=Number(text);if(offset%batch||offset>=points.length||(group==='ports'&&offset))return json({error:'Invalid range.'},400);
     const selected=points.slice(offset,offset+batch);
     try {
-      const payload=await lastGood(cycleKey(model,group,offset),()=>fetchModel(model,selected,group),model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
+      const key=cycleKey(model,group,offset),load=model==='smhi_snow'?async()=>backfillSMHI(await fetchModel(model,selected,group),await lastGood.peek(key)):()=>fetchModel(model,selected,group);
+      const payload=await lastGood(key,load,model==='dmi_harmonie'?()=>fetchDMIFallback(selected,group):null);
       return json({...payload,model,group,total:points.length,nextOffset:offset+selected.length<points.length?offset+selected.length:null});
     }catch(e){return json({error:e.status===429?(model.startsWith('dmi_')?'DMI is overloaded. Wait '+e.retryAfter+' s before trying again.':'The provider is busy. Try again shortly.'):'Could not load model '+model+'.',model,...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
   };

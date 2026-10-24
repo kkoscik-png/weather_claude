@@ -79,3 +79,24 @@ test('7-day outlook for the port tiles: one request for all ports, validated and
   await api(new Request('https://weather.seasync.co/api/daily'), {});
   assert.equal(calls, 1, 'cached');
 });
+
+test('SMHI: the current and previous hour are kept from the previous run (SNOW starts at the next hour)', async () => {
+  const { createForecastAPI } = await import('../worker/forecast.mjs');
+  let clock = Date.parse('2026-10-24T04:50:00Z');
+  const snow = ref => {
+    const start = Date.parse(ref) + 1800000; // SNOW: first step is the next full hour after the reference time
+    return { referenceTime: ref, createdTime: ref, geometry: { coordinates: [21.5, 57.4] }, timeSeries: Array.from({ length: 6 }, (_, k) => ({ time: new Date(start + k * 3600000).toISOString().replace('.000', ''), intervalParametersStartTime: new Date(start + (k - 1) * 3600000).toISOString().replace('.000', ''), data: { wind_speed: 5 + k + (Date.parse(ref) % 7200000 ? 0.5 : 0), wind_speed_of_gust: 9, wind_from_direction: 200 } })) };
+  };
+  const api = createForecastAPI({ now: () => clock, fetcher: async () => Response.json(snow(new Date(Math.floor(clock / 3600000) * 3600000 + 1800000).toISOString().replace('.000', ''))) });
+  const req = () => new Request('https://weather.seasync.co/api/forecast?model=smhi_snow&group=ports');
+  const first = await (await api(req(), {})).json();
+  assert.equal(new Date(first.records[0].hourly.time[0] * 1000).toISOString(), '2026-10-24T05:00:00.000Z');
+  clock = Date.parse('2026-10-24T05:50:00Z');
+  const next = await (await api(req(), {})).json(), h = next.records[0].hourly;
+  // New run starts at 06:00; 05:00 (current hour) comes from the previous run.
+  assert.equal(new Date(h.time[0] * 1000).toISOString(), '2026-10-24T05:00:00.000Z');
+  assert.equal(new Date(h.time[1] * 1000).toISOString(), '2026-10-24T06:00:00.000Z');
+  assert.equal(h.wind_speed_10m.length, h.time.length);
+  assert.equal(h.wind_speed_10m[0], first.records[0].hourly.wind_speed_10m[0]);
+  assert.equal(next.records[0].backfilledUntil, Date.parse('2026-10-24T06:00:00Z') / 1000);
+});
