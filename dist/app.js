@@ -891,7 +891,7 @@ function renderHourly(){
  svg+=`<line x1="0" x2="${W}" y1="23" y2="23" stroke="${dark?'#22404b':'#dfe8ea'}"/>`;
  rains.forEach((v,j)=>{if(!valid(v)||v<=0)return;const bh=4+16*Math.log1p(v)/Math.log1p(Math.max(rmax,10)),c=rainColor(v);svg+=`<rect class="hh-rain-bar" data-rain="${v}" x="${j*24+4.5}" y="24.5" width="15" height="${bh-.5}" rx="2" fill="${c}" stroke="${dark?'#5d7883':'#9fb0b6'}" stroke-width=".8" vector-effect="non-scaling-stroke"/>`;});
  svg+='</svg>';
- const vals=`<div class="hh-vals hh-prob">${probs.map(v=>`<span>${valid(v)&&v>=10?Math.round(v):''}</span>`).join('')}</div>`+svg+`<div class="hh-vals hh-rain">${rains.map(v=>`<span>${valid(v)&&v>=.1?format(v,1):''}</span>`).join('')}</div>`;
+ const vals=`<div class="hh-vals hh-prob">${probs.map(v=>`<span>${valid(v)&&v>=10?Math.round(v)+'%':''}</span>`).join('')}</div>`+svg+`<div class="hh-vals hh-rain">${rains.map(v=>`<span>${valid(v)&&v>=.1?format(v,1):''}</span>`).join('')}</div>`;
  pop.innerHTML=head+`<div class="hh-wrap" style="--n:${n}"><div class="hh-legend"><span><i style="background:${pc}"></i>Chance of rain %</span><span class="hh-rain-key" title="Rain amount colours: white &lt;1 mm, orange 1–10, yellow 10–15, green 15–50, blue 50–200, purple/pink above">Rain mm<i class="rain-ramp"></i></span></div><div class="hh-grid">${cols}</div>${vals}</div>`;
  pop.hidden=false;placeHourly();
 }
