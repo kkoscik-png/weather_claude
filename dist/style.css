@@ -856,3 +856,23 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .dd-wind{font-size:11px}.dd-wind i{font-size:13px}
 .daily-head b{font-size:14px}.daily-head span{font-size:10.5px}
 @media(max-width:760px){.dd-name{font-size:10px}.dd-icon svg{width:22px;height:22px}.dd-temp{font-size:12px;gap:3px}.dd-now{font-size:9px}.dd-prob{font-size:9.5px}.dd-rain,.dd-wind{font-size:9px}.dd-wind i{font-size:11px}}
+
+/* Weather icon style picker (top bar, between refresh and day/night) */
+.icon-style{position:relative;display:flex}
+.icon-style-btn svg{position:absolute;left:50%;top:50%;width:20px;height:20px;margin:0;transform:translate(-50%,-50%);fill:initial;stroke:initial}
+.icon-style-menu{position:absolute;top:calc(100% + 8px);right:-40px;z-index:4000;width:300px;background:#fff;border:1px solid #d9e4e7;border-radius:14px;box-shadow:0 18px 50px -16px rgba(16,44,57,.45);padding:8px;display:flex;flex-direction:column;gap:6px}
+.ism-head{font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#7b8f97;padding:2px 4px 0}
+.ism-opt{display:grid;grid-template-columns:1fr;gap:4px;width:100%;text-align:left;padding:7px 8px;border:1px solid #e3eaec;border-radius:10px;background:#fff;color:#14323c}
+.ism-opt:hover{filter:none;border-color:#9fd2c4}
+.ism-opt.on{border-color:var(--accent);box-shadow:0 0 0 2px #0d8c7a33;background:#f3faf8}
+.ism-name{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:650}
+.ism-name b{display:grid;place-items:center;width:18px;height:18px;border-radius:6px;background:var(--accent);color:#fff;font-size:10px}
+.ism-row{display:flex;justify-content:space-between;padding:4px 8px;border-radius:8px}
+.ism-row.light{background:#f7fafa}.ism-row.dark{background:#11232c}
+.ism-row svg{width:26px;height:26px}
+:root[data-theme="dark"] .icon-style-menu{background:#11232c;border-color:#22404b}
+:root[data-theme="dark"] .ism-opt{background:#0f1f27;border-color:#22404b;color:#e3eef1}
+:root[data-theme="dark"] .ism-opt.on{background:#16352f;border-color:#3f8f7f}
+:root[data-theme="dark"] .ism-row.dark{background:#0b1820}
+@media(max-width:760px){.icon-style-menu{right:-90px;width:272px}.ism-row svg{width:22px;height:22px}}
+.icon-style-menu{max-height:calc(100vh - 90px);overflow:auto}

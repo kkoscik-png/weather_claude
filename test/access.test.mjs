@@ -103,7 +103,7 @@ test('installable app: manifest with PNG and maskable icons, service worker at t
   assert(fs.existsSync('dist/sw.js'));
   assert.equal(assetCacheControl(new URL('https://weather.seasync.co/sw.js')), 'no-cache');
   const html = fs.readFileSync('dist/index.html', 'utf8');
-  assert(html.includes('rel="manifest" href="manifest.webmanifest"') && html.includes('id="installApp"'));
+  assert(html.includes('rel="manifest" href="manifest.webmanifest"') && !html.includes('id="installApp"') && html.includes('id="iconStyleBtn"'));
 });
 
 test('every versioned asset in index.html carries the same version tag', async () => {
