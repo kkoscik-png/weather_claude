@@ -771,3 +771,47 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .picker-status .picker-updated{font-weight:500}
 .picker-status.loading .picker-updated,.picker-status.error .picker-updated{display:none}
 @media(max-width:760px){.picker-title{letter-spacing:.5px;white-space:nowrap;gap:4px}.picker-title .picker-status{font-size:8.5px;gap:3px}}
+
+/* 7-day outlook popup beside the port tile */
+.port-wx[data-daily-port]{cursor:pointer;border-radius:8px;padding:2px 3px;margin:-2px -3px;transition:background .15s}
+.port-wx[data-daily-port]:hover{background:#0d8c7a14}
+.daily-popup{position:absolute;z-index:3500;display:flex;flex-direction:column;background:#fff;border:1px solid #cfe2dd;border-radius:14px;box-shadow:0 18px 50px -18px rgba(16,44,57,.45);padding:8px 10px 9px;overflow:hidden;animation:daily-in .16s ease-out}
+@keyframes daily-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.daily-head{display:flex;align-items:baseline;gap:8px;padding:0 2px 6px;border-bottom:1px solid #eef2f3}
+.daily-head b{font:700 13px 'Manrope',sans-serif;color:#14323c}
+.daily-head span{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7b8f97}
+.daily-close{margin-left:auto;width:22px;height:22px;border-radius:50%;border:0;background:#eef3f4;color:#4f666e;font-size:15px;line-height:1;padding:0;position:relative}
+.daily-close:hover{filter:none;background:#e1ecee}
+.daily-grid{flex:1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding-top:6px;min-height:0}
+.daily-day{display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:1px;border-radius:9px;padding:3px 2px;background:#f7fafa;min-width:0}
+.daily-day.today{background:#edf6f4;box-shadow:inset 0 0 0 1px #9fd2c4}
+.dd-name{font-size:9.5px;font-weight:700;color:#4f666e;white-space:nowrap}
+.daily-day.today .dd-name{color:#0d8c7a}
+.dd-icon svg{width:24px;height:24px;display:block}
+.dd-temp{display:flex;gap:4px;font:700 11.5px 'Manrope',sans-serif;font-variant-numeric:tabular-nums}
+.dd-temp .t-max{color:#d63a32}.dd-temp .t-min{color:#1e8a4c}
+.dd-now{font-size:8.5px;color:#14323c;font-weight:600;white-space:nowrap}
+.dd-prob{display:flex;align-items:center;gap:2px;font-size:9.5px;font-weight:700;color:#1789bf;font-variant-numeric:tabular-nums}
+.dd-prob svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.dd-rain{font-size:9px;color:#126a95;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dd-wind{display:flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#4f666e}
+.dd-wind i{font-style:normal;display:inline-block;font-size:11px;color:#14323c}
+.daily-empty{flex:1;display:grid;place-items:center;font-size:11px;color:#7b8f97}
+:root[data-theme="dark"] .daily-popup{background:#11232c;border-color:#22404b;box-shadow:0 18px 50px -18px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .daily-head{border-bottom-color:#1d3742}
+:root[data-theme="dark"] .daily-head b,:root[data-theme="dark"] .dd-now,:root[data-theme="dark"] .dd-wind i{color:#e3eef1}
+:root[data-theme="dark"] .daily-day{background:#0f1f27}
+:root[data-theme="dark"] .daily-day.today{background:#16352f;box-shadow:inset 0 0 0 1px #3f8f7f}
+:root[data-theme="dark"] .dd-name,:root[data-theme="dark"] .dd-wind{color:#9fb3ba}
+:root[data-theme="dark"] .dd-rain{color:#7cc7f2}:root[data-theme="dark"] .dd-prob{color:#5fb8ec}
+:root[data-theme="dark"] .daily-close{background:#1b323c;color:#c8d6da}
+:root[data-theme="dark"] .daily-popup svg [fill="#fff"],:root[data-theme="dark"] .daily-popup svg [fill="white"]{fill:#d5e1e6}
+@media(max-width:760px){.daily-popup{padding:7px 7px 8px}.daily-grid{gap:3px}.dd-name{font-size:8.5px}.dd-icon svg{width:20px;height:20px}.dd-temp{font-size:10.5px;gap:2px}.dd-now,.dd-rain,.dd-wind{font-size:8px}.dd-prob{font-size:8.5px}}
+/* Desktop: keep the 7 days inside the tile height */
+.daily-popup{padding:6px 9px 7px}
+.daily-head{padding-bottom:4px}
+.daily-head b{font-size:12.5px}
+.daily-close{width:20px;height:20px;font-size:14px}
+.daily-grid{padding-top:5px;gap:5px}
+.daily-day{gap:0;padding:2px 2px 3px;justify-content:space-evenly}
+.dd-icon svg{width:21px;height:21px}

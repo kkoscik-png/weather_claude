@@ -292,6 +292,21 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   const api=async function handleForecast(request,env,ctx={}) {
     if(!shared.store)shared.store=remoteStore(env);
     const u=new URL(request.url);
+    // 7-day outlook for the port tiles' weather popup: one Open-Meteo request for all ports
+    // (best-match model mix, which includes the chance of rain), cached for 30 minutes.
+    if(u.pathname==='/api/daily'){
+      if(request.method!=='GET')return json({error:'Method not allowed.'},405);
+      try{
+        const result=await cached('daily/v1',1800,async()=>{
+          const ports=STORMGLASS_POINTS.ports,query={latitude:ports.map(p=>p.lat).join(','),longitude:ports.map(p=>p.lon).join(','),daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_direction_10m_dominant,wind_speed_10m_max,wind_gusts_10m_max',current:'temperature_2m,weather_code',timezone:'Europe/Stockholm',forecast_days:'7',wind_speed_unit:'ms',temperature_unit:'celsius'};
+          const data=await(await response('https://api.open-meteo.com/v1/forecast?'+new URLSearchParams(query))).json(),rows=Array.isArray(data)?data:[data];
+          if(rows.length!==ports.length||!rows.every(r=>Array.isArray(r.daily?.time)))throw Error('Invalid daily forecast');
+          const num=(v,lo=-Infinity,hi=Infinity)=>typeof v==='number'&&Number.isFinite(v)&&v>=lo&&v<=hi?v:null;
+          return {saved:now(),attribution:'Weather forecasts / Open-Meteo, CC BY 4.0',ports:rows.map((r,i)=>({id:ports[i].id,current:{time:r.current?.time??null,temperature_2m:num(r.current?.temperature_2m),weather_code:num(r.current?.weather_code,0,99)},daily:{time:r.daily.time,weather_code:r.daily.time.map((_,k)=>num(r.daily.weather_code?.[k],0,99)),temperature_2m_max:r.daily.time.map((_,k)=>num(r.daily.temperature_2m_max?.[k])),temperature_2m_min:r.daily.time.map((_,k)=>num(r.daily.temperature_2m_min?.[k])),precipitation_sum:r.daily.time.map((_,k)=>num(r.daily.precipitation_sum?.[k],0)),precipitation_probability_max:r.daily.time.map((_,k)=>num(r.daily.precipitation_probability_max?.[k],0,100)),wind_direction_10m_dominant:r.daily.time.map((_,k)=>num(r.daily.wind_direction_10m_dominant?.[k],0,360)),wind_speed_10m_max:r.daily.time.map((_,k)=>num(r.daily.wind_speed_10m_max?.[k],0)),wind_gusts_10m_max:r.daily.time.map((_,k)=>num(r.daily.wind_gusts_10m_max?.[k],0))}}))};
+        });
+        return json(result,200,{'Cache-Control':'private, max-age=600'});
+      }catch(e){return json({error:'7-day forecast unavailable.'},e.status===429?429:502);}
+    }
     if(u.pathname==='/api/point'){
       if(request.method!=='GET')return json({error:'Method not allowed.'},405);
       const model=u.searchParams.get('model'),lat=Number(u.searchParams.get('lat')),lon=Number(u.searchParams.get('lon'));
