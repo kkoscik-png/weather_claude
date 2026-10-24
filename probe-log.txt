@@ -1,2 +1,0 @@
-first 0.53 [{'name': 'Abenberg', 'lat': 49.24282, 'lon': 10.96401, 'fc': 'PPL', 'pop': 5484}]
-606 520 errors 0 109.3 s
