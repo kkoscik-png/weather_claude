@@ -745,7 +745,7 @@ function placeDaily(){
  const pop=$('dailyPopup'),i=state.dailyPort;if(!pop||i==null)return;const tile=document.querySelector(`#ports [data-port="${i}"]`)?.closest?.('.port');if(!tile){closeDaily();return;}
  const r=tile.getBoundingClientRect(),sx=window.scrollX||0,sy=window.scrollY||0,wide=window.innerWidth>760;
  const width=wide?Math.min(620,window.innerWidth-r.right-26):window.innerWidth-24;
- Object.assign(pop.style,wide?{left:(r.right+10+sx)+'px',top:(r.top+sy)+'px',width:width+'px',height:r.height+'px'}:{left:(12+sx)+'px',top:(r.bottom+8+sy)+'px',width:width+'px',height:Math.max(r.height,150)+'px'});
+ Object.assign(pop.style,wide?{left:(r.right+10+sx)+'px',top:(r.top+sy)+'px',width:width+'px',height:'auto',minHeight:r.height+'px'}:{left:(12+sx)+'px',top:(r.bottom+8+sy)+'px',width:width+'px',height:'auto',minHeight:Math.max(r.height,150)+'px'});
 }
 function renderDaily(){
  const pop=$('dailyPopup'),i=state.dailyPort;if(!pop||i==null)return;const p=PORTS[i],d=state.daily?.ports?.find(x=>x.id===String(i));
