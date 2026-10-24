@@ -25,10 +25,10 @@ export const CONTENT_SECURITY_POLICY = [
 
 // Public addresses of this app. Everything else (workers.dev, previews) is refused.
 // Both public addresses serve the app; www. variants redirect to them.
-export const ALLOWED_HOSTS = new Set(['marine.weather.seasync.co', 'pogoda.seasync.co']);
+export const ALLOWED_HOSTS = new Set(['marine.weather.seasync.co', 'weather.seasync.co', 'pogoda.seasync.co']);
 // "www." variants and the old pogoda.seasync.co address only redirect to the canonical one.
-// weather.seasync.co (and www.) now lead to the main address marine.weather.seasync.co.
-export const REDIRECT_HOSTS = new Map([['weather.seasync.co', 'marine.weather.seasync.co'], ['www.weather.seasync.co', 'marine.weather.seasync.co'], ['www.pogoda.seasync.co', 'pogoda.seasync.co']]);
+// marine.weather.seasync.co, weather.seasync.co and pogoda.seasync.co all serve the app; www. variants redirect.
+export const REDIRECT_HOSTS = new Map([['www.weather.seasync.co', 'weather.seasync.co'], ['www.pogoda.seasync.co', 'pogoda.seasync.co']]);
 
 const YEAR = 31536000, DAY = 86400;
 
