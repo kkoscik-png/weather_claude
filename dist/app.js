@@ -991,7 +991,7 @@ function setIconStyle(k){if(!WX_STYLES[k])return;state.wxStyle=k;try{localStorag
 function bindIconPicker(){
  const btn=$('iconStyleBtn'),menu=$('iconStyleMenu');if(!btn||!menu)return;renderIconPicker();
  btn.onclick=e=>{e.stopPropagation();menu.hidden=!menu.hidden;btn.setAttribute('aria-expanded',String(!menu.hidden));renderIconPicker();};
- menu.addEventListener('click',e=>{const o=e.target.closest?.('[data-icon-style]');if(o){setIconStyle(o.dataset.iconStyle);}e.stopPropagation();});
+ menu.addEventListener('click',e=>{const o=e.target.closest?.('[data-icon-style]');e.stopPropagation();if(o){menu.hidden=true;btn.setAttribute('aria-expanded','false');setIconStyle(o.dataset.iconStyle);}});
  document.addEventListener('click',()=>{if(!menu.hidden){menu.hidden=true;btn.setAttribute('aria-expanded','false');}});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;btn.setAttribute('aria-expanded','false');btn.focus?.();}});
 }
