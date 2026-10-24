@@ -768,6 +768,9 @@ function renderDaily(){
 }
 // Hourly view of one day: opens below the 7-day panel with the size of the second tile,
 // 24 columns (hour, icon, temperature) and bar rows for the chance and amount of rain.
+// Rain amount colour scale (mm): white below 1, then orange, yellow, greens, blues, purple, magenta, pink.
+const RAIN_SCALE=[[1,'#ffffff'],[5,'#ffbe58'],[10,'#ffae02'],[15,'#fefe00'],[25,'#b2ff01'],[50,'#4cff01'],[100,'#00e599'],[150,'#00a6ff'],[200,'#3f3fff'],[300,'#b200fe'],[400,'#fe01fe'],[Infinity,'#ff4c9c']];
+function rainColor(v){return (RAIN_SCALE.find(([max])=>v<max)||RAIN_SCALE.at(-1))[1];}
 function toggleDay(day){if(state.dailyDay===day){closeHourly();return;}state.dailyDay=day;document.querySelectorAll?.('#dailyPopup .daily-day').forEach(x=>{const on=x.dataset.dailyDay===day;x.classList.toggle('selected',on);x.setAttribute('aria-pressed',String(on));});renderHourly();}
 function placeHourly(){
  const pop=$('hourlyPopup'),daily=$('dailyPopup');if(!pop||pop.hidden||!daily||daily.hidden)return;
@@ -790,10 +793,10 @@ function renderHourly(){
  let svg=`<svg class="hh-bars" viewBox="0 0 ${W} 46" preserveAspectRatio="none" aria-hidden="true">`;
  probs.forEach((v,j)=>{if(!valid(v))return;const bh=Math.max(1,v/100*20);svg+=`<rect x="${j*24+4}" y="${22-bh}" width="16" height="${bh}" rx="2" fill="${pc}" fill-opacity="${(.35+v/100*.65).toFixed(2)}"/>`;});
  svg+=`<line x1="0" x2="${W}" y1="23" y2="23" stroke="${dark?'#22404b':'#dfe8ea'}"/>`;
- rains.forEach((v,j)=>{if(!valid(v)||v<=0)return;const bh=Math.max(2,Math.min(1,v/rmax)*20);svg+=`<rect x="${j*24+4}" y="24" width="16" height="${bh}" rx="2" fill="${rc}"/>`;});
+ rains.forEach((v,j)=>{if(!valid(v)||v<=0)return;const bh=4+16*Math.log1p(v)/Math.log1p(Math.max(rmax,10)),c=rainColor(v);svg+=`<rect class="hh-rain-bar" data-rain="${v}" x="${j*24+4.5}" y="24.5" width="15" height="${bh-.5}" rx="2" fill="${c}" stroke="${dark?'#5d7883':'#9fb0b6'}" stroke-width=".8" vector-effect="non-scaling-stroke"/>`;});
  svg+='</svg>';
  const vals=`<div class="hh-vals hh-prob">${probs.map(v=>`<span>${valid(v)&&v>=10?Math.round(v):''}</span>`).join('')}</div>`+svg+`<div class="hh-vals hh-rain">${rains.map(v=>`<span>${valid(v)&&v>=.1?format(v,1):''}</span>`).join('')}</div>`;
- pop.innerHTML=head+`<div class="hh-wrap" style="--n:${n}"><div class="hh-legend"><span><i style="background:${pc}"></i>Chance of rain %</span><span><i style="background:${rc}"></i>Rain mm</span></div><div class="hh-grid">${cols}</div>${vals}</div>`;
+ pop.innerHTML=head+`<div class="hh-wrap" style="--n:${n}"><div class="hh-legend"><span><i style="background:${pc}"></i>Chance of rain %</span><span class="hh-rain-key" title="Rain amount colours: white &lt;1 mm, orange 1–10, yellow 10–15, green 15–50, blue 50–200, purple/pink above">Rain mm<i class="rain-ramp"></i></span></div><div class="hh-grid">${cols}</div>${vals}</div>`;
  pop.hidden=false;placeHourly();
 }
 async function refreshDMIIfDue(){
