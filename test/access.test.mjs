@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHandler, assetCacheControl } from '../worker/index.mjs';
 
 const handler = createHandler();
-const request = (path = '/', host = 'weather.seasync.co', assertion) => new Request('https://' + host + path, { headers: assertion ? { 'Cf-Access-Jwt-Assertion': assertion } : {} });
+const request = (path = '/', host = 'marine.weather.seasync.co', assertion) => new Request('https://' + host + path, { headers: assertion ? { 'Cf-Access-Jwt-Assertion': assertion } : {} });
 function assetsEnv(extra = {}) {
   let calls = 0;
   return { env: { ...extra, ASSETS: { async fetch() { calls++; return new Response('weather app'); } } }, calls: () => calls };
@@ -38,11 +38,11 @@ test('missing assets are never cached by the browser', async () => {
 });
 test('both public addresses serve the app', async () => {
   const { env } = assetsEnv();
-  for (const host of ['weather.seasync.co', 'pogoda.seasync.co']) for (const path of ['/', '/app.js?v=1', '/api/stormglass/status']) assert.equal((await handler(request(path, host), env)).status, 200);
+  for (const host of ['marine.weather.seasync.co', 'pogoda.seasync.co']) for (const path of ['/', '/app.js?v=1', '/api/stormglass/status']) assert.equal((await handler(request(path, host), env)).status, 200);
 });
 test('legacy Access settings and assertions do not require a login', async () => {
   const { env } = assetsEnv({ ACCESS_TEAM_DOMAIN: 'old.cloudflareaccess.com', ACCESS_AUD: 'old-audience' });
-  assert.equal((await handler(request('/', 'weather.seasync.co', 'expired.or.invalid'), env)).status, 200);
+  assert.equal((await handler(request('/', 'marine.weather.seasync.co', 'expired.or.invalid'), env)).status, 200);
 });
 test('alternate hostnames cannot serve assets or API', async () => {
   const { env, calls } = assetsEnv();
@@ -71,9 +71,11 @@ test('Stormglass without a runtime secret reports 503 without serving assets', a
 test('www. and http:// addresses redirect to the canonical HTTPS address', async () => {
   const { env, calls } = assetsEnv();
   const cases = [
-    ['https://www.weather.seasync.co/?x=1', 'https://weather.seasync.co/?x=1'],
+    ['https://www.weather.seasync.co/?x=1', 'https://marine.weather.seasync.co/?x=1'],
+    ['https://weather.seasync.co/api/forecast?model=icon_eu', 'https://marine.weather.seasync.co/api/forecast?model=icon_eu'],
+    ['http://weather.seasync.co/', 'https://marine.weather.seasync.co/'],
     ['http://www.pogoda.seasync.co/app.js', 'https://pogoda.seasync.co/app.js'],
-    ['http://weather.seasync.co/', 'https://weather.seasync.co/'],
+    ['http://marine.weather.seasync.co/', 'https://marine.weather.seasync.co/'],
   ];
   for (const [from, to] of cases) {
     const response = await handler(new Request(from), env);

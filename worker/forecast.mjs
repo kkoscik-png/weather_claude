@@ -298,7 +298,7 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     const tasks=prewarmTasks(),keys=tasks.map(t=>'c/'+cycleKey(t.model,t.group,t.offset));
     const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
     let ran=0,failed=0;const queue=[...due];
-    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
+    await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset)})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
     return {total:tasks.length,due:dueKeys.size,ran,failed};
   }
   const api=async function handleForecast(request,env,ctx={}) {
