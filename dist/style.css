@@ -756,3 +756,15 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 :root[data-theme="dark"] .order-btn{color:#6f8790}
 :root[data-theme="dark"] .order-btn:hover{color:#7ee0c5;background:#16352f}
 @media(max-width:760px){.model-order{right:1px}.order-btn{width:12px;height:12px}.order-btn svg{width:8px;height:8px}}
+
+/* Model cards: update status on the right of the title — dot + last update time. */
+.picker-title .picker-status{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0;text-transform:none;color:#5c737b;font-variant-numeric:tabular-nums;white-space:nowrap}
+.picker-status b{font-weight:650;color:#14323c}
+.picker-status .status-dot{width:7px;height:7px;border-radius:50%;background:#16a58b;box-shadow:0 0 0 3px #16a58b24;flex:none}
+.picker-status.old .status-dot,.picker-status.error .status-dot{background:#ff4d4f;box-shadow:0 0 0 3px #ff4d4f33,0 0 6px #ff4d4f}
+.picker-status.stale .status-dot{background:#e0902f;box-shadow:0 0 0 3px #e0902f33}
+.picker-status.loading .status-dot,.picker-status.unknown .status-dot{background:#a7b6bb;box-shadow:none}
+.picker-status.loading .status-dot{animation:stale-dot 1.2s ease-in-out infinite}
+:root[data-theme="dark"] .picker-status{color:#8aa3ab}
+:root[data-theme="dark"] .picker-status b{color:#e3eef1}
+@media(max-width:760px){.picker-title .picker-status{font-size:9px;gap:4px}.picker-status .status-dot{width:6px;height:6px}}

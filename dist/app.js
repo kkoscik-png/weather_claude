@@ -771,7 +771,19 @@ function renderMapStamp(){
  const age=Date.now()-Date.parse(timing?.updatedAt),dot=updated.closest?.('.map-stamp')?.querySelector?.('.status-dot');if(dot?.classList){const old=Number.isFinite(age)&&age>6*3600000;dot.classList.toggle('old',old);dot.title=old?'Forecast older than 6 hours':'';}next.textContent=stampTime(Date.parse(timing?.nextUpdate));
  const stamp=updated.closest?.('.map-stamp');if(stamp)stamp.title=(timing?.basis==='reference'?'Model cycle':timing?.basis==='fetch'?'Data download':'Provider publication')+(timing?.estimated?' · next update is estimated':'')+' · Swedish time';
 }
-function renderUpdateClocks(){renderMapStamp();
+// Wind/wave model cards: green dot + time of the last update when the forecast is current;
+// red when it is older than 6 h or the source failed, amber when an old copy is shown, grey while loading.
+function renderPickerStatus(){
+ for(const [id,model,meta,errKey] of [['windStatus',state.model,state.metas[state.model],state.model],['waveStatus',state.waveSource,waveMeta(),state.waveSource==='ecmwf_wam'?'wave':'wave-'+state.waveSource]]){
+  const node=$(id);if(!node)continue;const timing=sourceTiming(model,meta),updated=Date.parse(timing?.updatedAt),age=Date.now()-updated;
+  const loading=!meta&&state.providerLoading?.[model],error=!meta&&state.errors?.[errKey];
+  const status=loading?'loading':error?'error':!Number.isFinite(updated)?'unknown':age>6*3600000?'old':meta?.stale?'stale':'ok';
+  node.className='picker-status '+status;
+  const label=node.querySelector?.('b');if(label)label.textContent=loading?'loading…':error?'error':stampTime(updated);
+  node.title=status==='ok'?'Forecast up to date · last update '+stampTime(updated)+' (Swedish time)':status==='old'?'Forecast older than 6 hours':status==='stale'?'Last good forecast — the provider is not answering':status==='error'?String(state.errors[errKey]):status==='loading'?'Loading the forecast':'No update time from the provider';
+ }
+}
+function renderUpdateClocks(){renderMapStamp();renderPickerStatus();
  for(const [id,model,meta] of [['windUpdates',state.model,state.metas[state.model]],['waveUpdates',state.waveSource,waveMeta()]]){
   const node=$(id);if(!node)continue;let timing=meta?.delivery==='open-meteo'?meta.timing:state.timings[model]||meta?.timing;
   if(model==='stormglass'&&meta)timing={updatedAt:new Date(meta.saved).toISOString(),nextUpdate:new Date(meta.saved+21600000).toISOString(),basis:'fetch',estimated:true};
