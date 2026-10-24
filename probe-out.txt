@@ -1,0 +1,64 @@
+Sat Oct 24 05:50:39 UTC 2026
+==== snow1g 21.576607 57.398842
+ref 2026-10-24T05:30:00Z created 2026-10-24T05:46:20Z
+n 80 first 2026-10-24T06:00:00Z 2026-10-24T05:00:00Z second 2026-10-24T07:00:00Z
+['air_pressure_at_mean_sea_level', 'air_temperature', 'cloud_area_fraction', 'cloud_base_altitude', 'cloud_top_altitude', 'high_type_cloud_area_fraction', 'low_type_cloud_area_fraction', 'medium_type_cloud_area_fraction', 'precipitation_amount_max', 'precipitation_amount_mean', 'precipitation_amount_mean_deterministic', 'precipitation_amount_median', 'precipitation_amount_min', 'precipitation_frozen_part', 'predominant_precipitation_type_at_surface', 'probability_of_frozen_precipitation', 'probability_of_precipitation', 'relative_humidity', 'symbol_code', 'thunderstorm_probability', 'visibility_in_air', 'wind_from_direction', 'wind_speed', 'wind_speed_of_gust']
+==== mesan2g 21.576607 57.398842
+dy>
+</html>
+ HTTP404
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json;t=open('m.json').read();t=t[:t.rfind(' HTTP')];d=json.loads(t);print(sorted(d.keys()));ts=d.get('timeSeries',[]);print('n',len(ts),'first',ts and ts[0]['time'],'last',ts and ts[-1]['time']);print(ts and json.dumps(ts[-1])[:900])
+                                                                 ~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+==== snow1g 17.979752 58.939033
+ref 2026-10-24T05:30:00Z created 2026-10-24T05:46:20Z
+n 80 first 2026-10-24T06:00:00Z 2026-10-24T05:00:00Z second 2026-10-24T07:00:00Z
+['air_pressure_at_mean_sea_level', 'air_temperature', 'cloud_area_fraction', 'cloud_base_altitude', 'cloud_top_altitude', 'high_type_cloud_area_fraction', 'low_type_cloud_area_fraction', 'medium_type_cloud_area_fraction', 'precipitation_amount_max', 'precipitation_amount_mean', 'precipitation_amount_mean_deterministic', 'precipitation_amount_median', 'precipitation_amount_min', 'precipitation_frozen_part', 'predominant_precipitation_type_at_surface', 'probability_of_frozen_precipitation', 'probability_of_precipitation', 'relative_humidity', 'symbol_code', 'thunderstorm_probability', 'visibility_in_air', 'wind_from_direction', 'wind_speed', 'wind_speed_of_gust']
+==== mesan2g 17.979752 58.939033
+dy>
+</html>
+ HTTP404
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json;t=open('m.json').read();t=t[:t.rfind(' HTTP')];d=json.loads(t);print(sorted(d.keys()));ts=d.get('timeSeries',[]);print('n',len(ts),'first',ts and ts[0]['time'],'last',ts and ts[-1]['time']);print(ts and json.dumps(ts[-1])[:900])
+                                                                 ~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+==== snow1g 18.542647 54.533221
+ref 2026-10-24T05:30:00Z created 2026-10-24T05:46:20Z
+n 80 first 2026-10-24T06:00:00Z 2026-10-24T05:00:00Z second 2026-10-24T07:00:00Z
+['air_pressure_at_mean_sea_level', 'air_temperature', 'cloud_area_fraction', 'cloud_base_altitude', 'cloud_top_altitude', 'high_type_cloud_area_fraction', 'low_type_cloud_area_fraction', 'medium_type_cloud_area_fraction', 'precipitation_amount_max', 'precipitation_amount_mean', 'precipitation_amount_mean_deterministic', 'precipitation_amount_median', 'precipitation_amount_min', 'precipitation_frozen_part', 'predominant_precipitation_type_at_surface', 'probability_of_frozen_precipitation', 'probability_of_precipitation', 'relative_humidity', 'symbol_code', 'thunderstorm_probability', 'visibility_in_air', 'wind_from_direction', 'wind_speed', 'wind_speed_of_gust']
+==== mesan2g 18.542647 54.533221
+dy>
+</html>
+ HTTP404
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import json;t=open('m.json').read();t=t[:t.rfind(' HTTP')];d=json.loads(t);print(sorted(d.keys()));ts=d.get('timeSeries',[]);print('n',len(ts),'first',ts and ts[0]['time'],'last',ts and ts[-1]['time']);print(ts and json.dumps(ts[-1])[:900])
+                                                                 ~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
