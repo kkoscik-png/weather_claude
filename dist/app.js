@@ -858,8 +858,21 @@ function placeHourly(){
  const d=daily.getBoundingClientRect(),tiles=[...document.querySelectorAll('#ports .port')].map(t=>t.getBoundingClientRect()),sy=window.scrollY||0,sx=window.scrollX||0,wide=window.innerWidth>760;
  const gap=tiles.length>1?Math.max(8,tiles[1].top-tiles[0].bottom):10;
  // Always below the 7-day panel, whichever tile it was opened from.
- const h=wide?(tiles[1]||tiles[0]).height:Math.max(d.height,170);
- Object.assign(pop.style,{left:(d.left+sx)+'px',top:(d.bottom+gap+sy)+'px',width:d.width+'px',height:h+'px'});
+ // Wide screens: the bottom edge lines up with the "Find your port" tile.
+ const find=wide&&document.querySelector('.find-card')?.getBoundingClientRect(),top=d.bottom+gap;
+ const h=wide?Math.max((tiles[1]||tiles[0]).height,find?find.bottom-top:0):Math.max(d.height,170);
+ Object.assign(pop.style,{left:(d.left+sx)+'px',top:(top+sy)+'px',width:d.width+'px',height:h+'px'});
+ scaleHourly(pop,h);
+}
+// Scale the hourly content (hours, icons, temperatures, values) proportionally to the panel:
+// as large as the height allows, but never wider than one hour column; the bars take the rest.
+function scaleHourly(pop,h){
+ const wrap=pop.querySelector?.('.hh-wrap'),grid=pop.querySelector?.('.hh-grid');if(!wrap||!grid)return;
+ pop.style.setProperty('--hs','1');pop.style.height='auto';
+ const natural=pop.getBoundingClientRect().height,head=wrap.getBoundingClientRect().top-pop.getBoundingClientRect().top,n=Number(getComputedStyle(wrap).getPropertyValue('--n'))||24,col=grid.getBoundingClientRect().width/n;
+ pop.style.height=h+'px';
+ const k=Math.max(1,Math.min((h-head-4)/Math.max(1,natural-head),(col-3)/18));
+ pop.style.setProperty('--hs',k.toFixed(3));
 }
 function renderHourly(){
  const pop=$('hourlyPopup'),i=state.dailyPort,day=state.dailyDay;if(!pop||i==null||!day)return;

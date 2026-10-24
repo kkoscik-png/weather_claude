@@ -918,3 +918,13 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 :root[data-theme="dark"] .port-menu{background:#11232c;border-color:#2a4652;box-shadow:0 16px 34px -14px rgba(0,0,0,.7)}
 :root[data-theme="dark"] .port-menu .find-row.current{background:#16352f}
 :root[data-theme="dark"] .port-menu-head{color:#d9b54a}
+
+/* 24-hour panel: sizes follow --hs (set from the panel height, see scaleHourly) */
+.hourly-popup .hh-hour{font-size:calc(8.5px*var(--hs,1))}
+.hourly-popup .hh-icon svg{width:calc(17px*var(--hs,1));height:calc(17px*var(--hs,1))}
+.hourly-popup .hh-temp{font-size:calc(10px*var(--hs,1))}
+.hourly-popup .hh-vals{font-size:calc(7.5px*var(--hs,1));line-height:calc(9px*var(--hs,1));height:calc(9px*var(--hs,1))}
+.hourly-popup .hh-bars{min-height:calc(26px*var(--hs,1))}
+.hourly-popup .hh-legend{font-size:calc(8.5px*min(var(--hs,1),1.15))}
+.hourly-popup .hh{gap:calc(1px*(var(--hs,1) - 1)*4)}
+@media(max-width:760px){.hourly-popup .hh-icon svg{width:13px;height:13px}.hourly-popup .hh-temp{font-size:8.5px}.hourly-popup .hh-hour{font-size:7px}.hourly-popup .hh-vals{font-size:6px;line-height:9px;height:9px}.hourly-popup .hh-bars{min-height:26px}.hourly-popup .hh{gap:0}}
