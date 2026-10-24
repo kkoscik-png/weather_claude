@@ -10,7 +10,7 @@ function app() {
     localStorage: { getItem: k => stored.get(k) ?? null, setItem: (k, v) => stored.set(k, v), removeItem: k => stored.delete(k) },
     document: { getElementById: el, querySelector: el, querySelectorAll: () => [] } };
   vm.createContext(c);
-  vm.runInContext(fs.readFileSync('dist/app.js', 'utf8').replace(/start\(\);\s*$/, '') + ';globalThis.t={state,PORTS,MODELS,windFlagsSVG,toggleFlagPort,flagPorts,loadFlagPorts,renderPorts,loadSlots,saveSlots,portPicker,ensurePort,isFavourite,searchPorts,setDb:d=>{PORT_DB=d;},dailyFor,BUILTIN_PORTS};', c);
+  vm.runInContext(fs.readFileSync('dist/app.js', 'utf8').replace(/start\(\);\s*$/, '') + ';globalThis.t={state,PORTS,MODELS,windFlagsSVG,toggleFlagPort,flagPorts,loadFlagPorts,renderPorts,loadSlots,saveSlots,portPicker,ensurePort,isFavourite,searchPorts,setDb:d=>{PORT_DB=d;},dailyFor,BUILTIN_PORTS,favouritePorts};', c);
   const t = c.t, times = [t.state.base];
   t.state.times = times; t.state.hour = 0; t.state.slots = [0, 1, 2];
   t.state.wind = Object.fromEntries(Object.keys(t.MODELS).map(m => [m, t.PORTS.map(() => ({ hourly: { time: times, wind_speed_10m: [7], wind_gusts_10m: [11], wind_direction_10m: [240] } }))]));
@@ -76,9 +76,8 @@ test('favourites: four berths by default, tiles list only favourites, added port
   t.loadSlots();
   assert.deepEqual([...t.state.favs], ['ventspils-berth', 'norvik-berth', 'gdynia-berth', 'karlskrona-berth']);
   assert.deepEqual([...t.state.slots], [1, 2]);
-  let list = t.portPicker(0, 1);
-  assert.equal((list.match(/<option /g) || []).length, 4);
-  assert(!/Ventspils$|bw-ventspils/.test(list));
+  assert.deepEqual([...t.favouritePorts()].map(i => t.PORTS[i].id), ['ventspils-berth', 'norvik-berth', 'gdynia-berth', 'karlskrona-berth']);
+  assert.match(t.portPicker(0, 1), /data-port-menu="0"/);
   // A port from the database is appended to PORTS, starred, and survives a reload.
   const i = t.ensurePort({ id: 'db-LTKLJ', name: 'Klaipėda', country: 'LT', lat: 55.71, lon: 21.11, code: 'LTKLJ' });
   assert.equal(i, t.BUILTIN_PORTS);
@@ -92,7 +91,7 @@ test('favourites: four berths by default, tiles list only favourites, added port
   assert(j >= again.t.BUILTIN_PORTS);
   assert.deepEqual([...again.t.state.slots], [1, j]);
   assert.equal(again.t.state.savedPort, j);
-  assert(again.t.portPicker(1, j).includes('Klaipėda'));
+  assert(again.t.favouritePorts().includes(j));
 });
 
 test('slots saved by older versions (indices) still load', () => {
@@ -114,4 +113,12 @@ test('port search ignores accents and puts berths and main ports first', () => {
   assert(t.searchPorts('klaip').some(x => x.name === 'Klaipėda'));
   assert.equal(t.searchPorts('x').length, 0);
   assert(t.searchPorts('a').length === 0 && t.searchPorts('ri').length <= 8);
+});
+
+test('picking a found port shows it without starring it; only the star changes favourites', () => {
+  const src = fs.readFileSync('dist/app.js', 'utf8');
+  const pick = src.match(/function pickFoundPort\(x\)\{[^\n]*/)[0];
+  assert(!/state\.favs\s*=/.test(pick), 'choosing a result must not add a favourite');
+  assert.match(src, /data-unstar=/);
+  assert.match(src, /state\.favs=\(state\.favs\|\|\[\]\)\.filter\(f=>f!==id\)/);
 });
