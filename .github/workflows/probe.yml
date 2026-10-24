@@ -8,6 +8,6 @@ jobs:
       - uses: actions/checkout@v4
       - shell: bash {0}
         run: |
-          python3 probe/geocode.py > probe-log.txt 2>&1
+          timeout 1500 python3 probe/geocode.py > probe-log.txt 2>&1
           git config user.name probe; git config user.email probe@example.com
           git add probe-out.json probe-log.txt; git commit -m "probe output"; git push
