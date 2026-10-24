@@ -761,6 +761,9 @@ function sourceTiming(model,meta){
 }
 const stampDayFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Stockholm',weekday:'short'});
 // Short time for the map label; adds the weekday when it is not today (Swedish time).
+// A forecast counts as outdated when it is older than 6 h, or — for sources that publish less
+// often (e.g. Copernicus twice a day) — when its own cycle is more than 2 h overdue.
+function forecastOutdated(timing){const updated=Date.parse(timing?.updatedAt);if(!Number.isFinite(updated))return false;const cycle=Date.parse(timing?.nextUpdate)-updated;return Date.now()-updated>Math.max(6*3600000,(Number.isFinite(cycle)&&cycle>0?cycle:0)+2*3600000);}
 function stampTime(ms){if(!Number.isFinite(ms))return '—';const d=new Date(ms);return (DAY_KEY.format(d)!==DAY_KEY.format(new Date())?stampDayFmt.format(d)+' ':'')+shortFmt.format(d);}
 // Map label: selected source, when its data was last updated and when the next update is expected.
 function renderMapStamp(){
@@ -768,7 +771,7 @@ function renderMapStamp(){
  const updated=$('mapUpdated'),next=$('mapNext');if(!updated||!next)return;
  updated.textContent=stampTime(Date.parse(timing?.updatedAt));
  // A forecast older than 6 h lights the source dot red.
- const age=Date.now()-Date.parse(timing?.updatedAt),dot=updated.closest?.('.map-stamp')?.querySelector?.('.status-dot');if(dot?.classList){const old=Number.isFinite(age)&&age>6*3600000;dot.classList.toggle('old',old);dot.title=old?'Forecast older than 6 hours':'';}next.textContent=stampTime(Date.parse(timing?.nextUpdate));
+ const age=Date.now()-Date.parse(timing?.updatedAt),dot=updated.closest?.('.map-stamp')?.querySelector?.('.status-dot');if(dot?.classList){const old=forecastOutdated(timing);dot.classList.toggle('old',old);dot.title=old?'Forecast overdue — no newer cycle from the provider yet':'';}next.textContent=stampTime(Date.parse(timing?.nextUpdate));
  const stamp=updated.closest?.('.map-stamp');if(stamp)stamp.title=(timing?.basis==='reference'?'Model cycle':timing?.basis==='fetch'?'Data download':'Provider publication')+(timing?.estimated?' · next update is estimated':'')+' · Swedish time';
 }
 // Wind/wave model cards: green dot + time of the last update when the forecast is current;
@@ -777,10 +780,10 @@ function renderPickerStatus(){
  for(const [id,model,meta,errKey] of [['windStatus',state.model,state.metas[state.model],state.model],['waveStatus',state.waveSource,waveMeta(),state.waveSource==='ecmwf_wam'?'wave':'wave-'+state.waveSource]]){
   const node=$(id);if(!node)continue;const timing=sourceTiming(model,meta),updated=Date.parse(timing?.updatedAt),age=Date.now()-updated;
   const loading=!meta&&state.providerLoading?.[model],error=!meta&&state.errors?.[errKey];
-  const status=loading?'loading':error?'error':!Number.isFinite(updated)?'unknown':age>6*3600000?'old':meta?.stale?'stale':'ok';
+  const status=loading?'loading':error?'error':!Number.isFinite(updated)?'unknown':forecastOutdated(timing)?'old':meta?.stale?'stale':'ok';
   node.className='picker-status '+status;
   const label=node.querySelector?.('b');if(label)label.textContent=loading?'loading…':error?'error':stampTime(updated);
-  node.title=status==='ok'?'Forecast up to date · last update '+stampTime(updated)+' (Swedish time)':status==='old'?'Forecast older than 6 hours':status==='stale'?'Last good forecast — the provider is not answering':status==='error'?String(state.errors[errKey]):status==='loading'?'Loading the forecast':'No update time from the provider';
+  node.title=status==='ok'?'Forecast up to date · last update '+stampTime(updated)+' (Swedish time)':status==='old'?'Forecast overdue — no newer cycle from the provider yet':status==='stale'?'Last good forecast — the provider is not answering':status==='error'?String(state.errors[errKey]):status==='loading'?'Loading the forecast':'No update time from the provider';
  }
 }
 function renderUpdateClocks(){renderMapStamp();renderPickerStatus();
