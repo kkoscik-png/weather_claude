@@ -59,7 +59,11 @@ export async function loadCopernicus(points, { getJSON, getBuffer, now }) {
 // Whole-Baltic wave map: the full-domain (time-chunked) store gives every sea cell for two
 // hours per ~1 MB chunk, so a map of hundreds of points costs one chunk per two hours.
 const gridCells = new Map();
-export async function loadCopernicusGrid(points, times, { getJSON, getBuffer, now }) {
+// One map part at a time per isolate: each decodes ~12 MB, and parallel parts would compete with
+// the port and route requests served by the same isolate.
+let gridQueue = Promise.resolve();
+export function loadCopernicusGrid(...args) { const job = gridQueue.then(() => loadCopernicusGridNow(...args)); gridQueue = job.catch(() => {}); return job; }
+async function loadCopernicusGridNow(points, times, { getJSON, getBuffer, now }) {
   const dataset = await copernicusDataset(getJSON, now), asset = dataset.assets.timeChunked;
   if (!asset) throw Error('No Copernicus map store');
   const root = asset.href + '/', meta = (await getJSON(root + '.zmetadata', 1800)).metadata, t0ms = asset.viewDims.time.coords.min;

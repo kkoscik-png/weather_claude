@@ -612,25 +612,33 @@ function updateRouteWaves(){const button=$('routeWaves'),readout=$('routeWaveRea
 // served by the Worker in seven 12-hour parts per model (Copernicus Baltic, ECMWF WAM).
 const BALTIC_WAVE_MODELS=['copernicus_baltic','ecmwf_wam'],BALTIC_PARTS=7;
 function balticWaveSupported(){return BALTIC_WAVE_MODELS.includes(state.waveSource);}
-async function loadBalticWaves(force=false){
- const source=state.waveSource;state.balticData=state.balticData||{};if(!balticWaveSupported()){updateRouteWaves();return;}
- if(!force&&state.balticData[source]&&Date.now()<state.balticData[source].until)return updateRouteWaves();
+// Parts load two at a time, starting with the hours being shown; each one appears as soon as it arrives.
+let balticRequest=null;
+function loadBalticWaves(force=false){
+ const source=state.waveSource;state.balticData=state.balticData||{};if(!balticWaveSupported()){updateRouteWaves();return Promise.resolve();}
+ const have=state.balticData[source];if(!force&&have&&have.complete&&Date.now()<have.until){updateRouteWaves();return Promise.resolve();}
+ if(balticRequest&&balticRequest.source===source&&!force)return balticRequest.job;
+ const anchor=Math.floor((Date.now()-3600000)/43200000)*43200000,current=Math.max(0,Math.min(BALTIC_PARTS-1,Math.floor((selectedEpoch()*1000-anchor)/43200000)||0));
+ const order=[...Array.from({length:BALTIC_PARTS-current},(_,k)=>current+k),...Array.from({length:current},(_,k)=>k)];
+ const data=state.balticData[source]=force||!have?{lat:null,lon:null,index:new Map(),until:Infinity,got:0}:have;data.complete=false;data.got=0;
  state.balticLoading=true;updateRouteWaves();
- const parts=await Promise.all(Array.from({length:BALTIC_PARTS},(_,k)=>requestJSON('/api/forecast?model='+source+'&group=baltic&offset='+k,'baltic-map-v1-'+source+'-'+k,force).then(r=>r.data).catch(e=>{console.warn('baltic',source,k,e.message);return null;})));
- const ok=parts.filter(p=>Array.isArray(p?.times)&&Array.isArray(p?.hs));state.balticLoading=false;
- if(ok.length){
-  const index=new Map();ok.forEach(p=>p.times.forEach((t,j)=>{if(!index.has(t))index.set(t,[p,j]);}));
-  const lat=ok[0].lat,lon=ok[0].lon,until=Math.min(...ok.map(p=>Date.parse(p.refreshAfter||p.timing?.nextUpdate)||Date.now()+1800000));
-  state.balticData[source]={lat,lon,index,timing:ok[0].timing,stale:ok.some(p=>p.stale),until:Math.max(until,Date.now()+600000)};
- }else state.balticError=true;
- if(state.waveSource===source)updateRouteWaves();
+ const take=p=>{if(!Array.isArray(p?.times)||!Array.isArray(p?.hs))return false;data.lat=p.lat;data.lon=p.lon;data.timing=p.timing;data.stale=data.stale||p.stale;p.times.forEach((t,j)=>data.index.set(t,[p,j]));const until=Date.parse(p.refreshAfter||p.timing?.nextUpdate);data.until=Math.min(data.until,Number.isFinite(until)?Math.max(until,Date.now()+600000):Date.now()+1800000);data.got++;if(state.waveSource===source)updateRouteWaves();return true;};
+ const fetchPart=(k,retry)=>requestJSON('/api/forecast?model='+source+'&group=baltic&offset='+k,'baltic-map-v1-'+source+'-'+k,force||retry).then(r=>take(r.data)).catch(e=>{console.warn('baltic',source,k,e.message);return false;});
+ const job=(async()=>{
+  const failed=[],queue=[...order];
+  await Promise.all([0,1].map(async()=>{for(let k=queue.shift();k!==undefined;k=queue.shift())if(!await fetchPart(k,false))failed.push(k);}));
+  if(failed.length){await new Promise(r=>setTimeout(r,20000));for(const k of failed)await fetchPart(k,true);}
+  data.complete=data.got>=BALTIC_PARTS;state.balticLoading=false;if(!data.got)state.balticError=true;
+  if(state.waveSource===source)updateRouteWaves();
+ })().finally(()=>{if(balticRequest?.job===job)balticRequest=null;});
+ balticRequest={source,job};return job;
 }
 function balticWaveValues(){
- const d=state.balticData?.[state.waveSource];if(!d||!balticWaveSupported())return [];const hit=d.index.get(selectedEpoch());
+ const d=state.balticData?.[state.waveSource];if(!d?.lat||!balticWaveSupported())return [];const hit=d.index.get(selectedEpoch());
  return d.lat.map((lat,i)=>({id:'g'+i,kind:'grid',station:i,lat,lon:d.lon[i],value:hit?hit[0].hs[i]?.[hit[1]]??null:null,direction:hit?hit[0].dir[i]?.[hit[1]]??null:null})).filter(p=>valid(p.value));
 }
 function updateBalticButton(){const b=$('balticWaves');if(!b)return;b.classList.toggle('active',!!state.balticWaves);b.setAttribute('aria-pressed',String(!!state.balticWaves));b.title=!balticWaveSupported()?'Baltic wave map: available for Copernicus Baltic and ECMWF WAM':state.balticWaves?(state.balticLoading?'Loading the Baltic wave map…':'Hide the Baltic wave map'):'Wave heights over the whole Baltic';b.classList.toggle('loading-dim',!!state.balticLoading);}
-function bindBalticWaves(){const b=$('balticWaves');if(!b)return;state.balticWaves=true;try{state.balticWaves=localStorage.getItem('baltic-wave-map')!=='off';}catch{}b.onclick=()=>{state.balticWaves=!state.balticWaves;try{localStorage.setItem('baltic-wave-map',state.balticWaves?'on':'off');}catch{}if(state.balticWaves){if(!balticWaveSupported())showBalticNotice();loadBalticWaves();}else updateRouteWaves();};updateBalticButton();if(state.balticWaves)loadBalticWaves();}
+function bindBalticWaves(){const b=$('balticWaves');if(!b)return;state.balticWaves=true;try{state.balticWaves=localStorage.getItem('baltic-wave-map')!=='off';}catch{}b.onclick=()=>{state.balticWaves=!state.balticWaves;try{localStorage.setItem('baltic-wave-map',state.balticWaves?'on':'off');}catch{}if(state.balticWaves){if(!balticWaveSupported())showBalticNotice();loadBalticWaves();}else updateRouteWaves();};updateBalticButton();}
 function showBalticNotice(){const status=$('fieldStatus');const msg='Baltic wave map: choose Copernicus Baltic or ECMWF WAM as the wave model.';if(status)status.textContent=msg;const caption=document.querySelector('.map-caption');if(caption){caption.hidden=false;clearTimeout(showBalticNotice.t);showBalticNotice.t=setTimeout(()=>{caption.hidden=true;},5000);}}
 function initRouteWaves(){if(!map)return;routeWaveLayer=L.layerGroup().addTo(map);updateRouteWaves();}
 function coastWaveValues(){const records=state.coastWaves[state.waveSource];if(!records)return [];return COAST_POINTS.map((p,i)=>({...p,kind:'coast',series:records[i],value:at(records[i],'wave_height'),direction:at(records[i],'wave_direction'),period:at(records[i],'wave_period')}));}
