@@ -942,7 +942,7 @@ function renderPickerStatus(){
   const node=$(id);if(!node)continue;const timing=sourceTiming(model,meta),updated=Date.parse(timing?.updatedAt),age=Date.now()-updated;
   const loading=!meta&&state.providerLoading?.[model],error=!meta&&state.errors?.[errKey];
   const status=loading?'loading':error?'error':!Number.isFinite(updated)?'unknown':forecastOutdated(timing)?'old':meta?.stale?'stale':'ok';
-  node.className='picker-status '+status;
+  node.className='picker-status ps-'+status;
   const label=node.querySelector?.('b');if(label)label.textContent=loading?'loading…':error?'error':stampTime(updated);
   node.title=status==='ok'?'Forecast up to date · last update '+stampTime(updated)+' (Swedish time)':status==='old'?'Forecast overdue — no newer cycle from the provider yet':status==='stale'?'Last good forecast — the provider is not answering':status==='error'?String(state.errors[errKey]):status==='loading'?'Loading the forecast':'No update time from the provider';
  }
