@@ -935,3 +935,6 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .ports-column>.ports .port-wx{width:var(--wxw);flex:none;margin-left:auto}
 .ports-column>.ports .port-flag{right:calc(var(--pr) + var(--wxw) + 4px)}
 @media(max-width:760px){.ports-column>.ports .port{--wxw:40px;--fw:26px;--pr:11px}.ports-column>.ports .port-top{padding-right:0;gap:calc(var(--fw) + 10px)}.ports-column>.ports .port-flag{right:calc(var(--pr) + var(--wxw) + 2px)}}
+/* Flag button vertically centred on the weather block (icon + temperatures) */
+.ports-column>.ports .port-flag{margin-top:9px}
+@media(max-width:760px){.ports-column>.ports .port-flag{margin-top:6px}}
