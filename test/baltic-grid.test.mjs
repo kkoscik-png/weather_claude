@@ -18,7 +18,8 @@ test('parts are anchored to 00/12 UTC and cover the next 72 hours', () => {
   const anchor = balticAnchor(NOW);
   assert.equal(new Date(anchor).toISOString(), '2026-10-25T00:00:00.000Z');
   assert(anchor <= NOW - HOUR && anchor + BALTIC_PARTS * 12 * HOUR >= NOW + 71 * HOUR);
-  assert.equal(prewarmTasks().filter(t => t.group === 'baltic').length, 3 * BALTIC_PARTS);
+  assert.equal(prewarmTasks().filter(t => t.group === 'baltic').length, BALTIC_PARTS);
+  assert(prewarmTasks().filter(t => t.group === 'baltic').every(t => t.model === 'copernicus_baltic'));
 });
 
 test('ECMWF WAM Baltic map: whole grid in two Open-Meteo requests, sliced into 12-hour parts', async () => {
@@ -41,6 +42,7 @@ test('ECMWF WAM Baltic map: whole grid in two Open-Meteo requests, sliced into 1
   assert.equal(r0.hs[0][0], null); assert.equal(r0.hs[0][11], 1.23); assert.equal(r0.dir[5][11], 245);
   assert.equal(r1.nextOffset, 2);
   assert.equal((await api(new Request('https://marine.weather.seasync.co/api/forecast?model=fmi_wam&group=baltic&offset=0'), {})).status, 400);
+  assert.equal((await api(new Request('https://marine.weather.seasync.co/api/forecast?model=dwd_ewam&group=baltic&offset=0'), {})).status, 400);
   assert.equal((await api(new Request('https://marine.weather.seasync.co/api/forecast?model=ecmwf_wam&group=baltic&offset=9'), {})).status, 400);
 });
 

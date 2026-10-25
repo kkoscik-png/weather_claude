@@ -39,11 +39,13 @@ export function parsePoints(text){
 // wave sources → ports, map field, both routes and the coast points.
 const PREWARM_WIND=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_global','icon_d2'],PREWARM_WAVE=['ecmwf_wam','fmi_wam','dwd_ewam','copernicus_baltic','fcoo_ww3'];
 // Whole-Baltic wave map: ~27 km sea grid, served in 12-hour parts anchored to 00/12 UTC.
-export const BALTIC_MODELS=['copernicus_baltic','ecmwf_wam','dwd_ewam'],BALTIC_PART_HOURS=12,BALTIC_PARTS=7;
+// Copernicus comes from its free S3 store and is pre-fetched; ECMWF WAM costs 451 Open-Meteo locations
+// per cycle, so it is fetched only when someone opens the map with that model (then shared via the store).
+export const BALTIC_MODELS=['copernicus_baltic','ecmwf_wam'],BALTIC_PREWARM=['copernicus_baltic'],BALTIC_PART_HOURS=12,BALTIC_PARTS=7;
 export function balticAnchor(t){return Math.floor((t-HOUR)/(12*HOUR))*12*HOUR;}
 export function prewarmTasks(){
   const batches=(model,group)=>{const n=GROUPS[group].length,b=group==='wide-grid'?n:BATCH,out=[];for(let o=0;o<(group==='ports'?1:n);o+=b)out.push({model,group,offset:o});return out;};
-  return [...[...PREWARM_WIND,...PREWARM_WAVE].flatMap(m=>batches(m,'ports')),...PREWARM_WIND.flatMap(m=>batches(m,'wind-grid')),...PREWARM_WAVE.flatMap(m=>[...batches(m,'wave-grid'),...batches(m,'route'),...batches(m,'coast'),...batches(m,'route-gk')]),...PREWARM_WIND.flatMap(m=>batches(m,'wide-grid')),...BALTIC_MODELS.flatMap(model=>Array.from({length:BALTIC_PARTS},(_,offset)=>({model,group:'baltic',offset})))];
+  return [...[...PREWARM_WIND,...PREWARM_WAVE].flatMap(m=>batches(m,'ports')),...PREWARM_WIND.flatMap(m=>batches(m,'wind-grid')),...PREWARM_WAVE.flatMap(m=>[...batches(m,'wave-grid'),...batches(m,'route'),...batches(m,'coast'),...batches(m,'route-gk')]),...PREWARM_WIND.flatMap(m=>batches(m,'wide-grid')),...BALTIC_PREWARM.flatMap(model=>Array.from({length:BALTIC_PARTS},(_,offset)=>({model,group:'baltic',offset})))];
 }
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};

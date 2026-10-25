@@ -609,8 +609,8 @@ function updateRouteWaves(){const button=$('routeWaves'),readout=$('routeWaveRea
  const visible=grid?.length?visibleRouteWaves(grid,p=>map.latLngToContainerPoint([p.lat,p.lon]),map.getSize(),state.routeWaves?coastWaveValues():[]):visibleRouteWaves([...values,...gkRouteValues()],p=>map.latLngToContainerPoint([p.lat,p.lon]),map.getSize(),coastWaveValues());for(const p of visible)L.marker([p.lat,p.lon],{pane:'routeWaves',icon:routeWaveIcon(p),keyboard:false,interactive:false}).addTo(routeWaveLayer);
 }
 // Whole-Baltic wave map: ~27 km sea grid (same spacing as the Ventspils–Norvik route grid),
-// served by the Worker in seven 12-hour parts per model (Copernicus Baltic, ECMWF WAM, DWD EWAM).
-const BALTIC_WAVE_MODELS=['copernicus_baltic','ecmwf_wam','dwd_ewam'],BALTIC_PARTS=7;
+// served by the Worker in seven 12-hour parts per model (Copernicus Baltic, ECMWF WAM).
+const BALTIC_WAVE_MODELS=['copernicus_baltic','ecmwf_wam'],BALTIC_PARTS=7;
 function balticWaveSupported(){return BALTIC_WAVE_MODELS.includes(state.waveSource);}
 async function loadBalticWaves(force=false){
  const source=state.waveSource;state.balticData=state.balticData||{};if(!balticWaveSupported()){updateRouteWaves();return;}
@@ -629,9 +629,9 @@ function balticWaveValues(){
  const d=state.balticData?.[state.waveSource];if(!d||!balticWaveSupported())return [];const hit=d.index.get(selectedEpoch());
  return d.lat.map((lat,i)=>({id:'g'+i,kind:'grid',station:i,lat,lon:d.lon[i],value:hit?hit[0].hs[i]?.[hit[1]]??null:null,direction:hit?hit[0].dir[i]?.[hit[1]]??null:null})).filter(p=>valid(p.value));
 }
-function updateBalticButton(){const b=$('balticWaves');if(!b)return;b.classList.toggle('active',!!state.balticWaves);b.setAttribute('aria-pressed',String(!!state.balticWaves));b.title=!balticWaveSupported()?'Baltic wave map: available for Copernicus Baltic, ECMWF WAM and DWD EWAM':state.balticWaves?(state.balticLoading?'Loading the Baltic wave map…':'Hide the Baltic wave map'):'Wave heights over the whole Baltic';b.classList.toggle('loading-dim',!!state.balticLoading);}
+function updateBalticButton(){const b=$('balticWaves');if(!b)return;b.classList.toggle('active',!!state.balticWaves);b.setAttribute('aria-pressed',String(!!state.balticWaves));b.title=!balticWaveSupported()?'Baltic wave map: available for Copernicus Baltic and ECMWF WAM':state.balticWaves?(state.balticLoading?'Loading the Baltic wave map…':'Hide the Baltic wave map'):'Wave heights over the whole Baltic';b.classList.toggle('loading-dim',!!state.balticLoading);}
 function bindBalticWaves(){const b=$('balticWaves');if(!b)return;try{state.balticWaves=localStorage.getItem('baltic-wave-map')==='on';}catch{}b.onclick=()=>{state.balticWaves=!state.balticWaves;try{localStorage.setItem('baltic-wave-map',state.balticWaves?'on':'off');}catch{}if(state.balticWaves){if(!balticWaveSupported())showBalticNotice();loadBalticWaves();}else updateRouteWaves();};updateBalticButton();if(state.balticWaves)loadBalticWaves();}
-function showBalticNotice(){const status=$('fieldStatus');const msg='Baltic wave map: choose Copernicus Baltic, ECMWF WAM or DWD EWAM as the wave model.';if(status)status.textContent=msg;const caption=document.querySelector('.map-caption');if(caption){caption.hidden=false;clearTimeout(showBalticNotice.t);showBalticNotice.t=setTimeout(()=>{caption.hidden=true;},5000);}}
+function showBalticNotice(){const status=$('fieldStatus');const msg='Baltic wave map: choose Copernicus Baltic or ECMWF WAM as the wave model.';if(status)status.textContent=msg;const caption=document.querySelector('.map-caption');if(caption){caption.hidden=false;clearTimeout(showBalticNotice.t);showBalticNotice.t=setTimeout(()=>{caption.hidden=true;},5000);}}
 function initRouteWaves(){if(!map)return;routeWaveLayer=L.layerGroup().addTo(map);updateRouteWaves();}
 function coastWaveValues(){const records=state.coastWaves[state.waveSource];if(!records)return [];return COAST_POINTS.map((p,i)=>({...p,kind:'coast',series:records[i],value:at(records[i],'wave_height'),direction:at(records[i],'wave_direction'),period:at(records[i],'wave_period')}));}
 async function loadCoastWaves(force=false){
