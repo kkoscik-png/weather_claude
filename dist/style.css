@@ -939,3 +939,12 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .ports-column>.ports .port-flag{margin-top:9px}
 @media(max-width:760px){.ports-column>.ports .port-flag{margin-top:6px}}
 .map-controls .map-btn.loading-dim{opacity:.6}
+
+/* Short description of the site under the footer: the page's H1 and the text search engines and link previews read. */
+.site-intro{max-width:760px;margin:6px auto 22px;padding:16px 4px 0;border-top:1px solid var(--border);color:var(--muted);text-align:center}
+.site-intro h1{font:650 15px/1.35 'Manrope',sans-serif;letter-spacing:-.2px;color:var(--ink);margin:0 0 8px}
+.site-intro p{font-size:11px;line-height:1.7;margin:0 0 6px}
+.site-intro b{font-weight:600;color:var(--ink)}
+.site-intro-note{font-size:10px!important;opacity:.85}
+@media(min-width:761px){main>.site-intro{grid-column:1 / -1}}
+@media(max-width:760px){.site-intro{margin:4px 2px 18px;text-align:left}.site-intro h1{font-size:14px}}
