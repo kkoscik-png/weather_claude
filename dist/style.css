@@ -938,3 +938,4 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 /* Flag button vertically centred on the weather block (icon + temperatures) */
 .ports-column>.ports .port-flag{margin-top:9px}
 @media(max-width:760px){.ports-column>.ports .port-flag{margin-top:6px}}
+.map-controls .map-btn.loading-dim{opacity:.6}

@@ -2,7 +2,8 @@ import { normalizeOpenWeather, normalizeSnow } from './open-weather.mjs';
 import { createLastGoodCache, normalizeDMIOpenMeteo } from './dmi-resilience.mjs';
 import { STORMGLASS_POINTS } from './stormglass-points.mjs';
 import { FORECAST_GRIDS, COAST_POINTS, GK_ROUTE_POINTS } from './forecast-points.mjs';
-import { loadCopernicus, copernicusDataset } from './copernicus.mjs';
+import { loadCopernicus, copernicusDataset, loadCopernicusGrid } from './copernicus.mjs';
+import { BALTIC_GRID } from './baltic-grid.mjs';
 import { loadFcoo, fcooMeta, fcooTiming } from './fcoo.mjs';
 import { remoteStore } from './store.mjs';
 const HOUR=3600000, BATCH=6, WIDE_MODELS=['icon_eu','icon_global','ecmwf_ifs','dmi_harmonie','metno_nordic','icon_d2','fmi_harmonie','smhi_snow'];
@@ -37,9 +38,12 @@ export function parsePoints(text){
 // What the app loads, per source: wind sources → ports, map field and zoomed-out grid;
 // wave sources → ports, map field, both routes and the coast points.
 const PREWARM_WIND=['icon_eu','ecmwf_ifs','smhi_snow','dmi_harmonie','metno_nordic','fmi_harmonie','icon_global','icon_d2'],PREWARM_WAVE=['ecmwf_wam','fmi_wam','dwd_ewam','copernicus_baltic','fcoo_ww3'];
+// Whole-Baltic wave map: ~27 km sea grid, served in 12-hour parts anchored to 00/12 UTC.
+export const BALTIC_MODELS=['copernicus_baltic','ecmwf_wam','dwd_ewam'],BALTIC_PART_HOURS=12,BALTIC_PARTS=7;
+export function balticAnchor(t){return Math.floor((t-HOUR)/(12*HOUR))*12*HOUR;}
 export function prewarmTasks(){
   const batches=(model,group)=>{const n=GROUPS[group].length,b=group==='wide-grid'?n:BATCH,out=[];for(let o=0;o<(group==='ports'?1:n);o+=b)out.push({model,group,offset:o});return out;};
-  return [...[...PREWARM_WIND,...PREWARM_WAVE].flatMap(m=>batches(m,'ports')),...PREWARM_WIND.flatMap(m=>batches(m,'wind-grid')),...PREWARM_WAVE.flatMap(m=>[...batches(m,'wave-grid'),...batches(m,'route'),...batches(m,'coast'),...batches(m,'route-gk')]),...PREWARM_WIND.flatMap(m=>batches(m,'wide-grid'))];
+  return [...[...PREWARM_WIND,...PREWARM_WAVE].flatMap(m=>batches(m,'ports')),...PREWARM_WIND.flatMap(m=>batches(m,'wind-grid')),...PREWARM_WAVE.flatMap(m=>[...batches(m,'wave-grid'),...batches(m,'route'),...batches(m,'coast'),...batches(m,'route-gk')]),...PREWARM_WIND.flatMap(m=>batches(m,'wide-grid')),...BALTIC_MODELS.flatMap(model=>Array.from({length:BALTIC_PARTS},(_,offset)=>({model,group:'baltic',offset})))];
 }
 export function modelTiming(updatedAt,interval,referenceTime=null,basis='publication') {
   const t=Date.parse(updatedAt);return {updatedAt:Number.isFinite(t)?iso(t):null,referenceTime,nextUpdate:Number.isFinite(t)?iso(t+interval):null,basis,estimated:true};
@@ -143,7 +147,7 @@ export function createTTLCache({now=()=>Date.now(),cache=null,memory=new Map(),p
   }
 }
 export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Date.now(),cache=null,pause}={}) {
-  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),shared={store:null},remote=()=>shared.store,lastGood=createLastGoodCache({now,cache,remote,prefix:'c/'}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt)),remote,prefix:'s/'});
+  const memory=new Map(),pending=new Map(),dmiTimings=new Map(),dmiResponse=createDMIRequester({fetcher,now,cache,pause}),shared={store:null},remote=()=>shared.store,lastGood=createLastGoodCache({now,cache,remote,prefix:'c/'}),balticGood=createLastGoodCache({now,cache,remote,prefix:'c/',usable:v=>Array.isArray(v?.hs)&&Array.isArray(v?.times)&&v.times.length>0}),schedules=createLastGoodCache({now,cache,usable:v=>Number.isFinite(Date.parse(v?.timing?.updatedAt)),remote,prefix:'s/'});
   const cached=createTTLCache({now,cache,memory,pending});
   async function response(url) {if(url.startsWith('https://opendataapi.dmi.dk/'))return dmiResponse(url);const r=await fetcher(url,{signal:AbortSignal.timeout(35000),headers:{Accept:'application/json, application/xml, */*'}});if(!r.ok){const e=Error('Source temporarily unavailable ('+r.status+')');e.status=r.status;throw e;}return r;}
   const getJSON=(url,ttl=300)=>cached(url,ttl,async()=>await(await response(url)).json());
@@ -308,11 +312,26 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
     let recent=[];try{recent=((await shared.store.get('m/recent-points'))||[]).filter(r=>now()-r.seen<3*86400000).slice(0,15);}catch{}
     const base=prewarmTasks(),nPorts=base.filter(t=>t.group==='ports').length;
     const custom=recent.flatMap(r=>[...PREWARM_WIND,...PREWARM_WAVE].map(model=>({model,group:'points',offset:0,pts:r.pts})));
-    const tasks=[...base.slice(0,nPorts),...custom,...base.slice(nPorts)],keys=tasks.map(t=>'c/'+cycleKey(t.model,t.pts?'pts:'+t.pts:t.group,t.offset));
+    const tasks=[...base.slice(0,nPorts),...custom,...base.slice(nPorts)],keys=tasks.map(t=>'c/'+(t.group==='baltic'?balticKey(t.model,t.offset):cycleKey(t.model,t.pts?'pts:'+t.pts:t.group,t.offset)));
     const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
     let ran=0,failed=0;const queue=[...due];
     await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset),...(t.pts?{pts:t.pts}:{})})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
     return {total:tasks.length,due:dueKeys.size,ran,failed};
+  }
+  const balticKey=(model,part)=>cycleKey(model,'baltic@'+iso(balticAnchor(now())).slice(0,13),part);
+  // One part of the Baltic map: 12 hourly steps × all grid points (height in m, direction in °).
+  async function fetchBaltic(model,part){
+    const start=balticAnchor(now())+part*BALTIC_PART_HOURS*HOUR,times=Array.from({length:BALTIC_PART_HOURS},(_,i)=>(start+i*HOUR)/1000);
+    const base={times,lat:BALTIC_GRID.map(p=>p.lat),lon:BALTIC_GRID.map(p=>p.lon)};
+    if(model==='copernicus_baltic')return {...base,...await loadCopernicusGrid(BALTIC_GRID,times,{getJSON,getBuffer,now:now()}),saved:now()};
+    // Open-Meteo marine: the whole grid once per anchor (two multi-point requests), sliced per part.
+    const full=await cached('baltic-om/v1/'+model+'/'+iso(balticAnchor(now())).slice(0,13),1800,async()=>{
+      const records=[];let timing,attribution;
+      for(let k=0;k<BALTIC_GRID.length;k+=230){const r=await fetchOpenWeather(model,BALTIC_GRID.slice(k,k+230),'baltic');records.push(...r.records);timing=r.timing;attribution=r.attribution;}
+      return {records,timing,attribution,saved:now()};
+    });
+    const pick=(r,f,t)=>{const k=r?.hourly?.time?.indexOf(t);const v=k>=0?r.hourly[f]?.[k]:null;return typeof v==='number'&&Number.isFinite(v)?(f==='wave_height'?Math.round(v*100)/100:Math.round(v)):null;};
+    return {...base,hs:full.records.map(r=>times.map(t=>pick(r,'wave_height',t))),dir:full.records.map(r=>times.map(t=>pick(r,'wave_direction',t))),timing:full.timing,attribution:full.attribution,saved:full.saved};
   }
   const seenPoints=new Map();
   async function rememberPoints(pts){
@@ -357,6 +376,12 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
       if(model==='smhi_snow'||model.startsWith('fmi_'))return snapshot?json({timing:snapshot.timing,refreshAfter:snapshot.refreshAfter}):json({error:'The update time appears after the forecast is loaded.'},503);
       try{const schedule=await getSchedule(model);return json({timing:schedule.timing,refreshAfter:schedule.refreshAfter,checkedAt:iso(schedule.saved)});}
       catch(e){return json({error:'Update time temporarily unavailable.',...(e.retryAt?{retryAt:iso(e.retryAt),retryAfter:e.retryAfter}:{})},e.status===429?429:502,e.retryAfter?{'Retry-After':String(e.retryAfter)}:{});}
+    }
+    if(u.searchParams.get('group')==='baltic'){
+      const part=Number(u.searchParams.get('offset')||'0');
+      if(!BALTIC_MODELS.includes(model)||!Number.isInteger(part)||part<0||part>=BALTIC_PARTS)return json({error:'Invalid model or part for the Baltic map.'},400);
+      try{const payload=await balticGood(balticKey(model,part),()=>fetchBaltic(model,part));return json({...payload,model,group:'baltic',part,parts:BALTIC_PARTS,nextOffset:part+1<BALTIC_PARTS?part+1:null});}
+      catch(e){return json({error:e.status===429?'The provider is busy. Try again shortly.':'Could not load the Baltic wave map for '+model+'.',model},e.status===429?429:502);}
     }
     const requested=u.searchParams.get('group')||'ports',custom=requested==='points'?parsePoints(u.searchParams.get('pts')):null;
     if(requested==='points'&&!custom)return json({error:'Invalid points.'},400);
