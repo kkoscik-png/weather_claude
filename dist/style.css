@@ -929,3 +929,9 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .hourly-popup .hh{gap:calc(1px*(var(--hs,1) - 1)*4)}
 @media(max-width:760px){.hourly-popup .hh-icon svg{width:13px;height:13px}.hourly-popup .hh-temp{font-size:8.5px}.hourly-popup .hh-hour{font-size:7px}.hourly-popup .hh-vals{font-size:6px;line-height:9px;height:9px}.hourly-popup .hh-bars{min-height:26px}.hourly-popup .hh{gap:0}}
 .hourly-popup .hh-prob span{white-space:nowrap;letter-spacing:-.3px}
+/* Port tiles: weather (icon, now, min/max) at the right edge, model-flag button just left of it */
+.ports-column>.ports .port{--wxw:50px;--fw:30px;--pr:14px}
+.ports-column>.ports .port-top{padding-right:0;gap:calc(var(--fw) + 12px)}
+.ports-column>.ports .port-wx{width:var(--wxw);flex:none;margin-left:auto}
+.ports-column>.ports .port-flag{right:calc(var(--pr) + var(--wxw) + 4px)}
+@media(max-width:760px){.ports-column>.ports .port{--wxw:40px;--fw:26px;--pr:11px}.ports-column>.ports .port-top{padding-right:0;gap:calc(var(--fw) + 10px)}.ports-column>.ports .port-flag{right:calc(var(--pr) + var(--wxw) + 2px)}}
