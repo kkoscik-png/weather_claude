@@ -79,7 +79,7 @@ export function createScheduled(fetchHandler) {
   return async function scheduled(event, env, ctx) {
     const self = ctx?.exports?.default;
     const call = self?.fetch ? request => self.fetch(request) : request => fetchHandler(request, env, ctx);
-    const result = await handleForecast.prewarm(env, call, self?.fetch ? {} : { limit: 4, concurrency: 2 });
+    const result = await handleForecast.prewarm(env, call, self?.fetch ? { mode: 'exports' } : { limit: 8, concurrency: 2, mode: 'in-process' });
     console.log('prewarm', JSON.stringify(result));
   };
 }

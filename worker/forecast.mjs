@@ -308,17 +308,23 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
   // Scheduled pre-fetch: every source and point group the app shows, in the order a visitor
   // needs them (ports first). Only entries whose cycle is due are fetched; each one runs as its
   // own request (call), so a slow provider does not hold up the others.
-  async function prewarm(env,call,{limit=16,concurrency=4}={}){
+  async function prewarm(env,call,{limit=16,concurrency=4,mode=null}={}){
     shared.store=shared.store||remoteStore(env);if(!shared.store)return {skipped:'no store'};
     // Ports picked by users in the last 3 days are kept warm too (right after the built-in ports).
     let recent=[];try{recent=((await shared.store.get('m/recent-points'))||[]).filter(r=>now()-r.seen<3*86400000).slice(0,15);}catch{}
     const base=prewarmTasks(),nPorts=base.filter(t=>t.group==='ports').length;
     const custom=recent.flatMap(r=>[...PREWARM_WIND,...PREWARM_WAVE].map(model=>({model,group:'points',offset:0,pts:r.pts})));
     const tasks=[...base.slice(0,nPorts),...custom,...base.slice(nPorts)],keys=tasks.map(t=>'c/'+(t.group==='baltic'?balticKey(t.model,t.offset):cycleKey(t.model,t.pts?'pts:'+t.pts:t.group,t.offset)));
-    const dueKeys=new Set(await shared.store.due(keys,now())),due=tasks.filter((t,i)=>dueKeys.has(keys[i])).slice(0,limit);
+    const dueKeys=new Set(await shared.store.due(keys,now())),dueAll=tasks.filter((t,i)=>dueKeys.has(keys[i]));
+    // Ports first; the rest in a rotating order, so frequently updated sources (SMHI every 15 min,
+    // hourly MET Nordic) cannot starve the long tail (coasts, corridors, the Baltic map).
+    const portsDue=dueAll.filter(t=>t.group==='ports'||t.group==='points'),rest=dueAll.filter(t=>t.group!=='ports'&&t.group!=='points'),turn=rest.length?Math.floor(now()/300000)*limit%rest.length:0;
+    const due=[...portsDue,...rest.slice(turn),...rest.slice(0,turn)].slice(0,limit);
     let ran=0,failed=0;const queue=[...due];
     await Promise.all(Array.from({length:Math.min(concurrency,queue.length)},async()=>{for(let t=queue.shift();t;t=queue.shift()){try{const r=await call(new Request('https://marine.weather.seasync.co/api/forecast?'+new URLSearchParams({model:t.model,group:t.group,offset:String(t.offset),...(t.pts?{pts:t.pts}:{})})));await r.body?.cancel?.();r.ok?ran++:failed++;}catch{failed++;}}}));
-    return {total:tasks.length,due:dueKeys.size,ran,failed};
+    const result={total:tasks.length,due:dueKeys.size,ran,failed,limit,mode,at:iso(now())};
+    try{await shared.store.put('m/prewarm-last',result,now()+86400000);}catch{}
+    return result;
   }
   const balticKey=(model,part)=>cycleKey(model,'baltic@'+iso(balticAnchor(now())).slice(0,13),part);
   // One part of the Baltic map: 12 hourly steps × all grid points (height in m, direction in °).
@@ -359,6 +365,10 @@ export function createForecastAPI({fetcher=(...args)=>fetch(...args),now=()=>Dat
         });
         return json(result,200,{'Cache-Control':'private, max-age=600'});
       }catch(e){return json({error:'7-day forecast unavailable.'},e.status===429?429:502);}
+    }
+    if(u.pathname==='/api/prewarm-status'){
+      let last=null;try{last=shared.store?await shared.store.get('m/prewarm-last'):null;}catch{}
+      return json({last,store:Boolean(shared.store)},200,{'Cache-Control':'no-store'});
     }
     if(u.pathname==='/api/point'){
       if(request.method!=='GET')return json({error:'Method not allowed.'},405);
