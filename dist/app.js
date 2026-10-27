@@ -106,6 +106,17 @@ function loadSlots(){
 }
 function saveSlots(){const ids=(state.slots||DEFAULT_SLOTS).map(i=>i==null?null:PORTS[i]?.id??null),info=Object.fromEntries((state.slots||[]).filter(i=>PORTS[i]?.custom).map(i=>[PORTS[i].id,state.portInfo?.[PORTS[i].id]]));try{localStorage.setItem(PORTS_KEY,JSON.stringify({slots:ids,port:PORTS[state.port]?.id??null,info}));}catch{}}
 function openingPort(){return state.savedPort??(inSlots(1)?1:(slotPorts()[0]??0));}
+// Removing a favourite also takes it off the tiles (and so off the map): its tile shows the next
+// favourite that is not already in the other tile, or "Choose your port" when none is left.
+function unfavourite(id){
+ state.favs=(state.favs||[]).filter(f=>f!==id);const i=portIndexById(id),old=[...(state.slots||DEFAULT_SLOTS)],slots=[...old];
+ if(i>=0&&slots.includes(i)){
+  slots.forEach((v,k)=>{if(v!==i)return;const next=favouritePorts().find(f=>!slots.includes(f));slots[k]=next??null;});
+  state.slots=slots;const flags=new Set(flagPorts());flags.delete(i);slots.forEach((v,k)=>{if(v!=null&&old[k]===i)flags.add(v);});state.flagPorts=flags;
+  if(state.port===i)state.port=slots[old.indexOf(i)]??slotPorts()[0]??0;if(!inSlots(state.port))state.port=slotPorts()[0]??0;saveSlots();
+ }
+ saveFavourites();renderAll();updateMarkers();
+}
 function choosePort(slot,port){
  const slots=[...(state.slots||DEFAULT_SLOTS)];if(port!==null){const other=slots.indexOf(port);if(other>=0&&other!==slot)slots[other]=slots[slot];}slots[slot]=port;state.slots=slots;
  if(port!==null){const set=new Set(flagPorts());set.add(port);state.flagPorts=set;state.port=port;}
@@ -129,7 +140,7 @@ function renderPortMenu(){
 function placePortMenu(){const menu=$('portMenu'),btn=document.querySelector?.(`[data-port-menu="${state.portMenu?.slot}"]`);if(!menu||!btn)return;const r=btn.getBoundingClientRect(),w=Math.min(300,window.innerWidth-24);menu.style.width=w+'px';menu.style.left=Math.max(12,Math.min(r.left,window.innerWidth-w-12))+'px';menu.style.top=(r.bottom+6)+'px';}
 function openPortMenu(slot){state.portMenu=state.portMenu?.slot===slot?null:{slot};renderPorts();renderPortMenu();}
 function closePortMenu(){if(!state.portMenu)return;state.portMenu=null;renderPortMenu();renderPorts();}
-function onPortMenuClick(e){e.stopPropagation();const m=state.portMenu;if(!m)return;const un=e.target.closest?.('[data-unstar]');if(un){const id=PORTS[Number(un.dataset.unstar)]?.id;state.favs=(state.favs||[]).filter(f=>f!==id);saveFavourites();renderPorts();renderPortMenu();renderPortResults();return;}const row=e.target.closest?.('[data-menu-port]');if(row){state.portMenu=null;renderPortMenu();choosePort(m.slot,Number(row.dataset.menuPort));}}
+function onPortMenuClick(e){e.stopPropagation();const m=state.portMenu;if(!m)return;const un=e.target.closest?.('[data-unstar]');if(un){const id=PORTS[Number(un.dataset.unstar)]?.id;unfavourite(id);renderPortMenu();renderPortResults();return;}const row=e.target.closest?.('[data-menu-port]');if(row){state.portMenu=null;renderPortMenu();choosePort(m.slot,Number(row.dataset.menuPort));}}
 function loadFlagPorts(){try{const saved=JSON.parse(localStorage.getItem('baltic-flag-ports'));if(Array.isArray(saved))state.flagPorts=new Set(saved.filter(i=>Number.isInteger(i)&&i>=0&&i<PORTS.length));}catch{}}
 const FLAG_ICON='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 14.5V2m0 .8c3-2.2 5 2.2 8.5 0v6.4c-3.5 2.2-5.5-2.2-8.5 0"/></svg>';
 const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -588,7 +599,7 @@ function bindPointPopup(pp){
  el.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest?.('[data-pp]');if(!b||b.tagName==='FORM')return;const act=b.dataset.pp;
   if(act==='star'){pp.naming=true;renderPointFav(pp);}
   else if(act==='cancel'){pp.naming=false;pp.draft='';renderPointFav(pp);}
-  else if(act==='unstar'){const id=pointId(pp.latlng);state.favs=(state.favs||[]).filter(f=>f!==id);saveFavourites();renderPorts();renderPointFav(pp);}});
+  else if(act==='unstar'){unfavourite(pointId(pp.latlng));renderPointFav(pp);}});
  el.addEventListener('submit',e=>{e.preventDefault();savePoint(pp);});
  el.addEventListener('input',e=>{if(e.target.matches?.('.pp-name'))pp.draft=e.target.value;});
  // Typing must not pan or zoom the map (Leaflet listens for arrows and +/− on the map).
@@ -1157,7 +1168,7 @@ function renderPortResults(){
  const mark=name=>{const i=plainText(name).indexOf(plainText(q));return i<0?name:name.slice(0,i)+'<mark>'+name.slice(i,i+q.length)+'</mark>'+name.slice(i+q.length);};
  box.hidden=false;box.innerHTML=hits.length?hits.map((x,k)=>`<div class="find-row${k===state.findActive?' active':''}" role="option" aria-selected="${k===state.findActive}" data-find="${k}"><span class="cc">${x.country}</span><span class="nm"><b>${mark(x.name)}</b><em>${COUNTRY_NAMES[x.country]||''}${x.builtin?' · berth':x.major?' · main port':''}</em></span><button type="button" class="star${isFavourite(x.id)?' on':''}" data-star="${k}" aria-pressed="${isFavourite(x.id)}" title="${isFavourite(x.id)?'Remove from favourites':'Add to favourites'}" aria-label="${isFavourite(x.id)?'Remove':'Add'} ${x.name} ${isFavourite(x.id)?'from':'to'} favourites">${isFavourite(x.id)?'★':'☆'}</button></div>`).join(''):'<div class="find-empty">No Baltic port matches.</div>';
 }
-function toggleFavourite(x){const id=x.id;if(!x.builtin)ensurePort({id,name:x.name,country:x.country,lat:x.lat,lon:x.lon,code:x.code});state.favs=isFavourite(id)?state.favs.filter(f=>f!==id):[...(state.favs||[]),id];saveFavourites();renderPorts();renderPortResults();if(state.portMenu)renderPortMenu();if(isFavourite(id)&&!x.builtin)refreshPortData();}
+function toggleFavourite(x){const id=x.id;if(isFavourite(id)){unfavourite(id);renderPortResults();if(state.portMenu)renderPortMenu();return;}if(!x.builtin)ensurePort({id,name:x.name,country:x.country,lat:x.lat,lon:x.lon,code:x.code});state.favs=[...(state.favs||[]),id];saveFavourites();renderPorts();renderPortResults();if(state.portMenu)renderPortMenu();if(isFavourite(id)&&!x.builtin)refreshPortData();}
 function pickFoundPort(x){const i=x.builtin?portIndexById(x.id):ensurePort({id:x.id,name:x.name,country:x.country,lat:x.lat,lon:x.lon,code:x.code});const slot=Math.max(0,(state.slots||DEFAULT_SLOTS).indexOf(state.port));const input=$('portSearch');if(input){input.value='';input.blur?.();}renderPortResults();choosePort(slot,i);refreshPortData();}
 // New ports need their forecasts: built-in data comes from cache, the new positions are fetched.
 let portRefresh=null;function refreshPortData(){clearTimeout(portRefresh);portRefresh=setTimeout(()=>{loadPorts(true);loadExtraWavePorts(state.waveSource,true);},200);}

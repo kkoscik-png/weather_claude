@@ -10,7 +10,7 @@ function app() {
     localStorage: { getItem: k => stored.get(k) ?? null, setItem: (k, v) => stored.set(k, v), removeItem: k => stored.delete(k) },
     document: { getElementById: el, querySelector: el, querySelectorAll: () => [] } };
   vm.createContext(c);
-  vm.runInContext(fs.readFileSync('dist/app.js', 'utf8').replace(/start\(\);\s*$/, '') + ';globalThis.t={state,PORTS,MODELS,windFlagsSVG,toggleFlagPort,flagPorts,loadFlagPorts,renderPorts,loadSlots,saveSlots,portPicker,ensurePort,isFavourite,searchPorts,setDb:d=>{PORT_DB=d;},dailyFor,BUILTIN_PORTS,favouritePorts};', c);
+  vm.runInContext(fs.readFileSync('dist/app.js', 'utf8').replace(/start\(\);\s*$/, '') + ';globalThis.t={state,PORTS,MODELS,windFlagsSVG,toggleFlagPort,flagPorts,loadFlagPorts,renderPorts,loadSlots,saveSlots,portPicker,ensurePort,isFavourite,searchPorts,setDb:d=>{PORT_DB=d;},dailyFor,BUILTIN_PORTS,favouritePorts,unfavourite,inSlots};', c);
   const t = c.t, times = [t.state.base];
   t.state.times = times; t.state.hour = 0; t.state.slots = [0, 1, 2];
   t.state.wind = Object.fromEntries(Object.keys(t.MODELS).map(m => [m, t.PORTS.map(() => ({ hourly: { time: times, wind_speed_10m: [7], wind_gusts_10m: [11], wind_direction_10m: [240] } }))]));
@@ -121,4 +121,19 @@ test('picking a found port shows it without starring it; only the star changes f
   assert(!/state\.favs\s*=/.test(pick), 'choosing a result must not add a favourite');
   assert.match(src, /data-unstar=/);
   assert.match(src, /state\.favs=\(state\.favs\|\|\[\]\)\.filter\(f=>f!==id\)/);
+});
+
+test('removing a favourite takes it off the tiles and the map (next favourite takes its tile)', () => {
+  const { t } = app();
+  t.loadSlots();
+  t.renderAll = () => {};
+  const i = t.ensurePort({ id: 'pt-58.270_19.680', name: 'Gotland N', country: '', lat: 58.27, lon: 19.68, code: '' });
+  t.state.favs.push('pt-58.270_19.680'); t.state.slots = [i, 2]; t.state.port = i; t.state.flagPorts = new Set([i]);
+  t.unfavourite('pt-58.270_19.680');
+  assert(!t.state.favs.includes('pt-58.270_19.680'));
+  assert(!t.state.slots.includes(i), 'no tile shows the removed point');
+  assert.equal(t.state.slots[0], 1, 'first favourite not in the other tile');
+  assert.equal(t.state.port, 1);
+  assert(!t.state.flagPorts.has(i) && t.state.flagPorts.has(1));
+  assert(!t.inSlots(i), 'marker hidden: not in a tile');
 });
