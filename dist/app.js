@@ -123,7 +123,7 @@ function renderPortMenu(){
  if(!menu){menu=document.createElement('div');menu.id='portMenu';menu.className='port-menu';menu.setAttribute('role','listbox');document.body.appendChild(menu);menu.addEventListener('mousedown',e=>e.preventDefault());menu.addEventListener('click',onPortMenuClick);}
  const cur=(state.slots||DEFAULT_SLOTS)[m.slot],favs=favouritePorts();
  menu.setAttribute('aria-label','Favourite ports for tile '+(m.slot+1));
- menu.innerHTML=`<div class="port-menu-head">★ Favourite ports</div>`+(favs.length?favs.map(i=>{const p=PORTS[i];return `<div class="find-row${i===cur?' current':''}" role="option" aria-selected="${i===cur}" data-menu-port="${i}"><span class="cc">${(p.code||'').slice(0,2)}</span><span class="nm"><b>${p.name}</b><em>${p.country}${i===cur?' · in this tile':''}</em></span><button type="button" class="star on" data-unstar="${i}" title="Remove from favourites" aria-label="Remove ${p.name} from favourites">★</button></div>`;}).join(''):'<div class="find-empty">No favourites yet. Use “Find your port” and tap ☆.</div>');
+ menu.innerHTML=`<div class="port-menu-head">★ Favourite ports</div>`+(favs.length?favs.map(i=>{const p=PORTS[i];return `<div class="find-row${i===cur?' current':''}" role="option" aria-selected="${i===cur}" data-menu-port="${i}"><span class="cc">${(p.code||'').slice(0,2)||'★'}</span><span class="nm"><b>${p.name}</b><em>${p.country}${i===cur?' · in this tile':''}</em></span><button type="button" class="star on" data-unstar="${i}" title="Remove from favourites" aria-label="Remove ${p.name} from favourites">★</button></div>`;}).join(''):'<div class="find-empty">No favourites yet. Use “Find your port” and tap ☆.</div>');
  menu.hidden=false;placePortMenu();
 }
 function placePortMenu(){const menu=$('portMenu'),btn=document.querySelector?.(`[data-port-menu="${state.portMenu?.slot}"]`);if(!menu||!btn)return;const r=btn.getBoundingClientRect(),w=Math.min(300,window.innerWidth-24);menu.style.width=w+'px';menu.style.left=Math.max(12,Math.min(r.left,window.innerWidth-w-12))+'px';menu.style.top=(r.bottom+6)+'px';}
@@ -549,27 +549,62 @@ function fitPointsView(points,animate){
 }
 // Map click: a real point forecast of the selected model at that position (not the overview grid).
 const POINT_WAVE_SOURCES=['ecmwf_wam','dwd_ewam'],pointCache=new Map();let pointPopup=null;
-function pointHTML(pp){
- const t=selectedEpoch(),when=fullFmt.format(new Date(t*1000)),where=`${pp.latlng.lat.toFixed(2)}°N ${pp.latlng.lng.toFixed(2)}°E`;
- if(pp.loading)return `<div class="point-pop"><b>${pp.title}</b><span class="pp-loading">Loading point forecast…</span><span>${when}</span><span>${where}</span><small>${pp.label}</small></div>`;
- if(!pp.record){const v=pp.fallback;return `<div class="point-pop"><b>${pp.title} · ${format(v?.value)} ${pp.wave?'m':'m/s'}</b><span>${when}</span><span>${where}</span><small>Point forecast unavailable · interpolated grid · ${pp.label}</small></div>`;}
- const r=pp.record,cell=valid(r.latitude)&&valid(r.longitude)?` · model cell ${r.latitude.toFixed(2)}°N ${r.longitude.toFixed(2)}°E`:'';
- if(pp.wave){const h=at(r,'wave_height',t),d=at(r,'wave_direction',t),per=at(r,'wave_period',t);return `<div class="point-pop"><b>Wave Hs ${format(h)} m</b><span>${valid(d)?'from '+compassName(d)+' ('+Math.round(d)+'°)':'direction —'}${valid(per)?' · period '+format(per)+' s':''}</span><span>${when}</span><span>${where}</span><small>Point forecast · ${pp.label}${cell}</small></div>`;}
- const w=at(r,'wind_speed_10m',t),g=at(r,'wind_gusts_10m',t),d=at(r,'wind_direction_10m',t);
- return `<div class="point-pop"><b>Wind <span class="pp-chip" style="background:${windHeat(w)};color:${windInk(w)}">${format(w)}</span> · Gusts <span class="pp-chip" style="background:${windHeat(g)};color:${windInk(g)}">${format(g)}</span> m/s</b><span>${valid(d)?'from '+compassName(d)+' ('+Math.round(d)+'°)':'direction —'}</span><span>${when}</span><span>${where}</span><small>Point forecast · ${pp.label}${cell}</small></div>`;
+// Compact map-click popup: values only, plus ☆ to save the spot as a named favourite port.
+const pointId=ll=>'pt-'+ll.lat.toFixed(3)+'_'+ll.lng.toFixed(3);
+const pointSavable=ll=>ll.lat>=53&&ll.lat<=66.5&&ll.lng>=9&&ll.lng<=31;
+function pointMainHTML(pp){
+ const t=selectedEpoch();
+ if(pp.loading)return '<span class="pp-loading">Loading…</span>';
+ const chip=v=>`<span class="pp-chip" style="background:${windHeat(v)};color:${windInk(v)}">${format(v)}</span>`,dir=d=>valid(d)?`<span class="pp-dir">from ${compassName(d)} (${Math.round(d)}°)</span>`:'<span class="pp-dir">direction —</span>';
+ if(!pp.record){const v=pp.fallback?.value;return `<b>${pp.wave?'Wave Hs '+format(v)+' m':'Wind '+chip(v)+' m/s'}</b>`;}
+ const r=pp.record;
+ if(pp.wave)return `<b>Wave Hs ${format(at(r,'wave_height',t))} m</b>${dir(at(r,'wave_direction',t))}`;
+ return `<b>Wind ${chip(at(r,'wind_speed_10m',t))} · Gusts ${chip(at(r,'wind_gusts_10m',t))} m/s</b>${dir(at(r,'wind_direction_10m',t))}`;
 }
-function renderPointPopup(){if(pointPopup?.popup?.isOpen?.())pointPopup.popup.setContent(pointHTML(pointPopup));}
+function pointFavHTML(pp){
+ const id=pointId(pp.latlng),fav=isFavourite(id),name=PORTS[portIndexById(id)]?.name;
+ if(!pointSavable(pp.latlng))return '';
+ if(fav)return `<div class="pp-fav"><button type="button" class="pp-star on" data-pp="unstar" title="Remove from favourites" aria-label="Remove ${name||'this point'} from favourites">★</button><span class="pp-saved">${name||'Favourite'}</span></div>`;
+ if(!pp.naming)return `<div class="pp-fav"><button type="button" class="pp-star" data-pp="star" title="Add this point to favourites" aria-label="Add this point to favourites">☆</button></div>`;
+ return `<form class="pp-fav" data-pp="form"><button type="button" class="pp-star on" data-pp="cancel" title="Cancel" aria-label="Cancel">★</button><input class="pp-name" name="name" maxlength="24" placeholder="Name this point" aria-label="Name of the point" autocomplete="off" value="${(pp.draft||'').replace(/"/g,'&quot;')}"><button type="submit" class="pp-add" title="Add to your ports">Add</button></form>`;
+}
+function pointHTML(pp){return `<div class="point-pop"><div class="pp-main">${pointMainHTML(pp)}</div><div class="pp-favbox">${pointFavHTML(pp)}</div></div>`;}
+// The popup content is one DOM node kept for its lifetime (a string would be re-set by Leaflet on
+// every update), so the name being typed survives hour changes.
+function renderPointPopup(){const pp=pointPopup;if(!pp?.popup?.isOpen?.()||!pp.el)return;const main=pp.el.querySelector('.pp-main');if(main)main.innerHTML=pointMainHTML(pp);}
+function renderPointFav(pp){const box=pp.el?.querySelector('.pp-favbox');if(box)box.innerHTML=pointFavHTML(pp);pp.popup.update?.();if(pp.naming){const input=box?.querySelector('.pp-name');input?.focus();}}
+function savePoint(pp){
+ const name=(pp.draft||'').replace(/[<>&"'`]/g,'').trim().slice(0,24);if(!name){pp.el?.querySelector('.pp-name')?.focus();return;}
+ const ll=pp.latlng,id=pointId(ll),i=ensurePort({id,name,country:'',lat:Number(ll.lat.toFixed(3)),lon:Number(ll.lng.toFixed(3)),code:''});
+ PORTS[i].name=PORTS[i].portName=name;if(state.portInfo?.[id])state.portInfo[id].name=name;
+ if(!isFavourite(id))state.favs=[...(state.favs||[]),id];saveFavourites();
+ pp.naming=false;pp.draft='';
+ // Show it straight away in the active port tile (the previous port stays in the favourites list).
+ const slot=Math.max(0,(state.slots||DEFAULT_SLOTS).indexOf(state.port));choosePort(slot,i);refreshPortData();renderPointFav(pp);
+}
+function bindPointPopup(pp){
+ const el=pp.el;if(!el||el.dataset.bound)return;el.dataset.bound='1';
+ // Stop here: the clicked button is replaced, and Leaflet would then treat the click as a map click.
+ el.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest?.('[data-pp]');if(!b||b.tagName==='FORM')return;const act=b.dataset.pp;
+  if(act==='star'){pp.naming=true;renderPointFav(pp);}
+  else if(act==='cancel'){pp.naming=false;pp.draft='';renderPointFav(pp);}
+  else if(act==='unstar'){const id=pointId(pp.latlng);state.favs=(state.favs||[]).filter(f=>f!==id);saveFavourites();renderPorts();renderPointFav(pp);}});
+ el.addEventListener('submit',e=>{e.preventDefault();savePoint(pp);});
+ el.addEventListener('input',e=>{if(e.target.matches?.('.pp-name'))pp.draft=e.target.value;});
+ // Typing must not pan or zoom the map (Leaflet listens for arrows and +/− on the map).
+ el.addEventListener('keydown',e=>{if(e.target.matches?.('.pp-name')){e.stopPropagation();if(e.key==='Escape'){pp.naming=false;pp.draft='';renderPointFav(pp);}}});
+}
 async function openPointPopup(latlng){
  const wave=state.layer==='wave',model=wave?state.waveSource:state.model,direct=wave?POINT_WAVE_SOURCES.includes(model):true;
  const pp={latlng,wave,title:wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',label:wave?waveSourceLabel():windModelInfo(model).label,fallback:fieldCovers(latlng.lng,latlng.lat)?sample(latlng.lat,latlng.lng):null,loading:direct,record:null};
- pp.popup=L.popup({className:'point-popup',maxWidth:260}).setLatLng(latlng).setContent(pointHTML(pp)).openOn(map);pointPopup=pp;
+ pp.el=document.createElement('div');pp.el.innerHTML=pointHTML(pp);pp.popup=L.popup({className:'point-popup',maxWidth:240,minWidth:150}).setLatLng(latlng).setContent(pp.el).openOn(map);pointPopup=pp;bindPointPopup(pp);
  if(!direct)return;
  const key=[model,(Math.round(latlng.lat*50)/50).toFixed(2),(Math.round(latlng.lng*50)/50).toFixed(2)].join('/');
  try{
   let data=pointCache.get(key);if(!data||Date.now()-data.at>1800000){const res=await fetch('/api/point?'+new URLSearchParams({model,lat:latlng.lat.toFixed(4),lon:latlng.lng.toFixed(4)}),{signal:AbortSignal.timeout(20000)});if(!res.ok)throw Error('HTTP '+res.status);data={...(await res.json()),at:Date.now()};if(pointCache.size>60)pointCache.delete(pointCache.keys().next().value);pointCache.set(key,data);}
   pp.record=data.record;
  }catch(e){console.warn('point',e.message);}
- pp.loading=false;if(pointPopup===pp)renderPointPopup();
+ pp.loading=false;if(pointPopup===pp){renderPointPopup();pp.popup.update?.();}
 }
 function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));if(state.windColors===false)fieldCanvas.style.visibility='hidden';particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');syncMarkers();map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});applyMapGestures();bindTwoFingerHint();bindMouseDragOnTouchDevices();map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>openPointPopup(e.latlng));new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
 

@@ -939,3 +939,21 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .ports-column>.ports .port-flag{margin-top:9px}
 @media(max-width:760px){.ports-column>.ports .port-flag{margin-top:6px}}
 .map-controls .map-btn.loading-dim{opacity:.6}
+
+/* Map-click popup: compact values + favourite star with a name field */
+.point-popup .leaflet-popup-content{margin:8px 10px}
+.point-pop{gap:2px;font-size:11.5px}
+.point-pop .pp-main{display:flex;flex-direction:column;gap:2px}
+.point-pop .pp-main b{font-size:12px;gap:3px}
+.point-pop .pp-chip{min-width:30px;padding:1px 5px;font-size:12px;border-radius:5px}
+.point-pop .pp-dir{opacity:.85}
+.pp-fav{display:flex;align-items:center;gap:6px;margin:5px 0 0;padding-top:5px;border-top:1px solid #3a56624d}
+.pp-star{flex:none;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:16px;line-height:1;color:#a9bcc3;background:#ffffff12;padding:0}
+.pp-star:hover{filter:none;background:#ffffff24}
+.pp-star.on{color:#f0b429}
+.pp-name{flex:1;min-width:0;width:110px;padding:4px 7px;border-radius:6px;border:1px solid #4d6a76;background:#0b1f2a;color:#e3eef1;font:600 12px 'DM Sans',system-ui,sans-serif}
+.pp-name:focus{outline:none;border-color:#31b9ab;box-shadow:0 0 0 2px #31b9ab40}
+.pp-add{flex:none;padding:4px 8px;border-radius:6px;background:#0d8c7a;color:#fff;font:700 11px 'DM Sans',system-ui,sans-serif}
+.pp-saved{font-weight:700;color:#e3eef1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:760px){.pp-name{font-size:16px;padding:3px 6px}}
+.point-pop .pp-main b{flex-wrap:nowrap;white-space:nowrap}.point-pop .pp-main{padding-right:14px}
