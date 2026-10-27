@@ -594,17 +594,40 @@ function bindPointPopup(pp){
  // Typing must not pan or zoom the map (Leaflet listens for arrows and +/− on the map).
  el.addEventListener('keydown',e=>{if(e.target.matches?.('.pp-name')){e.stopPropagation();if(e.key==='Escape'){pp.naming=false;pp.draft='';renderPointFav(pp);}}});
 }
-async function openPointPopup(latlng){
- const wave=state.layer==='wave',model=wave?state.waveSource:state.model,direct=wave?POINT_WAVE_SOURCES.includes(model):true;
- const pp={latlng,wave,title:wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',label:wave?waveSourceLabel():windModelInfo(model).label,fallback:fieldCovers(latlng.lng,latlng.lat)?sample(latlng.lat,latlng.lng):null,loading:direct,record:null};
- pp.el=document.createElement('div');pp.el.innerHTML=pointHTML(pp);pp.popup=L.popup({className:'point-popup',maxWidth:240,minWidth:150}).setLatLng(latlng).setContent(pp.el).openOn(map);pointPopup=pp;bindPointPopup(pp);
- if(!direct)return;
- const key=[model,(Math.round(latlng.lat*50)/50).toFixed(2),(Math.round(latlng.lng*50)/50).toFixed(2)].join('/');
+async function loadPointRecord(pp){
+ if(!pp.direct)return;const latlng=pp.latlng,model=pp.model,key=[model,(Math.round(latlng.lat*50)/50).toFixed(2),(Math.round(latlng.lng*50)/50).toFixed(2)].join('/'),ticket=pp.ticket=(pp.ticket||0)+1;
+ pp.loading=true;pp.record=null;renderPointPopup();
  try{
   let data=pointCache.get(key);if(!data||Date.now()-data.at>1800000){const res=await fetch('/api/point?'+new URLSearchParams({model,lat:latlng.lat.toFixed(4),lon:latlng.lng.toFixed(4)}),{signal:AbortSignal.timeout(20000)});if(!res.ok)throw Error('HTTP '+res.status);data={...(await res.json()),at:Date.now()};if(pointCache.size>60)pointCache.delete(pointCache.keys().next().value);pointCache.set(key,data);}
-  pp.record=data.record;
+  if(ticket!==pp.ticket)return;pp.record=data.record;
  }catch(e){console.warn('point',e.message);}
- pp.loading=false;if(pointPopup===pp){renderPointPopup();pp.popup.update?.();}
+ if(ticket!==pp.ticket)return;pp.loading=false;if(pointPopup===pp){renderPointPopup();if(!pp.naming)pp.popup.update?.();}
+}
+async function openPointPopup(latlng){
+ const wave=state.layer==='wave',model=wave?state.waveSource:state.model,direct=wave?POINT_WAVE_SOURCES.includes(model):true;
+ const pp={latlng,wave,model,direct,title:wave?'Wave Hs':state.layer==='gust'?'Gusts':'Wind',label:wave?waveSourceLabel():windModelInfo(model).label,fallback:fieldCovers(latlng.lng,latlng.lat)?sample(latlng.lat,latlng.lng):null,loading:direct,record:null};
+ pp.el=document.createElement('div');pp.el.innerHTML=pointHTML(pp);pp.popup=L.popup({className:'point-popup',maxWidth:240,minWidth:150,offset:[0,3]}).setLatLng(latlng).setContent(pp.el).openOn(map);pointPopup=pp;bindPointPopup(pp);
+ // A small green dot marks the exact point under the tip; both follow when the popup is dragged.
+ if(pointDot)pointDot.remove();pointDot=L.circleMarker(latlng,{radius:3.5,weight:1.5,color:'#ffffff',fillColor:'#2fc79f',fillOpacity:1,interactive:false}).addTo(map);
+ pp.popup.on('remove',()=>{if(pointPopup===pp&&pointDot){pointDot.remove();pointDot=null;}});
+ bindPointDrag(pp);
+ return loadPointRecord(pp);
+}
+let pointDot=null;
+// Drag the popup (mouse or finger) to move the point it marks; the forecast reloads where it is dropped.
+function bindPointDrag(pp){
+ const box=pp.popup.getElement?.();if(!box)return;
+ box.addEventListener('pointerdown',e=>{
+  if(e.button>0||e.target.closest?.('button,input,a,form .pp-name,.leaflet-popup-close-button'))return;
+  const start={x:e.clientX,y:e.clientY},origin=map.latLngToContainerPoint(pp.latlng);let moved=false;
+  const move=ev=>{const dx=ev.clientX-start.x,dy=ev.clientY-start.y;if(!moved&&Math.hypot(dx,dy)<4)return;if(!moved){moved=true;box.classList.add('dragging');map.dragging?.disable();}
+   const ll=map.containerPointToLatLng(L.point(origin.x+dx,origin.y+dy));pp.popup.setLatLng(ll);pointDot?.setLatLng(ll);pp.dragLatLng=ll;ev.preventDefault();};
+  const up=()=>{box.removeEventListener('pointermove',move);box.removeEventListener('pointerup',up);box.removeEventListener('pointercancel',up);try{box.releasePointerCapture(e.pointerId);}catch{}
+   if(!moved)return;box.classList.remove('dragging');map.dragging?.enable();
+   pp.latlng=pp.dragLatLng;pp.fallback=fieldCovers(pp.latlng.lng,pp.latlng.lat)?sample(pp.latlng.lat,pp.latlng.lng):null;pp.naming=false;pp.draft='';renderPointFav(pp);loadPointRecord(pp);};
+  try{box.setPointerCapture(e.pointerId);}catch{}
+  box.addEventListener('pointermove',move);box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
+ });
 }
 function initMap(){if(!window.L){$('fieldStatus').textContent='Map engine unavailable. Charts remain available.';return;}map=L.map('map',{zoomControl:false,attributionControl:true,minZoom:4,maxZoom:16,zoomSnap:.25,maxBounds:[[51,4],[69,36]],maxBoundsViscosity:.8});fitPorts();map.getContainer().addEventListener('pointerdown',()=>{state.viewTouched=true;},{once:true});map.getContainer().addEventListener('wheel',()=>{state.viewTouched=true;},{once:true,passive:true});const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',maxZoom:19,referrerPolicy:'strict-origin-when-cross-origin'});tiles.on('tileerror',()=>{if(++tileErrors>8)$('mapError').hidden=false;});tiles.on('load',()=>{if(tileErrors===0)$('mapError').hidden=true;});tiles.addTo(map);map.createPane('routeWaves');map.getPane('routeWaves').style.zIndex=410;map.createPane('weather');map.getPane('weather').style.zIndex=350;map.getPane('weather').style.pointerEvents='none';fieldCanvas=L.DomUtil.create('canvas','field-canvas',map.getPane('weather'));if(state.windColors===false)fieldCanvas.style.visibility='hidden';particleCanvas=L.DomUtil.create('canvas','particle-canvas',map.getPane('weather'));for(const c of [fieldCanvas,particleCanvas]){c.style.position='absolute';c.style.pointerEvents='none';}fctx=fieldCanvas.getContext('2d');pctx=particleCanvas.getContext('2d');syncMarkers();map.on('movestart zoomstart',()=>{mapPaused=true;pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);});applyMapGestures();bindTwoFingerHint();bindMouseDragOnTouchDevices();map.on('moveend zoomend resize',()=>{mapPaused=false;updateRouteWaves();drawField();});map.on('click',e=>openPointPopup(e.latlng));new ResizeObserver(()=>{map.invalidateSize();if(!state.viewTouched)fitPorts();}).observe($('map'));requestAnimationFrame(animate);}
 

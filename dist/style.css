@@ -957,3 +957,10 @@ main>.page-footer,.page-footer{margin-top:-11px;padding-top:0}
 .pp-saved{font-weight:700;color:#e3eef1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:760px){.pp-name{font-size:16px;padding:3px 6px}}
 .point-pop .pp-main b{flex-wrap:nowrap;white-space:nowrap}.point-pop .pp-main{padding-right:14px}
+
+/* Draggable map-click popup; larger tip fading into green, pointing at the green dot */
+.point-popup .leaflet-popup-content-wrapper{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.point-popup.dragging .leaflet-popup-content-wrapper{cursor:grabbing}
+.point-popup .pp-name{user-select:text;-webkit-user-select:text;cursor:text}
+.point-popup .leaflet-popup-tip-container{width:56px;height:28px;margin-left:-28px}
+.point-popup .leaflet-popup-tip{width:24px;height:24px;margin:-12px auto 0;background:linear-gradient(135deg,#102c3a 52%,#1d6a60 70%,#3cc9a6 92%,#5fe0bf 100%);box-shadow:0 3px 10px rgba(0,0,0,.35)}
