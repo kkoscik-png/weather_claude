@@ -576,7 +576,7 @@ function pointFavHTML(pp){
  const id=pointId(pp.latlng),fav=isFavourite(id),name=PORTS[portIndexById(id)]?.name;
  if(!pointSavable(pp.latlng))return '';
  if(fav)return `<div class="pp-fav"><button type="button" class="pp-star on" data-pp="unstar" title="Remove from favourites" aria-label="Remove ${name||'this point'} from favourites">★</button><span class="pp-saved">${name||'Favourite'}</span></div>`;
- if(!pp.naming)return `<div class="pp-fav"><button type="button" class="pp-star" data-pp="star" title="Add this point to favourites" aria-label="Add this point to favourites">☆</button></div>`;
+ if(!pp.naming)return `<div class="pp-fav"><button type="button" class="pp-star" data-pp="star" title="Add this point to favourites" aria-hidden="true" tabindex="-1">☆</button><button type="button" class="pp-addfav" data-pp="star">Add to favourites</button></div>`;
  return `<form class="pp-fav" data-pp="form"><button type="button" class="pp-star on" data-pp="cancel" title="Cancel" aria-label="Cancel">★</button><input class="pp-name" name="name" maxlength="24" placeholder="Name this point" aria-label="Name of the point" autocomplete="off" value="${(pp.draft||'').replace(/"/g,'&quot;')}"><button type="submit" class="pp-add" title="Add to your ports">Add</button></form>`;
 }
 function pointHTML(pp){return `<div class="point-pop"><div class="pp-main">${pointMainHTML(pp)}</div><div class="pp-favbox">${pointFavHTML(pp)}</div></div>`;}
